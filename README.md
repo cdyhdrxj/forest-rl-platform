@@ -79,7 +79,7 @@ forest-rl-platform/
 
 ## Распределение по студентам
 
-### Георгий. Прикладная математика и информатика — прокладка троп
+### Яна. Прикладная математика и информатика — прокладка троп
 
 Основная зона ответственности: `services/trail_planning`, `packages/baselines`, `experiments/benchmark_suites`.
 
@@ -95,7 +95,7 @@ forest-rl-platform/
 
 Основная зона ответственности: `services/robot_control`, `packages/env_bridge`, `ros2_ws/src/robot_adapter`, `tests/e2e`, `deploy`, `.github/workflows`.
 
-### Яна. Прикладная математика и информатика — патрулирование
+### Георгий. Прикладная математика и информатика — патрулирование
 
 Основная зона ответственности: `services/patrol_planning`, `packages/rl_algorithms`, `experiments/configs`, `experiments/benchmark_suites`.
 
