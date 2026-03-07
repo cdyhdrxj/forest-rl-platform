@@ -1,0 +1,10 @@
+{
+  "name": "forest-rl-platform",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo Настройте фронтенд в apps/web",
+    "build": "echo Настройте сборку фронтенда",
+    "lint": "echo Настройте проверку фронтенда"
+  }
+}
