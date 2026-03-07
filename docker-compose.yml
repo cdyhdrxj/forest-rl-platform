@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: forest_rl_db
+    environment:
+      POSTGRES_DB: forest_rl
+      POSTGRES_USER: forest
+      POSTGRES_PASSWORD: forest
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    image: python:3.11-slim
+    container_name: forest_rl_api
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: bash -c "echo API пока не настроен"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

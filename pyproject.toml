@@ -1,0 +1,9 @@
+[project]
+name = "forest-rl-platform"
+version = "0.1.0"
+description = "Платформа для моделирования и обучения агентов в лесной среде"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
