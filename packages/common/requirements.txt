@@ -1,0 +1,11 @@
+# Зависимости сервера
+fastapi
+uvicorn[standard]
+stable-baselines3
+gymnasium
+jax
+jaxlib
+numpy
+orjson
+torch
+camar
