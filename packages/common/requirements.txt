@@ -3,9 +3,10 @@ fastapi
 uvicorn[standard]
 stable-baselines3
 gymnasium
-jax
-jaxlib
+jax[cpu]
 numpy
 orjson
-torch
 camar
+alembic
+sqlalchemy
+psycopg2-binary
