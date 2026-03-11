@@ -143,8 +143,6 @@ docker compose up --build
 docker compose up -d
 ```
 
----
-
 ### Доступные сервисы
 
 | Сервис | Адрес |
@@ -152,8 +150,6 @@ docker compose up -d
 | **Клиентская часть (Web)** | [http://localhost:5173](http://localhost:5173) |
 | **Серверная часть (API)** | [http://localhost:8000](http://localhost:8000) |
 | **Управление БД (pgAdmin)** | [http://localhost:5050](http://localhost:5050) |
-
----
 
 ### Вход в pgAdmin
 
