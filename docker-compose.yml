@@ -1,17 +1,65 @@
-version: "3.10"
-
 services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Чтобы другие контейнеры ждали готовности БД
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      # Логин и пароль для входа в pgAdmin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: migrate
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONPATH=/app:/app/apps/api
+    depends_on:
+      postgres:
+        condition: service_healthy # Ждем, пока БД будет готова к подключениям
+    command: alembic upgrade head
+
   server:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: server
     volumes:
-    - ./apps/api:/app/api  
+      - ./:/app
     ports:
       - "8000:8000"
     environment:
       - PYTHONUTF8=1
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONPATH=/app:/app/apps/api
+    depends_on:
+      postgres:
+        condition: service_healthy # Ждем, пока БД будет готова к подключениям
+      migrate:
+        condition: service_completed_successfully # Сервер запустится только если миграции прошли успешно
 
   client:
     image: node:20-alpine
@@ -22,3 +70,6 @@ services:
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+volumes:
+  postgres_data:
