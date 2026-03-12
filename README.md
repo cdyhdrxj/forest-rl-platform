@@ -171,3 +171,10 @@ docker compose up -d
 * **Host:** `postgres`
 * **User/Password:** `forest` / `forest`
 
+## Работа с базой данных
+
+Компоненты, связанные с базой данных, размещены в каталоге `packages/`.
+
+* ORM-модели (SQLAlchemy) находятся в `packages/db/models/`.
+* Pydantic-модели, используемые для передачи данных между сервисами и API, находятся в `packages/schemas/`.
+* Создание и получение сессии БД выполняется через `packages/db/session.py`.
