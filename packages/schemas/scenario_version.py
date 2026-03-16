@@ -2,10 +2,8 @@ from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Dict, Any
 
-class ScenarioVersion(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    
-    id: int = Field(..., ge=1)
+
+class ScenarioVersionBase(BaseModel):
     scenario_id: int = Field(..., ge=1)
     version_no: int = Field(..., ge=1)
     seed: Optional[int] = Field(None, ge=0)
@@ -17,4 +15,10 @@ class ScenarioVersion(BaseModel):
     world_file_uri: Optional[str] = None
     preview_image_uri: Optional[str] = None
     is_active: bool = True
+
+
+class ScenarioVersionRead(ScenarioVersionBase):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int = Field(..., ge=1)
     created_at: datetime

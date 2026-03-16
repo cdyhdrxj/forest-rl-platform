@@ -1,8 +1,10 @@
 from sqlalchemy import Column, BigInteger, Integer, Float, ForeignKey, TIMESTAMP, JSON, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
 from .enums import EventType
+
 
 class EpisodeEvent(Base):
     __tablename__ = 'episode_events'

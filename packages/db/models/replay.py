@@ -1,7 +1,9 @@
 from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
+
 
 class Replay(Base):
     __tablename__ = 'replays'

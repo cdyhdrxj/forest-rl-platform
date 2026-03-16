@@ -1,7 +1,9 @@
 from sqlalchemy import Column, BigInteger, Integer, Boolean, Text, ForeignKey, TIMESTAMP, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
+
 
 class ScenarioVersion(Base):
     __tablename__ = 'scenario_versions'

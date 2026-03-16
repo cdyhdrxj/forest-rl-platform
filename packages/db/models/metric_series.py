@@ -1,7 +1,9 @@
 from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
+
 
 class MetricSeries(Base):
     __tablename__ = 'metric_series'
