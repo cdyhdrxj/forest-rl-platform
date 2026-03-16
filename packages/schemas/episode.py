@@ -1,11 +1,9 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 
-class Episode(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    
-    id: int = Field(..., ge=1)
+
+class EpisodeBase(BaseModel):
     run_id: int = Field(..., ge=1)
     episode_index: int = Field(..., ge=0)
     success: Optional[bool] = None
@@ -19,4 +17,10 @@ class Episode(BaseModel):
     coverage_ratio: Optional[float] = Field(None, ge=0, le=1)
     avg_detection_delay: Optional[float] = Field(None, ge=0)
     total_damage: Optional[float] = None
+
+
+class EpisodeRead(EpisodeBase):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int = Field(..., ge=1)
     created_at: datetime

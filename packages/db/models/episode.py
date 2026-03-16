@@ -1,7 +1,9 @@
 from sqlalchemy import Column, BigInteger, Integer, Boolean, String, Float, ForeignKey, TIMESTAMP, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
+
 
 class Episode(Base):
     __tablename__ = 'episodes'

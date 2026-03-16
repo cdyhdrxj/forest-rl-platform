@@ -1,8 +1,10 @@
 from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, JSON, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
 from .enums import ProjectMode, RunStatus
+
 
 class Run(Base):
     __tablename__ = 'runs'

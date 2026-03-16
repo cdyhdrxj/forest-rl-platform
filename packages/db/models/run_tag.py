@@ -1,7 +1,8 @@
-"""RunTag model"""
 from sqlalchemy import Column, BigInteger, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
+
 from .base import Base
+
 
 class RunTag(Base):
     __tablename__ = 'run_tags'

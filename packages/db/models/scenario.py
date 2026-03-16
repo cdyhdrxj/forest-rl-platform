@@ -1,9 +1,11 @@
 from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy import Enum as SQLEnum
+
 from .base import Base
 from .enums import ProjectMode
-from sqlalchemy import Enum as SQLEnum
+
 
 class Scenario(Base):
     __tablename__ = 'scenarios'

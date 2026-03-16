@@ -1,7 +1,9 @@
 from sqlalchemy import Column, BigInteger, String, Integer, Boolean, Text, ForeignKey, TIMESTAMP, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from .base import Base
+
 
 class Model(Base):
     __tablename__ = 'models'

@@ -176,5 +176,6 @@ docker compose up -d
 Компоненты, связанные с базой данных, размещены в каталоге `packages/`.
 
 * ORM-модели (SQLAlchemy) находятся в `packages/db/models/`.
-* Pydantic-модели, используемые для передачи данных между сервисами и API, находятся в `packages/schemas/`.
+* Модели Pydantic, предназначенные для API (входные и выходные данные), находятся в `packages/schemas/`.
 * Создание и получение сессии БД выполняется через `packages/db/session.py`.
+* Примеры работы с БД: `packages/db/examples/`.
