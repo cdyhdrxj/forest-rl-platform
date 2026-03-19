@@ -130,7 +130,7 @@ export default function App() {
   const [activeGridSize, setActiveGridSize] = useState(10)
 
   const [params, setParams] = useState({
-    lr: 0.0003, gamma: 0.99, tau: 0.005,
+    learning_rate: 0.0003, gamma: 0.99, tau: 0.005,
     obstacle_density: 0.05, grid_size: 15, max_steps: 500,
     goal_reward: 50.0, collision_penalty: 0.3, step_penalty: 0.0, action_scale: 1.0,
     max_speed: 50.0, accel: 40.0, damping: 0.6, dt: 0.01, terrain_penalty: 0.03,
@@ -176,11 +176,18 @@ export default function App() {
   }, [activeEnv, activeTask])
 
   const start = useCallback(() => {
-    wsRef.current?.send(JSON.stringify({ action: "start", algo, params }))
+    wsRef.current?.send(JSON.stringify({
+      action: "start",
+      params: {
+        ...params,
+        algorithm: algo.toLowerCase(),
+        mode: activeTask === "Тропы" ? "trail" : "patrol",
+      }
+    }))
     setActiveGridSize(params.grid_size)
     setChartData([])
     setRunning(true)
-  }, [algo, params])
+  }, [algo, params, activeTask])
 
   const stop = useCallback(() => {
     wsRef.current?.send(JSON.stringify({ action: "stop" }))
@@ -284,10 +291,10 @@ export default function App() {
                   <select value={algo} onChange={e => setAlgo(e.target.value)} disabled={running} style={{ ...selStyle, marginBottom: 14 }}>
                     <option>PPO</option><option>SAC</option><option>TD3</option>
                   </select>
-                  <Slider label="Скор. обуч." param="lr" min={0.00001} max={0.01} step={0.00001} />
+                  <Slider label="Скор. обуч." param="learning_rate" min={0.00001} max={0.01} step={0.00001} />
                   <Slider label="Гамма (γ)" param="gamma" min={0.9} max={0.999} step={0.001} />
                   <Slider label="Шагов в эпизоде" param="max_steps" min={50} max={5000} step={50} />
-                  {(algo === "SAC" || algo === "TD3") && <Slider label="Тау" param="tau" min={0.001} max={0.1} step={0.001} />}
+                  {(algo === "SAC" || algo === "TD3") && <Slider label="Тау (ԏ)" param="tau" min={0.001} max={0.1} step={0.001} />}
                   <div style={{ borderTop: `1px solid ${Theme.border}`, margin: "12px 0" }} />
                   <Slider label="Награда за цель" param="goal_reward" min={10} max={100} step={5} />
                   <Slider label="Штраф столкн." param="collision_penalty" min={0} max={5} step={0.1} />

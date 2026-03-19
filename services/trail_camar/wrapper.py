@@ -9,6 +9,7 @@ from camar.maps.utils import perlin_noise_vectorized
 
 class CamarGymWrapper(gym.Env):
     """Обёртка CAMAR для Gymnasium: адаптирует JAX-среду под интерфейс SB3"""
+
     def __init__(self, seed=0, obstacle_density=0.2, action_scale=1.0,
                  frameskip=1, goal_reward=1.0, collision_penalty=0.3,
                  grid_size=10, max_steps=100,
@@ -23,8 +24,8 @@ class CamarGymWrapper(gym.Env):
         self.grid_size = grid_size
         self._cached_render = None
         self.terrain_map = None
-        self.goal_count = 0  
-        self.collision_count = 0  
+        self.goal_count = 0
+        self.collision_count = 0
 
         self.env = camar_v0(
             map_generator="random_grid",
@@ -85,21 +86,16 @@ class CamarGymWrapper(gym.Env):
         on_goal = bool(np.array(self.state.on_goal).any())
         is_collision = bool(np.array(self.state.is_collision).any())
 
-        # базовая награда от CAMAR
         r = float(np.array(reward).sum())
 
-        # штраф за столкновение
         if render.get("is_collision"):
             r -= self.collision_penalty
 
-        # штраф за шаг
         r -= self.step_penalty
 
-        # бонус за достижение цели
         if on_goal:
             r += self.goal_reward
             self.goal_count += 1
-            print(f"base_reward={float(np.array(reward).sum()):.3f} total={r:.3f}")
 
         d = bool(np.array(done).any())
 
@@ -107,7 +103,6 @@ class CamarGymWrapper(gym.Env):
             "on_goal": on_goal,
             "is_collision": is_collision,
         }
-
 
     def get_terrain_map(self):
         return self.terrain_map
