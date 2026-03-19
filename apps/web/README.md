@@ -1,16 +1,85 @@
-# React + Vite
+# Forest RL — фронтенд
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite приложение для визуализации обучения RL-агентов.
 
-Currently, two official plugins are available:
+## Локальный запуск
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Установить зависимости из:
 
-## React Compiler
+```bash
+cd apps/web
+npm install
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Запустить в режиме разработки:
 
-## Expanding the ESLint configuration
+```bash
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Docker
+
+Первый запуск или при изменении зависимостей:
+
+```bash
+docker-compose up --build client
+```
+
+Обычный запуск:
+
+```bash
+docker-compose up client
+```
+
+## Подключение к серверу
+
+Фронт подключается к серверу по WebSocket. По умолчанию `ws://127.0.0.1:8000`.
+
+> TODO: вынести адрес сервера в переменную окружения `.env`
+
+Перед запуском фронта убедись что сервер запущен — см. `README` `в apps/api`.
+
+## Структура
+
+```
+src/
+├── App.jsx              # главный компонент, WebSocket
+├── constants/
+│   └── colors.js        # тема, цвета, стили
+```
+
+### Пример отправки параметров на сервер для среды CAMAR:
+
+```python
+{
+    "action": "start" | "stop",  # запустить или остановить обучение
+
+    "params": {
+        # алгоритм
+        "algorithm": "ppo" | "sac" | "td3",  # выбор алгоритма обучения
+        "learning_rate": float,  # скорость обучения
+        "gamma": float,          # коэффициент дисконтирования будущих наград
+        "tau": float,            # скорость обновления целевой сети (только SAC/TD3)
+        "max_steps": int,        # максимум шагов в одном эпизоде
+
+        # награды
+        "goal_reward": float,       # награда за достижение цели
+        "collision_penalty": float, # штраф за столкновение с препятствием
+        "step_penalty": float,      # штраф за каждый шаг
+
+        # карта
+        "grid_size": int,          # размер сетки среды (grid_size × grid_size)
+        "obstacle_density": float, # доля клеток занятых препятствиями (0..1)
+
+        # физика агента
+        "action_scale": float, # умножает скорость агента многократно
+        "max_speed": float,    # максимальная скорость
+        "accel": float,        # ускорение
+        "damping": float,      # торможение (0..1, чем выше тем быстрее останавливается)
+        "dt": float,           # шаг физического времени
+
+        # режим
+        "mode": "trail" | "patrol",
+    }
+}
+```
