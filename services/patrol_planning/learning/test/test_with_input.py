@@ -26,26 +26,10 @@ import keyboard
 import time
 import threading
 
+from services.patrol_planning.assets.envs.models import GW_DEFAULT
+env = GridWorld.load(GW_DEFAULT)
 
-#Агент
-agent = GridWorldAgent(4,4)
-
-#Нарушитель - игрок
-intruder_player = Controllable(0, 0, True)
-
-#Модель наблюдения
-obs_m = ObservationBox(4)
-
-#Модель среды
-env = GridWorld(
-    agent=agent,
-    obs_model=obs_m,
-    grid_world_size=8,
-    intruders=[intruder_player],
-    max_steps= 150
-)
-
-#Данные
+#Сброс среды
 obs, _ = env.reset()
 
 #Рендер движок
