@@ -2,10 +2,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from services.patrol_planning.src.pp_types import AgentActions
+from enum import IntEnum
+from services.patrol_planning.assets.agents.models import AgentConfig
 import numpy as np
 
 class GridWorldAgent:
     """Базовый класс для агентов сеточного мира"""
+    
+    #Действия агента
+    ACTIONS: IntEnum = AgentActions
 
     def __init__(self, y, x, is_random_spawned: bool = False):
         self.start_x = x
@@ -14,7 +19,6 @@ class GridWorldAgent:
         self.y = y
         self.is_random_spawned = is_random_spawned
         
-    
     def step(self, env: GridWorld, input_action):
         """
         Логика управления агентом. 
@@ -71,3 +75,20 @@ class GridWorldAgent:
         else:
             self.x = self.start_x
             self.y = self.start_y
+            
+    @staticmethod
+    def load(config: AgentConfig) -> GridWorldAgent:
+        """
+        Создает экземпляр GridWorldAgent на основе конфигурации.
+
+        Args:
+            config: Конфигурация агента
+
+        Returns:
+            Экземпляр GridWorldAgent
+        """
+        return GridWorldAgent(
+            y=config.pos[1],
+            x=config.pos[0],
+            is_random_spawned=config.is_random_spawned,
+        )

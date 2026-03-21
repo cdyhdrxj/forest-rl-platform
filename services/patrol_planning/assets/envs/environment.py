@@ -3,11 +3,16 @@ from __future__ import annotations
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from typing import List
-from services.patrol_planning.src.pp_types import AgentActions
+from typing import List, Type
 
 import copy
 import time
+
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+from services.patrol_planning.assets.agents.agent import GridWorldAgent
+from services.patrol_planning.assets.observations.obs_box import ObservationBox
+from services.patrol_planning.assets.intruders.wanderer import Wanderer
+from services.patrol_planning.assets.intruders.controllable import Controllable
 
 #Сеточный мир
 class GridWorld(gym.Env):
@@ -26,11 +31,11 @@ class GridWorld(gym.Env):
         self.agent = agent
         
         #Нарушители
-        self.intruders_start = copy.deepcopy(intruders)
+        self.intruders_start = copy.deepcopy(intruders) #Кешируем чтобы потом восстанавливать при reset
         self.intruders = copy.deepcopy(intruders)
         
-        #Переопределяем параметр класса
-        self.action_space = spaces.Discrete(len(AgentActions))
+        #Переопределяем параметр класса (#TODO Должен получать из агента!)
+        self.action_space = spaces.Discrete(len(agent.ACTIONS))
 
         #Переопределяем параметр класса
         self.obs = obs_model
@@ -104,4 +109,52 @@ class GridWorld(gym.Env):
             
                     #Конвертируем в формат для CNN
         return observation, reward, terminated, truncated, info
+
+    @staticmethod
+    def load(config: GridWorldConfig) -> 'GridWorld':
+        """
+        Создает настроенный экземпляр GridWorld на основе конфигурации.
+
+        Args:
+            config: Конфигурация GridWorldConfig
+
+        Returns:
+            GridWorld: Настроенный экземпляр среды
+
+        """
+        # Проверка типа модели
+        if not isinstance(config, GridWorldConfig):
+            raise ValueError(f"Ожидался GridWorldConfig, получено: {type(config)}")
+
+        # Создаем агента из конфигурации
+        agent = GridWorldAgent.load(config.agent_config)
+
+        # Создаем модель наблюдения из конфигурации
+        match type(config.obs_config).__name__:
+            case 'ObsBoxConfig':
+                obs_model = ObservationBox.load(config.obs_config)
+            case _:
+                raise ValueError(f"Неподдерживаемый тип конфига наблюдения: {type(config.obs_config).__name__}")
+
+        # Создаем нарушителей из конфигураций
+        intruders = []
+        for intruder_config in config.intruder_config:
+            match type(intruder_config).__name__:
+                case 'WandererConfig':
+                    # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
+                    intruders.append(Wanderer.load(intruder_config))
+                case 'ControllableConfig':
+                    # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
+                    intruders.append(Controllable.load(intruder_config))
+                case _:
+                    raise ValueError(f"Неподдерживаемый тип конфига нарушителя: {type(intruder_config).__name__}")
+
+        # Создаем и возвращаем настроенный экземпляр GridWorld
+        return GridWorld(
+            agent=agent,
+            obs_model=obs_model,
+            grid_world_size=config.grid_size,  # По умолчанию, можно сделать конфигурируемым
+            intruders=intruders,
+            max_steps=config.max_steps
+        )
     
