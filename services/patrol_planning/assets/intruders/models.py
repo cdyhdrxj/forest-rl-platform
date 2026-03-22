@@ -1,8 +1,14 @@
 from pydantic import BaseModel, Field
 from typing import List
 
+from typing import Annotated
+from pydantic import Field
+from typing import Literal
+
 class IntruderConfig(BaseModel):
     """Конфигурация базового нарушителя GridWorld"""
+    type: Literal["default"] = "default"
+    
     pos: List[int] = Field(
         default= [0,0],
         description= "Текущая позиция нарушителя в среде"
@@ -19,11 +25,18 @@ class IntruderConfig(BaseModel):
     
 class ControllableConfig(IntruderConfig):
     """Конфигурация управляемого нарушителя GridWorld"""
+    type: Literal["controllable"] = "controllable"
     pass
 
 class WandererConfig(IntruderConfig):
     """Конфигурация блуждающего нарушителя GridWorld"""
+    type: Literal["wanderer"] = "wanderer"
     pass
+
+IntruderConfigType = Annotated[
+    ControllableConfig | WandererConfig,
+    Field(discriminator="type")
+]
 
 
 

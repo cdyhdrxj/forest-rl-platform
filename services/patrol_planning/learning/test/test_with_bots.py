@@ -1,7 +1,7 @@
 """Агент vs Бот"""
 
 import sys
-import os
+import os, json
 
 # Абсолютный путь до корня проекта (где лежит environment, observations и т.д.)
 PROJECT_ROOT = os.path.abspath(
@@ -13,10 +13,18 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from services.patrol_planning.assets.envs.environment import GridWorld
+
 from services.patrol_planning.src.renderer_extended import GridWorldRendererExt
 
-from services.patrol_planning.assets.envs.models import GW_DEFAULT
-env = GridWorld.load(GW_DEFAULT)
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+#Загружаем конфиг среды
+with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+config = GridWorldConfig.model_validate(data)
+
+env = GridWorld.load(config)
+
 
 from stable_baselines3 import PPO
 

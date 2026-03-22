@@ -1,7 +1,7 @@
 """Агент vs Человек"""
 
 import sys
-import os
+import os, json
 
 # Абсолютный путь до корня проекта (где лежит environment, observations и т.д.)
 PROJECT_ROOT = os.path.abspath(
@@ -26,8 +26,14 @@ import keyboard
 import time
 import threading
 
-from services.patrol_planning.assets.envs.models import GW_DEFAULT
-env = GridWorld.load(GW_DEFAULT)
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+#Загружаем конфиг средыaasasaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaawaawaa
+with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+config = GridWorldConfig.model_validate(data)
+
+env = GridWorld.load(config)
 
 #Сброс среды
 obs, _ = env.reset()
