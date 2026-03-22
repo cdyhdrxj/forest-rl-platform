@@ -4,12 +4,12 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from gymnasium.spaces.space import Space
-
+from services.patrol_planning.assets.observations.models import  ObservationConfig
 
 class Observation(ABC):
     """Базовый абстрактный класс для наблюдений."""
 
-    def __init__(self, obs_size: int, cell_max_value: int):
+    def __init__(self, obs_size: int):
         """
         Инициализация базового observation.
 
@@ -18,7 +18,7 @@ class Observation(ABC):
             cell_max_value: максимальное значение в ячейке
         """
         self.obs_size = obs_size
-        self.cell_max_value = cell_max_value
+        # self.cell_max_value = cell_max_value
         
         ## gymnasium.spaces.space import Space
         self.space: Space
@@ -34,5 +34,19 @@ class Observation(ABC):
 
         Returns:
             np.ndarray: построенное наблюдение
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def load(config: ObservationConfig) -> Observation:
+        """
+        Создать экземпляр наблюдения из конфигурации.
+
+        Args:
+            config: конфигурация наблюдения
+
+        Returns:
+            Observation: настроенный экземпляр наблюдения
         """
         pass

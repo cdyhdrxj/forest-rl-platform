@@ -1,5 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from services.patrol_planning.assets.intruders.models import IntruderConfig
+from typing import Type
 
 class GridWorldIntruder:
     """Класс нарушителей для сеточного мира"""
@@ -36,6 +38,7 @@ class GridWorldIntruder:
     
     def reset(self, env):
         """
+
         Сбросить нарушителя к начальному состоянию
         """
 
@@ -72,5 +75,21 @@ class GridWorldIntruder:
             self.y = self.start_y
             env.word_layers["intruders"][self.x, self.y] = 1
 
+    @staticmethod
+    def load(config: IntruderConfig) -> GridWorldIntruder:
+        """
+        Создает экземпляр GridWorldIntruder на основе конфигурации.
 
+        Args:
+            config: Конфигурация нарушителя
+
+        Returns:
+            Экземпляр GridWorldIntruder
+        """
+        return GridWorldIntruder(
+            y=config.pos[1],
+            x=config.pos[0],
+            is_random_spawned=config.is_random_spawned,
+            catch_reward=config.catch_reward
+        )
       

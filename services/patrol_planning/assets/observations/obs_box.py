@@ -5,12 +5,13 @@ import numpy as np
 from .obs import Observation
 
 from services.patrol_planning.assets.agents.agent import GridWorldAgent
+from services.patrol_planning.assets.observations.models import ObsBoxConfig
 
 class ObservationBox(Observation):
     """Custom observation handler for the forest patrol environment."""
 
-    def __init__(self, obs_size=10, cell_max_value=10, layers_count: int  = 2):
-        super().__init__(obs_size, cell_max_value)
+    def __init__(self, obs_size=10, layers_count: int  = 2):
+        super().__init__(obs_size)
         # внутреннее описание пространства для RL
         
         self.layers_count = layers_count
@@ -81,4 +82,19 @@ class ObservationBox(Observation):
         
         obs = self.build_observation(layers, GridWorldAgent(0,0))
         return obs.shape
-        
+
+    @staticmethod
+    def load(config: ObsBoxConfig) -> ObservationBox:
+        """
+        Создать экземпляр ObservationBox из конфигурации.
+
+        Args:
+            config: конфигурация ObservationBox
+
+        Returns:
+            ObservationBox: настроенный экземпляр
+        """
+        return ObservationBox(
+            obs_size=config.size,
+            layers_count=config.layers_count
+        )
