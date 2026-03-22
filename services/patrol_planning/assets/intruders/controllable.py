@@ -2,8 +2,10 @@ from __future__ import annotations
 import numpy as np
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from .intruder import GridWorldIntruder
+from services.patrol_planning.assets.intruders.intruder import GridWorldIntruder
 from services.patrol_planning.src.pp_types import InputActions
+from services.patrol_planning.assets.intruders.models import IntruderConfig
+from typing import Type
 
 
 
@@ -51,6 +53,23 @@ class Controllable(GridWorldIntruder):
         
         #Иначе переходим в новую позицию
         env.word_layers["intruders"][self.x][self.y] = 1
-        
+
         return 0
-        
+
+    @staticmethod
+    def load(config: IntruderConfig) -> Controllable:
+        """
+        Создает экземпляр Controllable на основе конфигурации.
+
+        Args:
+            config: Конфигурация нарушителя
+
+        Returns:
+            Экземпляр Controllable
+        """
+        return Controllable(
+            y=config.pos[1],
+            x=config.pos[0],
+            is_random_spawned=config.is_random_spawned,
+            catch_reward=config.catch_reward
+        )

@@ -2,7 +2,9 @@ from __future__ import annotations
 import numpy as np
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from .intruder import GridWorldIntruder
+from services.patrol_planning.assets.intruders.intruder import GridWorldIntruder
+from services.patrol_planning.assets.intruders.models import IntruderConfig
+from typing import Type
 
 class Actions(IntEnum):
     UP = 0
@@ -12,7 +14,7 @@ class Actions(IntEnum):
     STAY = 4
 
 class Wanderer(GridWorldIntruder):
-    """Класс нарушителей-бродяг для сеточного мира"""
+    """Класс блуждающих нарушителей для сеточного мира"""
 
     def __init__(self, y, x, is_random_spawned: bool = False, catch_reward = 1):
         super().__init__(y, x, is_random_spawned, catch_reward)
@@ -53,6 +55,23 @@ class Wanderer(GridWorldIntruder):
         
         #Иначе переходим в новую позицию
         env.word_layers["intruders"][self.x][self.y] = 1
-        
+
         return 0
-        
+
+    @staticmethod
+    def load(config: IntruderConfig) -> Wanderer:
+        """
+        Создает экземпляр Wanderer на основе конфигурации.
+
+        Args:
+            config: Конфигурация нарушителя
+
+        Returns:
+            Экземпляр Wanderer
+        """
+        return Wanderer(
+            y=config.pos[1],
+            x=config.pos[0],
+            is_random_spawned=config.is_random_spawned,
+            catch_reward=config.catch_reward
+        )

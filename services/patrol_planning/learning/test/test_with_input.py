@@ -1,7 +1,7 @@
 """Агент vs Человек"""
 
 import sys
-import os
+import os, json
 
 # Абсолютный путь до корня проекта (где лежит environment, observations и т.д.)
 PROJECT_ROOT = os.path.abspath(
@@ -26,26 +26,16 @@ import keyboard
 import time
 import threading
 
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+#Загружаем конфиг средыaasasaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaawaawaa
+with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
 
-#Агент
-agent = GridWorldAgent(4,4)
+config = GridWorldConfig.model_validate(data)
 
-#Нарушитель - игрок
-intruder_player = Controllable(0, 0, True)
+env = GridWorld.load(config)
 
-#Модель наблюдения
-obs_m = ObservationBox(4)
-
-#Модель среды
-env = GridWorld(
-    agent=agent,
-    obs_model=obs_m,
-    grid_world_size=8,
-    intruders=[intruder_player],
-    max_steps= 150
-)
-
-#Данные
+#Сброс среды
 obs, _ = env.reset()
 
 #Рендер движок

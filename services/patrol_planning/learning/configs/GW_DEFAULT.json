@@ -1,0 +1,37 @@
+{
+  "agent_config": {
+    "type": "default",
+    "pos": [
+      4,
+      4
+    ],
+    "is_random_spawned": false
+  },
+  "intruder_config": [
+    {
+      "type": "controllable",
+      "pos": [
+        1,
+        1
+      ],
+      "is_random_spawned": true,
+      "catch_reward": 1.0
+    },
+    {
+      "type": "wanderer",
+      "pos": [
+        1,
+        1
+      ],
+      "is_random_spawned": true,
+      "catch_reward": 1.0
+    }
+  ],
+  "obs_config": {
+    "type": "box",
+    "size": 4,
+    "layers_count": 2
+  },
+  "max_steps": 150,
+  "grid_size": 8
+}
