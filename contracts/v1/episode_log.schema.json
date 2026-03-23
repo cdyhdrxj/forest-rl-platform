@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Журнал эпизода",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["run_id", "episode"],
+  "properties": {
+    "run_id": {
+      "type": "integer"
+    },
+    "episode": {
+      "type": "object",
+      "required": ["episode_index"],
+      "properties": {
+        "episode_index": {
+          "type": "integer"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "terminated_by": {
+          "type": "string"
+        },
+        "reward_total": {
+          "type": "number"
+        },
+        "steps_count": {
+          "type": "integer"
+        },
+        "duration_sec": {
+          "type": "number"
+        },
+        "path_length": {
+          "type": "number"
+        },
+        "path_cost": {
+          "type": "number"
+        },
+        "collisions_count": {
+          "type": "integer"
+        },
+        "coverage_ratio": {
+          "type": "number"
+        },
+        "avg_detection_delay": {
+          "type": "number"
+        },
+        "total_damage": {
+          "type": "number"
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event_type"],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "collision",
+              "goal_reached",
+              "intruder_spawn",
+              "intruder_detected",
+              "intruder_intercepted",
+              "fire_started",
+              "fire_finished",
+              "damage"
+            ]
+          },
+          "step_index": {
+            "type": "integer"
+          },
+          "sim_time_sec": {
+            "type": "number"
+          },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number" },
+          "payload": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
