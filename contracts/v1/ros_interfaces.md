@@ -14,7 +14,7 @@
 
 #### `/env/scan`
 **Тип:** `sensor_msgs/LaserScan`  
-**Описание:** Данные лидара для режима управления роботом.
+**Описание:** Данные лидара.
 
 #### `/env/odom`
 **Тип:** `nav_msgs/Odometry`  
@@ -22,14 +22,11 @@
 
 #### `/env/grid_state`
 **Тип:** `nav_msgs/OccupancyGrid`  
-**Описание:** Сеточное представление среды для быстрого режима и патрулирования.
+**Описание:** Сеточное представление среды.
 
-#### `/env/patrol_events`
-**Тип:** `custom_msgs/PatrolEvent`  
-**Описание:** События патрулирования:
-- появление нарушителя
-- начало пожара
-- нанесение ущерба
+Используется в режимах:
+- `fast`
+- `patrol`
 
 ### 2.2 Actions (Agent -> Environment)
 
@@ -48,7 +45,7 @@
 - `4` = stay
 
 Используется в режимах:
-- `grid_fast`
+- `fast`
 - `patrol`
 
 ### 2.3 Rewards
@@ -67,8 +64,11 @@
 **Описание:** События среды:
 - `collision`
 - `goal_reached`
+- `intruder_spawn`
 - `intruder_detected`
 - `intruder_intercepted`
+- `fire_started`
+- `fire_finished`
 - `damage`
 
 ## 3. Services
@@ -77,13 +77,13 @@
 **Тип:** `std_srvs/Empty`  
 **Описание:** Сброс эпизода.
 
-#### `/env/load_scenario`
-**Тип:** `custom_msgs/LoadScenario`  
-**Описание:** Загрузка сценария среды.
-
 #### `/env/step`
 **Тип:** `custom_msgs/Step`  
-**Описание:** Выполнение одного шага симуляции. Используется только в быстром режиме.
+**Описание:** Выполнение одного шага симуляции.
+
+Используется в режимах:
+- `fast`
+- `patrol`
 
 ## 4. Custom messages
 
@@ -93,24 +93,7 @@ builtin_interfaces/Time timestamp
 string event_type
 float32 value
 geometry_msgs/Point position
-```
-
-### `PatrolEvent.msg`
-```
-builtin_interfaces/Time timestamp
-string event_type
-float32 intensity
-geometry_msgs/Point position
-```
-
-### `LoadScenario.srv`
-```
-string scenario_id
-int32 scenario_version
-int32 seed
-string config_json
----
-bool success
+int32 step_index
 ```
 
 ### `Step.srv`
