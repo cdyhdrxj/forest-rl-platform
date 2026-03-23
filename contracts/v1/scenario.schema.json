@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Описание сценария",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["project_id", "code", "name", "mode", "version"],
+  "properties": {
+    "project_id": {
+      "type": "integer"
+    },
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["trail", "robot", "patrol", "fast", "multiagent"]
+    },
+    "description": {
+      "type": "string"
+    },
+    "version": {
+      "type": "object",
+      "required": ["version_no"],
+      "properties": {
+        "version_no": {
+          "type": "integer"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "terrain_config": {
+          "type": "object"
+        },
+        "obstacle_config": {
+          "type": "object"
+        },
+        "event_config": {
+          "type": "object"
+        },
+        "sensor_config": {
+          "type": "object"
+        },
+        "reward_config": {
+          "type": "object"
+        },
+        "world_file_uri": {
+          "type": "string"
+        },
+        "preview_image_uri": {
+          "type": "string"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["layer_type", "file_uri"],
+            "properties": {
+              "layer_type": {
+                "type": "string",
+                "enum": [
+                  "elevation",
+                  "traversability",
+                  "obstacles",
+                  "events"
+                ]
+              },
+              "file_uri": {
+                "type": "string"
+              },
+              "file_format": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
