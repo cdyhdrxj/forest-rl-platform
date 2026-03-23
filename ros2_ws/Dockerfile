@@ -5,6 +5,8 @@ FROM osrf/ros:humble-desktop
 RUN apt-get update && apt-get install -y \
     python3-pip \
     git \
+    ros-humble-rosbridge-server \
+    ros-humble-rosbridge-library \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаём рабочее пространство
@@ -21,8 +23,9 @@ RUN bash -c "source /opt/ros/humble/setup.bash && \
 COPY entrypoint.ros2.sh /
 RUN chmod +x /entrypoint.ros2.sh
 
-# Открываем порт
+# Открываем порты
 EXPOSE 10000
+EXPOSE 9090
 
-# Запускаем endpoint
+# Запускаем всё
 ENTRYPOINT ["/entrypoint.ros2.sh"]
