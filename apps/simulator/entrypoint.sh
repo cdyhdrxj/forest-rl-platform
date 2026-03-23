@@ -18,7 +18,6 @@ if ! xdpyinfo >/dev/null 2>&1; then
     echo "ПРОВЕРЬТЕ:"
     echo "1. XLaunch запущен?"
     echo "2. В XLaunch включен 'Disable access control'?"
-    echo "3. Попробуйте: export DISPLAY=$(ip route | grep default | awk '{print $3}'):0.0"
     exit 1
 fi
 echo "Connected to X server at $DISPLAY"
@@ -34,18 +33,11 @@ if [ ! -f "./simulator.x86_64" ]; then
     exit 1
 fi
 
-# Создаем папку для логов
-echo "Creating logs directory with proper permissions..."
-mkdir -p ./logs
-echo "Logs directory ready at: $(pwd)/logs"
+# Запускаем Unity БЕЗ логов!
+echo "Starting Unity simulator (logging disabled)..."
+echo "Command: ./simulator.x86_64 -screen-fullscreen 0"
 
-# Запускаем Unity
-echo "Starting Unity simulator..."
-echo "Command: ./simulator.x86_64 -logfile ./logs/unity_$(date +%Y%m%d_%H%M%S).log -screen-fullscreen 0"
-
-./simulator.x86_64 \
-    -logfile "./logs/unity_$(date +%Y%m%d_%H%M%S).log" \
-    -screen-fullscreen 0
+./simulator.x86_64 -screen-fullscreen 0
 
 echo "Unity simulator stopped unexpectedly"
 exit 1
