@@ -13,6 +13,7 @@ from services.patrol_planning.service.models import GridWorldTrainState
 from services.patrol_planning.assets.agents.agent import GridWorldAgent
 from services.patrol_planning.assets.observations.obs_box import ObservationBox
 from services.patrol_planning.assets.intruders.wanderer import Wanderer
+from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.patrol_planning.assets.intruders.controllable import Controllable
 
 # TRAJECTORY_MAX_LEN = 200
@@ -188,6 +189,9 @@ class GridWorld(gym.Env):
                 case 'ControllableConfig':
                     # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
                     intruders.append(Controllable.load(intruder_config))
+                case 'PoacherConfig':
+                    # Заглушка - создаём Wanderer
+                    intruders.append(Wanderer.load(WandererConfig()))
                 case _:
                     raise ValueError(f"Неподдерживаемый тип конфига нарушителя: {type(intruder_config).__name__}")
 

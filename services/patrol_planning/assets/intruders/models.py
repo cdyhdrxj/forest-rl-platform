@@ -33,8 +33,18 @@ class WandererConfig(IntruderConfig):
     type: Literal["wanderer"] = "wanderer"
     pass
 
+class PoacherConfig(IntruderConfig):
+    """Конфигурация нарушителя-браконьера GridWorld"""
+    type: Literal["poacher"] = "poacher"
+    
+    m_plan: float = Field(
+        default= 100.0,
+        description= "Размер ущерба, \
+            который браконьер должен причинить вырубкой"
+    )
+
 IntruderConfigType = Annotated[
-    ControllableConfig | WandererConfig,
+    ControllableConfig | WandererConfig | PoacherConfig,
     Field(discriminator="type")
 ]
 

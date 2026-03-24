@@ -15,5 +15,20 @@ class AgentConfig(BaseModel):
         агент случайным образом размещается в среде"
     )
     
+    m_block: float = Field(
+        default= 1.0,
+        description= "Размер штрафа за выбор действия, приводящего агента в ячейку \
+        с нулевой проходимостью"
+    )
+    
+    m_out: float = Field(
+        default= 1.0,
+        description= "Размер штрафа за выбор действия, выводящего агента за пределы среды"
+    )
+    
+    m_stay: float = Field(
+        default= 0.0,
+        description= "Размер штрафа за простой"
+    )
 
 
