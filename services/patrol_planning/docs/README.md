@@ -56,7 +56,7 @@ uv run services/patrol_planning/learning/test/test_with_input.py
 
 ## Pydantic Модели
 
-### `GridWorldTrainState`
+### GridWorldTrainState
 
 [`services/patrol_planning/service/models.py`](../service/models.py)
 
@@ -85,27 +85,64 @@ uv run services/patrol_planning/learning/test/test_with_input.py
     "agent_pos": [[0.0, 0.0]], // [[float, float]], позиция агента [[x, y]]
     "goal_pos": [[0.0, 0.0]], // [[float, float]], позиции нарушителей [[x, y]]
     "trajectory": [], // [[float, float]], путь агента
-    "step": 0, // int, счетчик шагов внутри эпизода (default: 0)
-    "total_reward": 0.0, // float, накопленная награда за эпизод (default: 0.0)
-    "episode": 0, // int, номер текущего эпизода (default: 0)
-    "last_episode_reward": 0.0, // float, награда за предыдущий эпизод (default: 0.0)
+    "step": 0, // int, счетчик шагов внутри эпизода
+    "total_reward": 0.0, // float, накопленная награда за эпизод
+    "episode": 0, // int, номер текущего эпизода
+    "last_episode_reward": 0.0, // float, награда за предыдущий эпизод
     "new_episode": false, // bool, флаг начала нового эпизода (default: false)
-    "i_count": 1, // int, число не пойманных нарушителей (default: 1)
+    "i_count": 1, // int, число не пойманных нарушителей
     "obs_raw": null, // np.ndarray  | null, данные наблюдения агента
 
     // Параметры, не обновляемые/не используемые средой (оставлены для совместимости)
 
-    "running": false, // bool, флаг выполнения обучения (default: false)
-    "mode": "trail", // string, режим работы (default: "trail")
-    "landmark_pos": [], // [[float, float]], позиции препятствий
-    "is_collision": false, // bool, флаг столкновения (default: false)
-    "goal_count": 0, // int, число достижений цели за эпизод
-    "collision_count": 0, // int, число столкновений за эпизод
-    "terrain_map": null, // [[float,...], ...] | null, карта рельефа 0..1
+    "running": false,
+    "mode": "trail",
+    "landmark_pos": [],
+    "is_collision": false,
+    "goal_count": 0,
+    "collision_count": 0,
+    "terrain_map": null,
 }
 ```
 
-### `GridWorldConfig`
+### Пример загрузки и сохранения
+
+#### Создание модели со стандартными значениями
+
+```python
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+
+config = GridWorldConfig()
+```
+
+#### Сохранение модели в JSON
+
+```python
+with open(
+    "services/patrol_planning/learning/configs/GW_DEFAULT.json",
+    "w",
+    encoding="utf-8"
+) as f:
+    f.write(config.model_dump_json(indent=2))
+```
+
+#### Загрузка
+
+```python
+import json
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+
+with open(
+    "services/patrol_planning/learning/configs/GW_DEFAULT.json",
+    "r",
+    encoding="utf-8"
+) as f:
+    data = json.load(f)
+
+config = GridWorldConfig.model_validate(data)
+```
+
+### GridWorldConfig
 
 [`services/patrol_planning/assets/envs/models.py`](../assets/envs/models.py)
 
@@ -151,13 +188,50 @@ uv run services/patrol_planning/learning/test/test_with_input.py
 }
 ```
 
-### Нарушители (Intruders)
+### Пример загрузки и сохранения
 
-<!-- #### `IntruderConfig` (базовый) -->
+#### Создание модели со стандартными значениями
+
+```python
+from services.patrol_planning.service.models import GridWorldTrainState
+
+config = GridWorldTrainState()
+```
+
+#### Сохранение модели в JSON
+
+```python
+with open(
+    "services/patrol_planning/learning/configs/GW_TRAIN_STATE_DEFAULT.json",
+    "w",
+    encoding="utf-8"
+) as f:
+    f.write(config.model_dump_json(indent=2))
+```
+
+#### Загрузка
+
+```python
+import json
+from services.patrol_planning.service.models import GridWorldTrainState
+
+with open(
+    "services/patrol_planning/learning/configs/GW_TRAIN_STATE_DEFAULT.json",
+    "r",
+    encoding="utf-8"
+) as f:
+    data = json.load(f)
+
+config = GridWorldTrainState.model_validate(data)
+```
+
+<!-- ### Нарушители (Intruders)
+
+#### `IntruderConfig` (базовый)
 
 [`services/patrol_planning/assets/intruders/models.py`](../assets/intruders/models.py)
 
-<!-- Базовый конфиг для нарушителей:
+Базовый конфиг для нарушителей:
 
 - `pos` — позиция
 - `is_random_spawned` — случайный спавн при reset()
@@ -169,7 +243,7 @@ uv run services/patrol_planning/learning/test/test_with_input.py
 
 #### `WandererConfig(IntruderConfig)`
 
-Блуждающий нарушитель (движется случайно). -->
+Блуждающий нарушитель (движется случайно).
 
 ### Наблюдения (Observations)
 
@@ -185,4 +259,4 @@ uv run services/patrol_planning/learning/test/test_with_input.py
 
 Конфигурация наблюдения:
 
-- `layers_count` — число слоёв (по умолчанию 2)
+- `layers_count` — число слоёв (по умолчанию 2) -->
