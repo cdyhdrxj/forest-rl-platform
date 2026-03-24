@@ -5,26 +5,31 @@
       4,
       4
     ],
-    "is_random_spawned": false
+    "is_random_spawned": false,
+    "m_block": 1.0,
+    "m_out": 1.0,
+    "m_stay": 0.0
   },
   "intruder_config": [
     {
-      "type": "controllable",
+      "type": "poacher",
       "pos": [
-        1,
-        1
+        2,
+        2
       ],
       "is_random_spawned": true,
-      "catch_reward": 1.0
+      "catch_reward": 1.0,
+      "m_plan": 100.0
     },
     {
-      "type": "wanderer",
+      "type": "poacher",
       "pos": [
         1,
         1
       ],
       "is_random_spawned": true,
-      "catch_reward": 1.0
+      "catch_reward": 1.0,
+      "m_plan": 100.0
     }
   ],
   "obs_config": {
