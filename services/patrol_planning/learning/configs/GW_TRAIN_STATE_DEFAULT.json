@@ -1,0 +1,29 @@
+{
+  "agent_pos": [
+    [
+      0.0,
+      0.0
+    ]
+  ],
+  "goal_pos": [
+    [
+      0.0,
+      0.0
+    ]
+  ],
+  "trajectory": [],
+  "step": 0,
+  "total_reward": 0.0,
+  "episode": 0,
+  "last_episode_reward": 0.0,
+  "new_episode": false,
+  "i_count": 1,
+  "obs_raw": null,
+  "running": false,
+  "mode": "trail",
+  "landmark_pos": [],
+  "is_collision": false,
+  "goal_count": 0,
+  "collision_count": 0,
+  "terrain_map": null
+}

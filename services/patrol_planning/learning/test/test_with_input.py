@@ -27,7 +27,8 @@ import time
 import threading
 
 from services.patrol_planning.assets.envs.models import GridWorldConfig
-#Загружаем конфиг средыaasasaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaawaawaa
+
+#Загружаем конфиг среды
 with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 

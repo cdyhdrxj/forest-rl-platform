@@ -21,11 +21,16 @@ from services.patrol_planning.assets.envs.models import GridWorldConfig
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
-# from services.patrol_planning.assets.envs.models import GW_DEFAULT
+# from services.patrol_planning.src.draft import GW_DEFAULT
 # with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "w", encoding="utf-8") as f:
 #     f.write(GW_DEFAULT.model_dump_json(indent=2))
 
-#Загружаем конфиг среды
+# from services.patrol_planning.src.draft import GW_STATE_DEFAULT
+# with open("services/patrol_planning/learning/configs/GW_TRAIN_STATE_DEFAULT.json", "w", encoding="utf-8") as f:
+#     f.write(GW_STATE_DEFAULT.model_dump_json(indent=2))
+
+
+# Загружаем конфиг среды
 with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
