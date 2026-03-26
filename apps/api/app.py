@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apps.api.websocket_manager import handle_ws
 from services.trail_camar.service  import CamarService
 from services.patrol_planning.service.service import GridWorldService
+from services.reforestation_planting.service import SeedlingPlantingService
 
 app = FastAPI()
 
@@ -16,6 +17,7 @@ app.add_middleware(
 
 _camar_trail = CamarService()
 _patrol_discrete = GridWorldService()
+_reforestation_discrete = SeedlingPlantingService()
 
 # _discrete_trail = DiscreteService()
 
@@ -30,6 +32,10 @@ async def ws_continuous(websocket: WebSocket):
 @app.websocket("/discrete/patrol")
 async def ws_discrete_patrol(websocket: WebSocket):
     await handle_ws(websocket, _patrol_discrete)
+
+@app.websocket("/discrete/reforestation")
+async def ws_discrete_reforestation(websocket: WebSocket):
+    await handle_ws(websocket, _reforestation_discrete)
 
 # @app.websocket("/discrete/trail")
 # async def ws_discrete_trail(websocket: WebSocket):

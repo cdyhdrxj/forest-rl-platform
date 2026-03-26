@@ -1,386 +1,427 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Theme, card, secLabel, selStyle } from "./constants/colors"
 
 const TASKS_BY_ENV = {
-  "Непрерывная двумерная": ["Патруль", "Тропы"],
-  "Трёхмерная": ["Патруль", "Тропы"],
-  "Дискретная": ["Патруль", "Тропы"],
+  "Continuous 2D": ["Patrol", "Trail"],
+  "Three-dimensional": ["Patrol", "Trail"],
+  "Discrete": ["Patrol", "Trail", "Planting"],
 }
 
 const WS_MAP = {
-  "Непрерывная двумерная/Патруль": "ws://127.0.0.1:8000/continuous/patrol",
-  "Непрерывная двумерная/Тропы": "ws://127.0.0.1:8000/continuous/trail",
-  "Трёхмерная/Патруль": "ws://127.0.0.1:8000/threed/patrol",
-  "Трёхмерная/Тропы": "ws://127.0.0.1:8000/threed/trail",
-  "Дискретная/Патруль": "ws://127.0.0.1:8000/discrete/patrol",
-  "Дискретная/Тропы": "ws://127.0.0.1:8000/discrete/trail",
+  "Continuous 2D/Patrol": "ws://127.0.0.1:8000/continuous/patrol",
+  "Continuous 2D/Trail": "ws://127.0.0.1:8000/continuous/trail",
+  "Three-dimensional/Patrol": "ws://127.0.0.1:8000/threed/patrol",
+  "Three-dimensional/Trail": "ws://127.0.0.1:8000/threed/trail",
+  "Discrete/Patrol": "ws://127.0.0.1:8000/discrete/patrol",
+  "Discrete/Trail": "ws://127.0.0.1:8000/discrete/trail",
+  "Discrete/Planting": "ws://127.0.0.1:8000/discrete/reforestation",
 }
 
-const CANVAS_SIZE = 360
-const CENTER_WIDTH = CANVAS_SIZE + 120
+const CANVAS_SIZE = 380
 
-const Label = ({ children }) =>
-  <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{children}</div>
-
-const Dot = ({ color, size = 7 }) =>
-  <span style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", background: color, flexShrink: 0 }} />
-
-const Btn = ({ onClick, disabled, color, children }) => (
-  <button onClick={onClick} disabled={disabled} style={{
-    padding: "10px",
-    background: disabled ? Theme.textMuted : color,
-    color: "white",
-    border: "none",
-    borderRadius: Theme.radiusSm,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: 700,
-    fontSize: 13,
-    boxShadow: disabled ? "none" : `0 1px 3px ${color}55`,
-  }}>{children}</button>
-)
-
-// Метрики для панели
 const METRICS = [
-  ["Эпизод", s => s?.episode ?? 0, null],
-  ["Шаг", s => s?.step ?? 0, null],
-  ["Награда", s => s?.total_reward != null ? s.total_reward.toFixed(1) : "0", null],
-  ["Целей", s => s?.goal_count ?? 0, Theme.green],
-  ["Столкн.", s => s?.collision_count ?? 0, Theme.red],
+  ["Episode", s => s?.episode ?? 0, null],
+  ["Step", s => s?.step ?? 0, null],
+  ["Reward", s => s?.total_reward != null ? s.total_reward.toFixed(1) : "0.0", null],
+  ["Completed", s => s?.goal_count ?? 0, Theme.green],
+  ["Blocked", s => s?.collision_count ?? 0, Theme.red],
 ]
 
 const LEGEND = [
-  [Theme.accent, "Агент"],
-  [Theme.green, "Цель"],
-  [Theme.textMuted, "Препятствие"],
-  [Theme.red, "Столкновение"],
+  [Theme.accent, "Robot"],
+  [Theme.green, "Plantable"],
+  ["#16a34a", "Planted"],
+  [Theme.textMuted, "Obstacle"],
+  [Theme.red, "Collision"],
 ]
 
-function drawCanvas(canvas, state, gridSize = 10, gridCache = null, terrain = null) {
+const Label = ({ children }) => (
+  <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{children}</div>
+)
+
+const Dot = ({ color, size = 7 }) => (
+  <span style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", background: color, flexShrink: 0 }} />
+)
+
+const Btn = ({ onClick, disabled, color, children }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      padding: "10px",
+      background: disabled ? Theme.textMuted : color,
+      color: "white",
+      border: "none",
+      borderRadius: Theme.radiusSm,
+      cursor: disabled ? "not-allowed" : "pointer",
+      fontWeight: 700,
+      fontSize: 13,
+      boxShadow: disabled ? "none" : `0 1px 3px ${color}55`,
+    }}
+  >
+    {children}
+  </button>
+)
+
+function drawCanvas(canvas, state, terrain) {
   const ctx = canvas.getContext("2d")
-  const size = CANVAS_SIZE
-  const half = gridSize * 0.2 + 0.15
-  const range = half * 2
-  const pu = size / range
-  const tc = ([x, y]) => [(x + half) / range * size, (half - y) / range * size]
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
+  ctx.fillStyle = "#fafafa"
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 
-  // Фон и сетка
-  ctx.clearRect(0, 0, size, size)
-  if (gridCache) ctx.drawImage(gridCache, 0, 0)
-  else { ctx.fillStyle = "#fafafa"; ctx.fillRect(0, 0, size, size) }
+  const map = terrain ?? state?.terrain_map
+  if (map?.length) {
+    const rows = map.length
+    const cols = map[0].length
+    const cw = CANVAS_SIZE / cols
+    const ch = CANVAS_SIZE / rows
 
-  // Рельеф
-  if (terrain) {
-    const rows = terrain.length
-    const cols = terrain[0].length
-    const cw = size / cols
-    const ch = size / rows
-    for (let iy = 0; iy < rows; iy++) {
-      for (let ix = 0; ix < cols; ix++) {
-        const val = terrain[iy][ix]
-        if (val > 0.5) {
-          const a = ((val - 0.5) / 0.5 * 0.45).toFixed(3)
-          ctx.fillStyle = `rgba(156,163,175,${a})`
-          ctx.fillRect(ix * cw, iy * ch, cw, ch)
+    for (let y = 0; y < rows; y += 1) {
+      for (let x = 0; x < cols; x += 1) {
+        ctx.strokeStyle = "#e5e7eb"
+        ctx.lineWidth = 1
+        ctx.strokeRect(x * cw, y * ch, cw, ch)
+
+        if (map[y][x] > 0.5) {
+          ctx.fillStyle = "rgba(156,163,175,0.55)"
+          ctx.fillRect(x * cw, y * ch, cw, ch)
         }
       }
     }
+
+    const fillCells = (positions, color, inset = 0.18) => {
+      positions?.forEach(([py, px]) => {
+        ctx.fillStyle = color
+        ctx.fillRect(
+          px * cw + cw * inset,
+          py * ch + ch * inset,
+          cw * (1 - inset * 2),
+          ch * (1 - inset * 2)
+        )
+      })
+    }
+
+    fillCells(state?.goal_pos, "rgba(34,197,94,0.35)", 0.08)
+    fillCells(state?.planted_pos, "#16a34a", 0.18)
+    fillCells(state?.landmark_pos, "#9ca3af", 0.12)
+
+    const trajectory = state?.trajectory ?? []
+    if (trajectory.length > 1) {
+      ctx.beginPath()
+      ctx.strokeStyle = "rgba(37,99,235,0.35)"
+      ctx.lineWidth = 2
+      trajectory.forEach(([py, px], index) => {
+        const tx = px * cw + cw / 2
+        const ty = py * ch + ch / 2
+        if (index === 0) ctx.moveTo(tx, ty)
+        else ctx.lineTo(tx, ty)
+      })
+      ctx.stroke()
+    }
+
+    state?.agent_pos?.forEach(([py, px]) => {
+      ctx.fillStyle = state?.is_collision ? Theme.red : Theme.accent
+      ctx.beginPath()
+      ctx.arc(px * cw + cw / 2, py * ch + ch / 2, Math.min(cw, ch) * 0.24, 0, Math.PI * 2)
+      ctx.fill()
+    })
+    return
   }
 
-  if (!state) return
-
-  // Траектория
-  const traj = state.trajectory ?? []
-  if (traj.length > 1) {
-    ctx.beginPath()
-    ctx.strokeStyle = "rgba(37,99,235,0.2)"
-    ctx.lineWidth = 1.5
-    const [x0, y0] = tc(traj[0])
-    ctx.moveTo(x0, y0)
-    traj.forEach(p => { const [cx, cy] = tc(p); ctx.lineTo(cx, cy) })
-    ctx.stroke()
-  }
-
-  // Объекты
-  const dot = (positions, color, r) => positions?.forEach(p => {
-    const [cx, cy] = tc(p)
-    ctx.fillStyle = color
-    ctx.beginPath()
-    ctx.arc(cx, cy, pu * r, 0, Math.PI * 2)
-    ctx.fill()
-  })
-
-  dot(state.landmark_pos, "#9ca3af", 0.1)
-  dot(state.goal_pos, Theme.green, 0.18)
-  dot(state.agent_pos, state.is_collision ? Theme.red : Theme.accent, 0.14)
+  ctx.strokeStyle = "#e5e7eb"
+  ctx.strokeRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 }
 
 export default function App() {
-  const [activeEnv, setActiveEnv] = useState("Непрерывная двумерная")
-  const [activeTask, setActiveTask] = useState("Тропы")
+  const [activeEnv, setActiveEnv] = useState("Discrete")
+  const [activeTask, setActiveTask] = useState("Planting")
   const [algo, setAlgo] = useState("PPO")
   const [state, setState] = useState(null)
   const [chartData, setChartData] = useState([])
   const [running, setRunning] = useState(false)
-  const [tab, setTab] = useState("Алгоритм")
+  const [tab, setTab] = useState("Algorithm")
+  const [terrain, setTerrain] = useState(null)
   const canvasRef = useRef(null)
   const wsRef = useRef(null)
-  const gridCacheRef = useRef(null)
-  const [terrain, setTerrain] = useState(null)
-  const [activeGridSize, setActiveGridSize] = useState(10)
 
   const [params, setParams] = useState({
-    learning_rate: 0.0003, gamma: 0.99, tau: 0.005,
-    obstacle_density: 0.05, grid_size: 15, max_steps: 500,
-    goal_reward: 50.0, collision_penalty: 0.3, step_penalty: 0.0, action_scale: 1.0,
-    max_speed: 50.0, accel: 40.0, damping: 0.6, dt: 0.01, terrain_penalty: 0.03,
+    learning_rate: 0.0003,
+    gamma: 0.99,
+    tau: 0.005,
+    grid_size: 12,
+    max_steps: 240,
+    obstacle_density: 0.12,
+    plantable_density: 0.7,
+    initial_seedlings: 30,
+    min_plant_distance: 1,
+    uniformity_radius: 1,
+    target_density: 0.35,
+    alpha_plant: 4.0,
+    alpha_quality: 2.0,
+    beta_move: 0.08,
+    beta_turn: 0.04,
+    beta_fail_move: 0.25,
+    beta_stay: 0.12,
+    beta_invalid_plant: 0.6,
+    lambda_uniformity: 3.0,
+    lambda_underplanting: 1.5,
+    goal_reward: 50.0,
+    collision_penalty: 0.3,
+    step_penalty: 0.0,
+    action_scale: 1.0,
+    max_speed: 50.0,
+    accel: 40.0,
+    damping: 0.6,
+    dt: 0.01,
+    terrain_penalty: 0.03,
   })
-  const set = (k, v) => setParams(p => ({ ...p, [k]: v }))
 
-  // WebSocket
+  const set = (key, value) => setParams(prev => ({ ...prev, [key]: value }))
+  const endpoint = WS_MAP[`${activeEnv}/${activeTask}`]
+
   useEffect(() => {
-    if (running) { wsRef.current?.send(JSON.stringify({ action: "stop" })); setRunning(false) }
+    if (!endpoint) return undefined
+    if (running) {
+      wsRef.current?.send(JSON.stringify({ action: "stop" }))
+      setRunning(false)
+    }
     setState(null)
     setChartData([])
+    setTerrain(null)
     wsRef.current?.close()
 
-    const ws = new WebSocket(WS_MAP[`${activeEnv}/${activeTask}`])
+    const ws = new WebSocket(endpoint)
     wsRef.current = ws
-
-    ws.onmessage = (e) => {
-      const data = JSON.parse(e.data)
-
-      // Обновление состояния и траектории
-      setState(prev => {
-        if (data.new_episode && prev?.trajectory?.length > 0) {
-          return { ...data, trajectory: prev.trajectory, agent_pos: prev.agent_pos }
-        }
-        return data
-      })
-
-      // Обновление рельефа
+    ws.onmessage = event => {
+      const data = JSON.parse(event.data)
+      setState(data)
       if (data.terrain_map) setTerrain(data.terrain_map)
-
-      // Обновление графика награды
       if (data.new_episode) {
         setChartData(prev => {
-          const episodeNum = data.episode - 1
-          if (prev.length > 0 && prev[prev.length - 1].i === episodeNum) return prev
-          return [...prev.slice(-99), { i: episodeNum, r: data.last_episode_reward }]
+          const episodeNum = Math.max(0, (data.episode ?? 1) - 1)
+          if (prev.length && prev[prev.length - 1].i === episodeNum) return prev
+          return [...prev.slice(-99), { i: episodeNum, r: data.last_episode_reward ?? 0 }]
         })
       }
     }
-    ws.onerror = (e) => console.error("ws error", e)
-
+    ws.onerror = error => console.error("ws error", error)
     return () => ws.close()
-  }, [activeEnv, activeTask])
+  }, [endpoint])
+
+  useEffect(() => {
+    if (canvasRef.current) drawCanvas(canvasRef.current, state, terrain)
+  }, [state, terrain])
 
   const start = useCallback(() => {
+    const mode = activeTask === "Trail" ? "trail" : activeTask === "Planting" ? "reforestation" : "patrol"
     wsRef.current?.send(JSON.stringify({
       action: "start",
       params: {
         ...params,
         algorithm: algo.toLowerCase(),
-        mode: activeTask === "Тропы" ? "trail" : "patrol",
-      }
+        mode,
+      },
     }))
-    setActiveGridSize(params.grid_size)
     setChartData([])
     setRunning(true)
-  }, [algo, params, activeTask])
+  }, [activeTask, algo, params])
 
   const stop = useCallback(() => {
     wsRef.current?.send(JSON.stringify({ action: "stop" }))
     setRunning(false)
-    setChartData([])
-    setTerrain(null)
   }, [])
 
-  // Кэширование сетки 
-  useEffect(() => {
-    const offscreen = document.createElement("canvas")
-    offscreen.width = CANVAS_SIZE
-    offscreen.height = CANVAS_SIZE
-    const ctx = offscreen.getContext("2d")
-    ctx.fillStyle = "#fafafa"
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
-    ctx.strokeStyle = "#e5e7eb"
-    ctx.lineWidth = 0.5
-    for (let i = 0; i <= activeGridSize; i++) {
-      const v = i * CANVAS_SIZE / activeGridSize
-      ctx.beginPath(); ctx.moveTo(v, 0); ctx.lineTo(v, CANVAS_SIZE); ctx.stroke()
-      ctx.beginPath(); ctx.moveTo(0, v); ctx.lineTo(CANVAS_SIZE, v); ctx.stroke()
-    }
-    gridCacheRef.current = offscreen
-  }, [activeGridSize])
-
-  // Отрисовка канваса при изменении состояния 
-  useEffect(() => {
-    if (canvasRef.current) drawCanvas(canvasRef.current, state, activeGridSize, gridCacheRef.current, terrain)
-  }, [state, activeGridSize, terrain])
-
-  // Ползунки параметров 
   const Slider = ({ label, param, min, max, step }) => (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
         <span style={{ color: Theme.textSecond }}>{label}</span>
         <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>{params[param]}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={params[param]}
-        onChange={e => set(param, +e.target.value)} disabled={running}
-        style={{ width: "100%", accentColor: Theme.accent, cursor: running ? "not-allowed" : "pointer" }} />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={params[param]}
+        onChange={e => set(param, Number(e.target.value))}
+        disabled={running}
+        style={{ width: "100%", accentColor: Theme.accent, cursor: running ? "not-allowed" : "pointer" }}
+      />
     </div>
   )
 
-  const TABS = ["Алгоритм", "Карта", "Робот"]
+  const TABS = ["Algorithm", "Map", "Robot"]
+  const isPlanting = activeTask === "Planting"
 
   return (
     <div style={{ minHeight: "100vh", background: Theme.bg, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
-      {/* Шапка с состоянием */}
       <div style={{ background: Theme.surface, borderBottom: `1px solid ${Theme.border}`, padding: "0 28px", height: 46, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: Theme.shadowSm }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: Theme.textPrimary }}>Forest RL</span>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: Theme.textSecond }}>
           <Dot color={running ? Theme.green : Theme.border} />
-          {running ? `Обучение · ${activeEnv} / ${activeTask} · ${algo}` : "Ожидание запуска"}
+          {running ? `Training · ${activeEnv} / ${activeTask} · ${algo}` : "Waiting to start"}
         </div>
       </div>
 
       <div style={{ padding: "16px 28px" }}>
-        <div style={{ display: "flex", gap: 14, maxWidth: 1280, margin: "0 auto", alignItems: "flex-start" }}>
-          
-          <div style={{ width: 210, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* Конфигурация среды и задачи */}
+        <div style={{ display: "flex", gap: 14, maxWidth: 1320, margin: "0 auto", alignItems: "flex-start" }}>
+          <div style={{ width: 230, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ ...card, padding: 14 }}>
-              <div style={secLabel}>Конфигурация</div>
-              <Label>Среда</Label>
-              <select value={activeEnv} disabled={running} style={{ ...selStyle, marginBottom: 10 }}
+              <div style={secLabel}>Configuration</div>
+              <Label>Environment</Label>
+              <select
+                value={activeEnv}
+                disabled={running}
+                style={{ ...selStyle, marginBottom: 10 }}
                 onChange={e => {
-                  setActiveEnv(e.target.value)
-                  if (!TASKS_BY_ENV[e.target.value].includes(activeTask))
-                    setActiveTask(TASKS_BY_ENV[e.target.value][0])
-                }}>
-                {Object.keys(TASKS_BY_ENV).map(e => <option key={e}>{e}</option>)}
+                  const nextEnv = e.target.value
+                  setActiveEnv(nextEnv)
+                  if (!TASKS_BY_ENV[nextEnv].includes(activeTask)) setActiveTask(TASKS_BY_ENV[nextEnv][0])
+                }}
+              >
+                {Object.keys(TASKS_BY_ENV).map(name => <option key={name}>{name}</option>)}
               </select>
-              <Label>Задача</Label>
+              <Label>Task</Label>
               <select value={activeTask} onChange={e => setActiveTask(e.target.value)} disabled={running} style={selStyle}>
-                {TASKS_BY_ENV[activeEnv].map(t => <option key={t}>{t}</option>)}
+                {TASKS_BY_ENV[activeEnv].map(name => <option key={name}>{name}</option>)}
               </select>
             </div>
 
-            {/* Панель параметров алгоритма */}
             <div style={{ ...card, overflow: "hidden" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#f8fafc", borderBottom: `1px solid ${Theme.border}` }}>
-                {TABS.map(t => (
-                  <button key={t} onClick={() => setTab(t)} style={{
-                    padding: "8px 2px",
-                    fontSize: 11,
-                    fontWeight: tab === t ? 600 : 400,
-                    color: tab === t ? Theme.accent : Theme.textMuted,
-                    background: tab === t ? Theme.surface : "transparent",
-                    border: "none",
-                    borderBottom: tab === t ? `2px solid ${Theme.accent}` : "2px solid transparent",
-                    cursor: "pointer",
-                  }}>{t}</button>
+                {TABS.map(name => (
+                  <button
+                    key={name}
+                    onClick={() => setTab(name)}
+                    style={{
+                      padding: "8px 2px",
+                      fontSize: 11,
+                      fontWeight: tab === name ? 600 : 400,
+                      color: tab === name ? Theme.accent : Theme.textMuted,
+                      background: tab === name ? Theme.surface : "transparent",
+                      border: "none",
+                      borderBottom: tab === name ? `2px solid ${Theme.accent}` : "2px solid transparent",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {name}
+                  </button>
                 ))}
               </div>
 
               <div style={{ padding: 14 }}>
-                {tab === "Алгоритм" && <>
-                  {/* Параметры алгоритма */}
-                  <Label>Алгоритм</Label>
+                {tab === "Algorithm" && <>
+                  <Label>Algorithm</Label>
                   <select value={algo} onChange={e => setAlgo(e.target.value)} disabled={running} style={{ ...selStyle, marginBottom: 14 }}>
-                    <option>PPO</option><option>SAC</option><option>TD3</option>
+                    <option>PPO</option>
+                    <option>A2C</option>
+                    {!isPlanting && <option>SAC</option>}
+                    {!isPlanting && <option>TD3</option>}
                   </select>
-                  <Slider label="Скор. обуч." param="learning_rate" min={0.00001} max={0.01} step={0.00001} />
-                  <Slider label="Гамма (γ)" param="gamma" min={0.9} max={0.999} step={0.001} />
-                  <Slider label="Шагов в эпизоде" param="max_steps" min={50} max={5000} step={50} />
-                  {(algo === "SAC" || algo === "TD3") && <Slider label="Тау (ԏ)" param="tau" min={0.001} max={0.1} step={0.001} />}
-                  <div style={{ borderTop: `1px solid ${Theme.border}`, margin: "12px 0" }} />
-                  <Slider label="Награда за цель" param="goal_reward" min={10} max={100} step={5} />
-                  <Slider label="Штраф столкн." param="collision_penalty" min={0} max={5} step={0.1} />
-                  <Slider label="Штраф за шаг" param="step_penalty" min={0} max={1} step={0.01} />
+                  <Slider label="Learning rate" param="learning_rate" min={0.00001} max={0.01} step={0.00001} />
+                  <Slider label="Gamma" param="gamma" min={0.9} max={0.999} step={0.001} />
+                  <Slider label="Max steps" param="max_steps" min={50} max={1000} step={10} />
+                  {(!isPlanting && (algo === "SAC" || algo === "TD3")) && <Slider label="Tau" param="tau" min={0.001} max={0.1} step={0.001} />}
+                  {isPlanting && <>
+                    <div style={{ borderTop: `1px solid ${Theme.border}`, margin: "12px 0" }} />
+                    <Slider label="Plant reward" param="alpha_plant" min={0.5} max={10} step={0.1} />
+                    <Slider label="Quality weight" param="alpha_quality" min={0} max={5} step={0.1} />
+                    <Slider label="Move penalty" param="beta_move" min={0} max={1} step={0.01} />
+                    <Slider label="Turn penalty" param="beta_turn" min={0} max={1} step={0.01} />
+                    <Slider label="Invalid plant penalty" param="beta_invalid_plant" min={0} max={2} step={0.01} />
+                  </>}
                 </>}
 
-                {tab === "Карта" && <>
-                  {/* Параметры карты */}
-                  <Slider label="Размер" param="grid_size" min={5} max={20} step={1} />
-                  <Slider label="Препятствия" param="obstacle_density" min={0} max={0.4} step={0.01} />
+                {tab === "Map" && <>
+                  <Slider label="Grid size" param="grid_size" min={5} max={20} step={1} />
+                  <Slider label="Obstacle density" param="obstacle_density" min={0} max={0.4} step={0.01} />
+                  {isPlanting && <>
+                    <Slider label="Plantable density" param="plantable_density" min={0.1} max={1} step={0.01} />
+                    <Slider label="Min plant distance" param="min_plant_distance" min={0} max={3} step={1} />
+                    <Slider label="Uniformity radius" param="uniformity_radius" min={0} max={3} step={1} />
+                    <Slider label="Target density" param="target_density" min={0.05} max={0.8} step={0.01} />
+                    <Slider label="Uniformity penalty" param="lambda_uniformity" min={0} max={10} step={0.1} />
+                    <Slider label="Underplant penalty" param="lambda_underplanting" min={0} max={10} step={0.1} />
+                  </>}
                 </>}
 
-                {tab === "Робот" && <>
-                  {/* Параметры агента / физики */}
-                  <Slider label="Масштаб" param="action_scale" min={0.1} max={5} step={0.1} />
-                  <Slider label="Макс. скор." param="max_speed" min={1} max={200} step={1} />
-                  <Slider label="Разгон" param="accel" min={1} max={100} step={1} />
-                  <Slider label="Торможение" param="damping" min={0.01} max={0.99} step={0.01} />
-                  <Slider label="Шаг физики" param="dt" min={0.001} max={0.05} step={0.001} />
+                {tab === "Robot" && <>
+                  {isPlanting ? <>
+                    <Slider label="Seedlings on board" param="initial_seedlings" min={5} max={80} step={1} />
+                    <Slider label="Stay penalty" param="beta_stay" min={0} max={1} step={0.01} />
+                    <Slider label="Failed move penalty" param="beta_fail_move" min={0} max={2} step={0.01} />
+                  </> : <>
+                    <Slider label="Action scale" param="action_scale" min={0.1} max={5} step={0.1} />
+                    <Slider label="Max speed" param="max_speed" min={1} max={200} step={1} />
+                    <Slider label="Acceleration" param="accel" min={1} max={100} step={1} />
+                    <Slider label="Damping" param="damping" min={0.01} max={0.99} step={0.01} />
+                    <Slider label="Physics dt" param="dt" min={0.001} max={0.05} step={0.001} />
+                  </>}
                 </>}
               </div>
             </div>
           </div>
 
-          {/* Панель состояния и канвас */}
-          <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, width: CENTER_WIDTH }}>
-            {/* Метрики */}
+          <div style={{ width: 560, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
-              {METRICS.map(([label, val, color]) => (
+              {METRICS.map(([label, getter, color]) => (
                 <div key={label} style={{ ...card, padding: "8px 6px", textAlign: "center" }}>
                   <div style={{ fontSize: 9, color: Theme.textMuted, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: color ?? Theme.textPrimary, fontFamily: Theme.mono }}>{val(state)}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: color ?? Theme.textPrimary, fontFamily: Theme.mono }}>{getter(state)}</div>
                 </div>
               ))}
             </div>
 
-            {/* Канвас */}
-            <div style={{ ...card, padding: 14, flex: 1, display: "flex", flexDirection: "column" }}>
+            <div style={{ ...card, padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: Theme.textPrimary }}>{activeEnv} · {activeTask}</span>
                 <div style={{ display: "flex", gap: 10, fontSize: 10, color: Theme.textSecond }}>
-                  {LEGEND.map(([c, l]) => (
-                    <span key={l} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                      <Dot color={c} size={6} />{l}
+                  {LEGEND.map(([color, text]) => (
+                    <span key={text} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      <Dot color={color} size={6} />{text}
                     </span>
                   ))}
                 </div>
               </div>
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE}
-                  style={{ display: "block", borderRadius: Theme.radiusSm, border: `1px solid ${Theme.border}` }} />
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ display: "block", borderRadius: Theme.radiusSm, border: `1px solid ${Theme.border}` }} />
               </div>
             </div>
 
-            {/* Кнопки управления */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <Btn onClick={start} disabled={running} color={Theme.green}>Старт</Btn>
-              <Btn onClick={stop} disabled={!running} color={Theme.red}>Стоп</Btn>
+              <Btn onClick={start} disabled={running || !endpoint} color={Theme.green}>Start</Btn>
+              <Btn onClick={stop} disabled={!running} color={Theme.red}>Stop</Btn>
             </div>
           </div>
 
-          {/* График динамики награды */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", maxHeight: 300 }}>
-            <div style={{ ...card, padding: 16, flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              <div style={secLabel}>Динамика вознаграждения</div>
-              <ResponsiveContainer width="100%" height={210}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ ...card, padding: 16 }}>
+              <div style={secLabel}>Reward Dynamics</div>
+              <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f2f5" />
-                  <XAxis dataKey="i"
-                    tick={{ fontSize: 10, fill: Theme.textMuted }}
-                    label={{ value: "Эпизод", position: "insideBottom", offset: -10, fontSize: 10, fill: Theme.textSecond }}
-                  />
-                  <YAxis width={40}
-                    tick={{ fontSize: 10, fill: Theme.textMuted }}
-                    label={{ value: "Награда", angle: -90, position: "insideLeft", fontSize: 10, fill: Theme.textSecond }}
-                  />
+                  <XAxis dataKey="i" tick={{ fontSize: 10, fill: Theme.textMuted }} label={{ value: "Episode", position: "insideBottom", offset: -10, fontSize: 10, fill: Theme.textSecond }} />
+                  <YAxis width={40} tick={{ fontSize: 10, fill: Theme.textMuted }} label={{ value: "Reward", angle: -90, position: "insideLeft", fontSize: 10, fill: Theme.textSecond }} />
                   <Tooltip
                     contentStyle={{ fontSize: 11, borderRadius: Theme.radiusSm, border: `1px solid ${Theme.border}`, boxShadow: Theme.shadow, background: Theme.surface }}
                     labelStyle={{ color: Theme.textSecond }}
                   />
-                  <Line type="monotone" dataKey="r" stroke={Theme.accent} dot={false} strokeWidth={1.5} name="Награда" />
+                  <Line type="monotone" dataKey="r" stroke={Theme.accent} dot={false} strokeWidth={1.5} name="Reward" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </div>
 
+            <div style={{ ...card, padding: 16 }}>
+              <div style={secLabel}>Live State</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: Theme.textSecond }}>
+                <div>Coverage: <strong style={{ color: Theme.textPrimary }}>{state?.coverage_ratio != null ? state.coverage_ratio.toFixed(2) : "0.00"}</strong></div>
+                <div>Seedlings left: <strong style={{ color: Theme.textPrimary }}>{state?.remaining_seedlings ?? 0}</strong></div>
+                <div>Invalid plants: <strong style={{ color: Theme.textPrimary }}>{state?.invalid_plant_count ?? 0}</strong></div>
+                <div>Endpoint: <strong style={{ color: Theme.textPrimary }}>{endpoint ?? "Unavailable"}</strong></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
