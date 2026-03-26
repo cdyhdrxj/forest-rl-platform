@@ -43,3 +43,14 @@ def run_single_episode(scenario, reward_config, episode_idx):
     # results["rl"] = ...
 
     return results
+
+
+def run_experiments(scenario, reward_config, n=50):
+
+    all_results = []
+
+    for i in range(n):
+        res = run_single_episode(scenario, reward_config, i)
+        all_results.append(res)
+
+    return all_results
