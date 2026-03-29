@@ -1,11 +1,15 @@
-import random
 from apps.api.sb3.sb3_trainer import SB3Trainer
-from services.trail_camar.wrapper import CamarGymWrapper
+from services.scenario_generator import (
+    build_continuous_trail_request,
+    extract_continuous_runtime_kwargs,
+    get_default_environment_generation_service,
+)
 from services.trail_camar.callback import CamarCallback
+from services.trail_camar.wrapper import CamarGymWrapper
 
 
 class CamarService(SB3Trainer):
-    """Сервис обучения агента в среде CAMAR"""
+    """Training service for the CAMAR environment."""
 
     def __init__(self):
         self.env = None
@@ -20,12 +24,10 @@ class CamarService(SB3Trainer):
         super().stop()
 
     def reset(self) -> None:
-        """Сброс среды и модели к изначальным параметрам"""
         self.stop()
         self.training_state = self._make_state()
 
     def get_state(self) -> dict:
-        """Снимок состояния для отправки на фронт"""
         s = self.training_state
         base = {
             "running": s["running"],
@@ -44,49 +46,47 @@ class CamarService(SB3Trainer):
         }
         if s["mode"] == "trail":
             base["trajectory"] = s["trajectory"]
-
         return base
 
     def _build_env(self, params: dict) -> CamarGymWrapper:
-        """Создание среды с параметрами от фронта"""
-        return CamarGymWrapper(
-            seed=random.randint(0, 100_000),
-            obstacle_density=params.get("obstacle_density", 0.2),
-            action_scale=params.get("action_scale", 1.0),
-            goal_reward=params.get("goal_reward", 1.0),
-            collision_penalty=params.get("collision_penalty", 0.3),
-            grid_size=params.get("grid_size", 10),
-            max_steps=params.get("max_steps", 200),
-            frameskip=params.get("frameskip", 5),
-            max_speed=params.get("max_speed", 50.0),
-            accel=params.get("accel", 40.0),
-            damping=params.get("damping", 0.6),
-            dt=params.get("dt", 0.01),
-            terrain_penalty=params.get("terrain_penalty", 0.3),
-        )
+        generation_service = get_default_environment_generation_service()
+        scenario = generation_service.generate(build_continuous_trail_request(params))
+        return CamarGymWrapper(**extract_continuous_runtime_kwargs(scenario))
 
     def _make_callback(self) -> CamarCallback:
         return CamarCallback(self.training_state)
 
     def _reset_counters(self) -> None:
-        """Сброс счётчиков и буферов между запусками"""
-        self.training_state.update({
-            "episode": 0, "step": 0,
-            "total_reward": 0.0, "last_episode_reward": 0.0,
-            "new_episode": False, "goal_count": 0,
-            "collision_count": 0, "trajectory": [],
-            "terrain_map": None,
-        })
+        self.training_state.update(
+            {
+                "episode": 0,
+                "step": 0,
+                "total_reward": 0.0,
+                "last_episode_reward": 0.0,
+                "new_episode": False,
+                "goal_count": 0,
+                "collision_count": 0,
+                "trajectory": [],
+                "terrain_map": None,
+            }
+        )
 
     @staticmethod
     def _make_state() -> dict:
         return {
-            "running": False, "mode": "trail",
-            "episode": 0, "step": 0,
-            "total_reward": 0.0, "last_episode_reward": 0.0,
+            "running": False,
+            "mode": "trail",
+            "episode": 0,
+            "step": 0,
+            "total_reward": 0.0,
+            "last_episode_reward": 0.0,
             "new_episode": False,
-            "agent_pos": [], "goal_pos": [], "landmark_pos": [],
+            "agent_pos": [],
+            "goal_pos": [],
+            "landmark_pos": [],
             "is_collision": False,
-            "goal_count": 0, "collision_count": 0,
-            "trajectory": [], "terrain_map": None,
+            "goal_count": 0,
+            "collision_count": 0,
+            "trajectory": [],
+            "terrain_map": None,
         }

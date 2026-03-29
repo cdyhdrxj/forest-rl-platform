@@ -33,11 +33,12 @@ class SeedlingPlantingEnv(gym.Env):
         RIGHT: (0, 1),
     }
 
-    def __init__(self, config: PlantingEnvConfig):
+    def __init__(self, config: PlantingEnvConfig, generated_layout: Optional[dict] = None):
         super().__init__()
         self.config = config
         self.size = config.grid_size
         self.train_state: Optional[PlantingTrainState] = None
+        self.generated_layout = generated_layout or {}
         self.action_space = spaces.Discrete(6)
         self.observation_space = spaces.Box(
             low=0.0,
@@ -115,6 +116,13 @@ class SeedlingPlantingEnv(gym.Env):
         return obs, reward, terminated, truncated, self._build_info()
 
     def _generate_layout(self) -> None:
+        if self.generated_layout:
+            self.free_mask = np.array(self.generated_layout["free_mask"], dtype=np.float32, copy=True)
+            self.plantable_mask = np.array(self.generated_layout["plantable_mask"], dtype=np.float32, copy=True)
+            self.quality_map = np.array(self.generated_layout["quality_map"], dtype=np.float32, copy=True)
+            self.success_prob_map = np.array(self.generated_layout["success_prob_map"], dtype=np.float32, copy=True)
+            return
+
         noise = self.np_random.random((self.size, self.size))
         self.free_mask = (noise > self.config.obstacle_density).astype(np.float32)
         if np.count_nonzero(self.free_mask) == 0:
@@ -141,6 +149,10 @@ class SeedlingPlantingEnv(gym.Env):
         ).astype(np.float32)
 
     def _sample_start_position(self) -> tuple[int, int]:
+        if self.generated_layout and "start_position" in self.generated_layout:
+            x, y = self.generated_layout["start_position"]
+            return int(x), int(y)
+
         free_cells = np.argwhere(self.free_mask == 1)
         if self.config.random_start:
             idx = int(self.np_random.integers(0, len(free_cells)))
@@ -302,4 +314,3 @@ class SeedlingPlantingEnv(gym.Env):
             self.train_state.last_episode_reward = self.train_state.total_reward
             self.train_state.total_reward = 0.0
             self.train_state.trajectory = []
-

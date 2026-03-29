@@ -4,6 +4,11 @@ from apps.api.sb3.sb3_trainer import SB3Trainer
 from services.reforestation_planting.callback import PlantingCallback
 from services.reforestation_planting.environment import SeedlingPlantingEnv
 from services.reforestation_planting.models import PlantingEnvConfig, PlantingTrainState
+from services.scenario_generator import (
+    build_reforestation_request,
+    extract_reforestation_runtime_layout,
+    get_default_environment_generation_service,
+)
 
 
 class SeedlingPlantingService(SB3Trainer):
@@ -50,9 +55,12 @@ class SeedlingPlantingService(SB3Trainer):
 
     def _build_env(self, params: dict):
         config = PlantingEnvConfig.model_validate(params)
+        generation_service = get_default_environment_generation_service()
+        scenario = generation_service.generate(build_reforestation_request(config))
+        generated_layout = extract_reforestation_runtime_layout(scenario)
 
         def factory():
-            env = SeedlingPlantingEnv(config)
+            env = SeedlingPlantingEnv(config, generated_layout=generated_layout)
             env.train_state = self.training_state
             return env
 
