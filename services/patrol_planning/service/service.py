@@ -1,14 +1,19 @@
-import random
-from apps.api.sb3.sb3_trainer import SB3Trainer
 from stable_baselines3.common.env_util import make_vec_env
 
-from services.patrol_planning.assets.envs.models import GridWorldConfig
-from services.patrol_planning.service.models import GridWorldTrainState
-from services.patrol_planning.service.callback import GridWorldCallback
+from apps.api.sb3.sb3_trainer import SB3Trainer
 from services.patrol_planning.assets.envs.environment import GridWorld
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+from services.patrol_planning.service.callback import GridWorldCallback
+from services.patrol_planning.service.models import GridWorldTrainState
+from services.scenario_generator import (
+    apply_patrol_generation,
+    build_patrol_grid_request,
+    get_default_environment_generation_service,
+)
+
 
 class GridWorldService(SB3Trainer):
-    """Сервис обучения агента в среде GridWorld"""
+    """Training service for the grid patrol environment."""
 
     def __init__(self):
         self.env: GridWorld = None
@@ -23,12 +28,10 @@ class GridWorldService(SB3Trainer):
         super().stop()
 
     def reset(self) -> None:
-        """Сброс среды и модели к изначальным параметрам"""
         self.stop()
         self.training_state = self._make_state()
 
     def get_state(self) -> dict:
-        """Снимок состояния для отправки на фронт"""
         s = self.training_state
         base = {
             "running": s.running,
@@ -47,27 +50,21 @@ class GridWorldService(SB3Trainer):
         }
         if s.mode == "trail":
             base["trajectory"] = s.trajectory
-
         return base
 
     def _build_env(self, params: dict) -> GridWorld:
-        """Создание среды с параметрами от фронта"""
-        #В словаре по ключу grid_wolrd_config должен быть передан model_dump GridWorldConfig
-        #Либо сделать params тоже pydantic моделью и просто вложить GridWorldConfig
-        config = GridWorldConfig.model_validate(params['grid_world_config'])
-        env = GridWorld.load(config)
-        
-        #Указываем ссылку на GridWorldTrainState, чтобы среда туда писала каждый step состояние
+        config = GridWorldConfig.model_validate(params["grid_world_config"])
+        generation_service = get_default_environment_generation_service()
+        scenario = generation_service.generate(build_patrol_grid_request(config))
+        config, static_layers = apply_patrol_generation(config, scenario)
+        env = GridWorld.load(config, static_layers=static_layers)
         env.train_state = self.training_state
-        
-        vec_env = make_vec_env(lambda: env, n_envs=1)
-        return vec_env
+        return make_vec_env(lambda: env, n_envs=1)
 
     def _make_callback(self) -> GridWorldCallback:
         return GridWorldCallback(self.training_state)
 
     def _reset_counters(self) -> None:
-        """Сброс счётчиков и буферов между запусками"""
         self.training_state.reset_counters()
 
     @staticmethod
