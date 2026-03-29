@@ -23,6 +23,7 @@ class SB3Trainer:
     """
 
     def start(self, params: dict) -> None:
+        self.last_error = None
         if self.training_state["running"]:
             return
 
@@ -48,8 +49,14 @@ class SB3Trainer:
             self.model.save(f"{self.__class__.__name__}_model")
 
     def _training_loop(self) -> None:
-        self.model.learn(
-            total_timesteps=10_000_000,
-            callback=self._make_callback(),
-            reset_num_timesteps=True,
-        )
+        try:
+            self.model.learn(
+                total_timesteps=10_000_000,
+                callback=self._make_callback(),
+                reset_num_timesteps=True,
+            )
+        except Exception as exc:
+            self.last_error = str(exc)
+            raise
+        finally:
+            self.training_state["running"] = False

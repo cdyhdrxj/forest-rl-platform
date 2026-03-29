@@ -65,5 +65,3 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
         pass
     finally:
         task.cancel()
-        if active_run_id is not None:
-            dispatcher.dispose_run(active_run_id)

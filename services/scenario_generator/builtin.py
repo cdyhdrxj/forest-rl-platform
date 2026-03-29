@@ -213,10 +213,17 @@ class Simulator3DFamilyGenerator:
 
 class PatrolTaskOverlay:
     task_kind = TaskKind.PATROL
-    supported_environments = {EnvironmentKind.GRID}
+    supported_environments = {EnvironmentKind.GRID, EnvironmentKind.SIMULATOR_3D}
 
     def apply(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
-        grid_size = int(scenario.runtime_context["grid"]["grid_size"])
+        grid_size = int(scenario.runtime_context.get("grid", {}).get("grid_size") or 0)
+        if grid_size <= 0:
+            terrain = scenario.get_layer_data("terrain_preview")
+            if terrain is None:
+                terrain = scenario.get_layer_data("terrain")
+            if terrain is None:
+                raise ValueError("Patrol overlay requires either a grid size or a terrain layer")
+            grid_size = int(terrain.shape[0])
         rng = np.random.default_rng(scenario.seed + 101)
         occupied: set[tuple[int, int]] = set()
 
@@ -258,6 +265,11 @@ class PatrolTaskOverlay:
             "intruder_positions": intruder_positions,
         }
         scenario.runtime_context["request_intruder_types"] = list(requested_intruder_types)
+        if scenario.environment_kind is EnvironmentKind.SIMULATOR_3D:
+            descriptor = dict(scenario.runtime_context.get("simulator_3d", {}).get("world_descriptor") or {})
+            descriptor["intruder_positions"] = intruder_positions
+            descriptor["agent_start"] = agent_pos
+            scenario.runtime_context.setdefault("simulator_3d", {})["world_descriptor"] = descriptor
         scenario.preview_payload["agent_pos"] = [[float(agent_pos[0]), float(agent_pos[1])]]
         scenario.preview_payload["goal_pos"] = [[float(x), float(y)] for x, y in intruder_positions]
         scenario.add_layer(
@@ -385,12 +397,24 @@ class DefaultScenarioValidator:
                 messages.append("Patrol scenario has no patrol runtime context")
             else:
                 grid_size = int(grid_ctx.get("grid_size", 0))
+                if grid_size <= 0:
+                    terrain = scenario.get_layer_data("terrain_preview")
+                    if terrain is None:
+                        terrain = scenario.get_layer_data("terrain")
+                    grid_size = int(terrain.shape[0]) if terrain is not None else 0
                 positions = [tuple(patrol_ctx["agent_pos"])] + [tuple(pos) for pos in patrol_ctx["intruder_positions"]]
                 if len(set(positions)) != len(positions):
                     messages.append("Patrol scenario contains overlapping initial positions")
                 for x, y in positions:
                     if not (0 <= x < grid_size and 0 <= y < grid_size):
                         messages.append("Patrol scenario contains out-of-bounds positions")
+
+        if scenario.environment_kind == EnvironmentKind.SIMULATOR_3D:
+            sim_ctx = scenario.runtime_context.get("simulator_3d")
+            if sim_ctx is None or "world_descriptor" not in sim_ctx:
+                messages.append("3D scenario has no world descriptor")
+            if scenario.get_layer_data("terrain_preview") is None:
+                messages.append("3D scenario has no terrain preview layer")
 
         if scenario.task_kind == TaskKind.REFORESTATION:
             ctx = scenario.runtime_context.get("reforestation")

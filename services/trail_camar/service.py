@@ -83,6 +83,18 @@ class CamarService(SB3Trainer):
             }
         )
 
+    def validate_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> list[str]:
+        messages: list[str] = []
+        if scenario.environment_kind.value != "continuous_2d":
+            messages.append("Continuous trail runtime can load only continuous_2d scenarios")
+        if scenario.runtime_context.get("trail") is None:
+            messages.append("Continuous trail runtime requires trail runtime context")
+        if scenario.get_layer_data("terrain") is None:
+            messages.append("Continuous trail runtime requires a terrain layer")
+        if runtime_config is None:
+            messages.append("Continuous trail runtime requires serialized runtime config")
+        return messages
+
     @staticmethod
     def _make_state() -> dict:
         return {

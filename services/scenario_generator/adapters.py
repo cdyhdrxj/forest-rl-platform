@@ -107,3 +107,23 @@ def build_continuous_trail_request(params: dict[str, Any]) -> GenerationRequest:
 
 def extract_continuous_runtime_kwargs(scenario: GeneratedScenario) -> dict[str, Any]:
     return dict(scenario.runtime_context["continuous_2d"]["wrapper_kwargs"])
+
+
+def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -> GenerationRequest:
+    return GenerationRequest(
+        environment_kind=EnvironmentKind.SIMULATOR_3D,
+        task_kind=task_kind,
+        seed=params.get("seed"),
+        terrain_params={
+            "preview_size": params.get("preview_size", params.get("grid_size", 32)),
+        },
+        forest_params={
+            "tree_density": params.get("tree_density", 0.25),
+            "terrain_hilliness": params.get("terrain_hilliness", 0.45),
+        },
+        task_params=dict(params),
+    )
+
+
+def extract_simulator_3d_runtime_config(scenario: GeneratedScenario) -> dict[str, Any]:
+    return dict(scenario.runtime_context.get("simulator_3d") or {})

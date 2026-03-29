@@ -8,6 +8,7 @@ import shutil
 
 from sqlalchemy import func
 
+from apps.api.runtime_monitor import RunObserver, write_service_log
 from packages.db.models.algorithm import Algorithm
 from packages.db.models.artifact import Artifact
 from packages.db.models.project import Project
@@ -27,16 +28,28 @@ from services.scenario_generator import (
     build_continuous_trail_request,
     build_patrol_grid_request,
     build_reforestation_request,
+    build_simulator_3d_request,
     extract_continuous_runtime_kwargs,
+    extract_simulator_3d_runtime_config,
     get_default_environment_generation_service,
+    merge_reports,
+    validate_generation_request,
 )
-from services.scenario_generator.models import EnvironmentKind, GeneratedScenario, GenerationRequest, TaskKind
+from services.scenario_generator.models import (
+    EnvironmentKind,
+    GeneratedScenario,
+    GenerationRequest,
+    TaskKind,
+    ValidationReport,
+)
 from services.scenario_generator.storage import (
     StoredScenario,
     get_storage_root,
     load_stored_scenario,
     store_generated_scenario,
 )
+from services.scenario_generator.validation import report_for_runtime_validation
+from services.simulator_3d import Simulator3DService
 from services.trail_camar.service import CamarService
 
 
@@ -66,6 +79,8 @@ class RunSession:
     stored_scenario: StoredScenario
     service: Any
     training_params: dict[str, Any]
+    observer: RunObserver | None = None
+    validation_report: dict[str, Any] | None = None
     last_error: str | None = None
 
 
@@ -95,6 +110,18 @@ def _build_continuous_request(params: dict[str, Any]) -> GenerationRequest:
 
 def _build_continuous_runtime_config(_: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
     return extract_continuous_runtime_kwargs(scenario)
+
+
+def _build_3d_trail_request(params: dict[str, Any]) -> GenerationRequest:
+    return build_simulator_3d_request(params, task_kind=TaskKind.TRAIL)
+
+
+def _build_3d_patrol_request(params: dict[str, Any]) -> GenerationRequest:
+    return build_simulator_3d_request(params, task_kind=TaskKind.PATROL)
+
+
+def _build_3d_runtime_config(_: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
+    return extract_simulator_3d_runtime_config(scenario)
 
 
 def _algorithm_family_for_key(algorithm_key: str) -> AlgorithmFamily:
@@ -138,21 +165,58 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         request_builder=_build_reforestation_request,
         runtime_config_builder=_build_reforestation_runtime_config,
     ),
+    "threed/trail": RuntimeRoute(
+        route_key="threed/trail",
+        environment_kind=EnvironmentKind.SIMULATOR_3D,
+        task_kind=TaskKind.TRAIL,
+        project_mode=ProjectMode.trail,
+        training_mode="trail",
+        service_factory=Simulator3DService,
+        request_builder=_build_3d_trail_request,
+        runtime_config_builder=_build_3d_runtime_config,
+    ),
+    "threed/patrol": RuntimeRoute(
+        route_key="threed/patrol",
+        environment_kind=EnvironmentKind.SIMULATOR_3D,
+        task_kind=TaskKind.PATROL,
+        project_mode=ProjectMode.patrol,
+        training_mode="patrol",
+        service_factory=Simulator3DService,
+        request_builder=_build_3d_patrol_request,
+        runtime_config_builder=_build_3d_runtime_config,
+    ),
 }
 
 
 class ExperimentDispatcher:
-    def __init__(self, routes: dict[str, RuntimeRoute] | None = None):
+    def __init__(
+        self,
+        routes: dict[str, RuntimeRoute] | None = None,
+        *,
+        generation_service=None,
+        observer_poll_interval: float = 0.25,
+    ):
         self.routes = routes or DEFAULT_ROUTES
-        self.generation_service = get_default_environment_generation_service()
+        self.generation_service = generation_service or get_default_environment_generation_service()
+        self.observer_poll_interval = float(observer_poll_interval)
         self._sessions: dict[int, RunSession] = {}
         self._lock = RLock()
 
     def generate_and_load(self, route_key: str, params: dict[str, Any]) -> RunSession:
         route = self._get_route(route_key)
         request = route.request_builder(params)
+        request_report = validate_generation_request(self.generation_service.registry, request)
+        if not request_report.passed:
+            raise ValueError(self._format_validation_error(request_report))
+
         scenario = self.generation_service.generate(request)
         runtime_config = route.runtime_config_builder(params, scenario)
+        runtime_service = route.service_factory()
+        runtime_report = self._validate_runtime(runtime_service, scenario, runtime_config)
+        combined_report = merge_reports(request_report, scenario.validation_report, runtime_report)
+        scenario.apply_validation_report(combined_report)
+        if not scenario.validation_passed:
+            raise ValueError(self._format_validation_error(scenario.validation_report))
 
         with db_session() as db:
             user = self._ensure_system_user(db)
@@ -179,6 +243,7 @@ class ExperimentDispatcher:
                     "generator_name": scenario.generator_name,
                     "generator_version": scenario.generator_version,
                     "validation_messages": list(scenario.validation_messages),
+                    "validation_report": scenario.validation_report.to_payload(),
                     "route_key": route.route_key,
                 },
                 sensor_config_json=dict(request.visualization_options),
@@ -205,6 +270,7 @@ class ExperimentDispatcher:
                     "route_key": route.route_key,
                     "training_params": dict(params),
                     "runtime_config": dict(runtime_config),
+                    "validation_report": scenario.validation_report.to_payload(),
                 },
             )
             db.add(run)
@@ -236,18 +302,28 @@ class ExperimentDispatcher:
             run_id = int(run.id)
             scenario_version_id = int(version.id)
 
-        service = route.service_factory()
-        service.load_scenario(stored.scenario, stored.runtime_config)
+        runtime_service.load_scenario(stored.scenario, stored.runtime_config)
         session = RunSession(
             run_id=run_id,
             scenario_version_id=scenario_version_id,
             route=route,
             stored_scenario=stored,
-            service=service,
+            service=runtime_service,
             training_params=dict(params),
+            validation_report=stored.scenario.validation_report.to_payload(),
         )
-        with self._lock:
-            self._sessions[run_id] = session
+        self._store_session(session)
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Scenario generated and loaded",
+            payload_json={
+                "route_key": route.route_key,
+                "scenario_version_id": scenario_version_id,
+                "validation_report": stored.scenario.validation_report.to_payload(),
+            },
+        )
         return session
 
     def load_run(self, run_id: int) -> RunSession:
@@ -271,6 +347,11 @@ class ExperimentDispatcher:
             training_params = dict((run.config_json or {}).get("training_params") or {})
 
         service = route.service_factory()
+        runtime_report = self._validate_runtime(service, stored.scenario, stored.runtime_config)
+        combined_report = merge_reports(stored.scenario.validation_report, runtime_report)
+        stored.scenario.apply_validation_report(combined_report)
+        if not combined_report.passed:
+            raise ValueError(self._format_validation_error(combined_report))
         service.load_scenario(stored.scenario, stored.runtime_config)
         session = RunSession(
             run_id=int(run_id),
@@ -279,9 +360,17 @@ class ExperimentDispatcher:
             stored_scenario=stored,
             service=service,
             training_params=training_params,
+            validation_report=combined_report.to_payload(),
         )
-        with self._lock:
-            self._sessions[int(run_id)] = session
+        self._store_session(session)
+        self._persist_run_validation_report(int(run_id), session.validation_report)
+        write_service_log(
+            run_id=int(run_id),
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Run session loaded from persisted scenario",
+            payload_json={"route_key": route.route_key, "scenario_version_id": int(run.scenario_version_id)},
+        )
         return session
 
     def load_scenario_version(
@@ -297,6 +386,14 @@ class ExperimentDispatcher:
             version = db.query(ScenarioVersion).filter(ScenarioVersion.id == scenario_version_id).first()
             if version is None or not version.world_file_uri:
                 raise KeyError(f"Scenario version '{scenario_version_id}' not found")
+
+            stored = load_stored_scenario(version.world_file_uri)
+            service = route.service_factory()
+            runtime_report = self._validate_runtime(service, stored.scenario, stored.runtime_config)
+            combined_report = merge_reports(stored.scenario.validation_report, runtime_report)
+            stored.scenario.apply_validation_report(combined_report)
+            if not combined_report.passed:
+                raise ValueError(self._format_validation_error(combined_report))
 
             algorithm_key = str(params.get("algorithm", route.default_algorithm)).lower()
             algorithm = self._ensure_algorithm(db, algorithm_key, route.project_mode)
@@ -314,22 +411,15 @@ class ExperimentDispatcher:
                 config_json={
                     "route_key": route.route_key,
                     "training_params": params,
-                    "runtime_config": {},
+                    "runtime_config": dict(stored.runtime_config),
+                    "validation_report": combined_report.to_payload(),
                 },
             )
             db.add(run)
             db.flush()
-
-            stored = load_stored_scenario(version.world_file_uri)
-            run.config_json = {
-                "route_key": route.route_key,
-                "training_params": params,
-                "runtime_config": dict(stored.runtime_config),
-            }
             self._attach_run_artifacts(db, int(run.id), stored)
             run_id = int(run.id)
 
-        service = route.service_factory()
         service.load_scenario(stored.scenario, stored.runtime_config)
         session = RunSession(
             run_id=run_id,
@@ -338,9 +428,16 @@ class ExperimentDispatcher:
             stored_scenario=stored,
             service=service,
             training_params=params,
+            validation_report=combined_report.to_payload(),
         )
-        with self._lock:
-            self._sessions[run_id] = session
+        self._store_session(session)
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Scenario version loaded into a new run",
+            payload_json={"route_key": route.route_key, "scenario_version_id": int(scenario_version_id)},
+        )
         return session
 
     def start_run(self, run_id: int, params: dict[str, Any] | None = None) -> RunSession:
@@ -353,6 +450,18 @@ class ExperimentDispatcher:
 
         session.training_params = start_params
         session.service.start(start_params)
+
+        if session.observer is not None:
+            session.observer.stop()
+        session.observer = RunObserver(
+            run_id=run_id,
+            route_key=session.route.route_key,
+            task_kind=session.route.task_kind,
+            service=session.service,
+            poll_interval=self.observer_poll_interval,
+        )
+        session.observer.start()
+
         self._update_run_status(
             run_id,
             status=RunStatus.running,
@@ -362,21 +471,51 @@ class ExperimentDispatcher:
                 "route_key": session.route.route_key,
                 "training_params": start_params,
                 "runtime_config": dict(session.stored_scenario.runtime_config),
+                "validation_report": session.validation_report,
             },
             started_at=datetime.utcnow(),
+            finished_at=None,
+        )
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Run started",
+            payload_json={"route_key": session.route.route_key, "training_params": start_params},
         )
         return session
 
     def stop_run(self, run_id: int) -> None:
         session = self.load_run(run_id)
         session.service.stop()
-        self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
+        if session.observer is not None:
+            session.observer.stop(final_status=RunStatus.cancelled, message="Run stopped by dispatcher")
+            session.observer = None
+        else:
+            self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Run stopped",
+            payload_json={"route_key": session.route.route_key},
+        )
 
     def reset_run(self, run_id: int) -> RunSession:
         session = self.load_run(run_id)
         session.service.reset()
+        if session.observer is not None:
+            session.observer.stop(final_status=RunStatus.cancelled, message="Run reset by dispatcher")
+            session.observer = None
         session.service.load_scenario(session.stored_scenario.scenario, session.stored_scenario.runtime_config)
         self._update_run_status(run_id, status=RunStatus.created, started_at=None, finished_at=None)
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Run reset",
+            payload_json={"route_key": session.route.route_key},
+        )
         return session
 
     def dispose_run(self, run_id: int) -> None:
@@ -384,9 +523,22 @@ class ExperimentDispatcher:
             session = self._sessions.pop(run_id, None)
         if session is None:
             return
+        if session.observer is not None:
+            session.observer.stop(
+                final_status=RunStatus.cancelled if session.service.get_state().get("running") else None,
+                message="Run disposed by dispatcher",
+            )
+            session.observer = None
         if session.service.get_state().get("running"):
             session.service.stop()
             self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Run disposed",
+            payload_json={"route_key": session.route.route_key},
+        )
 
     def get_state(self, route_key: str, run_id: int | None) -> dict[str, Any]:
         if run_id is None:
@@ -404,8 +556,17 @@ class ExperimentDispatcher:
             }
 
         session = self.load_run(run_id)
+        session.last_error = session.last_error or getattr(session.service, "last_error", None)
         state = dict(session.service.get_state())
         execution_phase = "running" if state.get("running") else "preview"
+        observer_finished = session.observer is not None and not session.observer.is_alive()
+        if session.last_error:
+            execution_phase = "failed"
+        elif observer_finished and session.observer.final_status is not None:
+            execution_phase = session.observer.final_status.value
+        elif session.observer is None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
+            execution_phase = "stopped"
+
         state.update(
             {
                 "route_key": session.route.route_key,
@@ -420,6 +581,7 @@ class ExperimentDispatcher:
                 "preview_uri": str(session.stored_scenario.preview_path),
                 "validation_passed": session.stored_scenario.scenario.validation_passed,
                 "validation_messages": list(session.stored_scenario.scenario.validation_messages),
+                "validation_report": session.validation_report or session.stored_scenario.scenario.validation_report.to_payload(),
             }
         )
         if session.last_error:
@@ -431,6 +593,34 @@ class ExperimentDispatcher:
             return self.routes[route_key]
         except KeyError as exc:
             raise KeyError(f"Unsupported route '{route_key}'") from exc
+
+    def _store_session(self, session: RunSession) -> None:
+        with self._lock:
+            self._sessions[session.run_id] = session
+
+    def _validate_runtime(
+        self,
+        runtime_service: Any,
+        scenario: GeneratedScenario,
+        runtime_config: dict[str, Any],
+    ) -> ValidationReport:
+        if not hasattr(runtime_service, "validate_scenario"):
+            return ValidationReport()
+        messages = list(runtime_service.validate_scenario(scenario, runtime_config) or [])
+        return report_for_runtime_validation(scenario, messages)
+
+    @staticmethod
+    def _format_validation_error(report: ValidationReport) -> str:
+        return "; ".join(report.messages) or "Scenario validation failed"
+
+    def _persist_run_validation_report(self, run_id: int, validation_report: dict[str, Any] | None) -> None:
+        with db_session() as db:
+            run = db.query(Run).filter(Run.id == run_id).first()
+            if run is None:
+                return
+            config_json = dict(run.config_json or {})
+            config_json["validation_report"] = dict(validation_report or {})
+            run.config_json = config_json
 
     def _ensure_system_user(self, db) -> User:
         user = db.query(User).filter(User.email == "system@forest.local").first()
