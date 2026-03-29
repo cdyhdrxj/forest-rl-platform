@@ -36,12 +36,19 @@ class ArtifactType(enum.Enum):
 
 class EventType(enum.Enum):
     collision = "collision"
+    collision_passable = "collision_passable"
+    collision_impassable = "collision_impassable"
     goal_reached = "goal_reached"
+    flip = "flip"
+    intruder_appeared = "intruder_appeared"
+    intruder_detected = "intruder_detected"
+    intruder_caught = "intruder_caught"
     timeout = "timeout"
     deadlock = "deadlock"
     fire_started = "fire_started"
     fire_detected = "fire_detected"
     fire_missed = "fire_missed"
+    # Legacy values are kept to preserve compatibility with existing rows and integrations.
     violator_started = "violator_started"
     violator_detected = "violator_detected"
     violator_intercepted = "violator_intercepted"
