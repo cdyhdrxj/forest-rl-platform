@@ -1,0 +1,419 @@
+{
+  "environment_kind": "simulator_3d",
+  "task_kind": "patrol",
+  "seed": 1498851986,
+  "generator_name": "simulator_3d_family_generator",
+  "generator_version": "v1",
+  "effective_params": {
+    "seed": 1498851986,
+    "preview_size": 12,
+    "tree_density": 0.25,
+    "terrain_hilliness": 0.45,
+    "task_params": {
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "tau": 0.005,
+      "grid_size": 12,
+      "max_steps": 240,
+      "obstacle_density": 0.12,
+      "plantable_density": 0.7,
+      "initial_seedlings": 30,
+      "min_plant_distance": 1,
+      "uniformity_radius": 1,
+      "target_density": 0.35,
+      "alpha_plant": 4,
+      "alpha_quality": 2,
+      "beta_move": 0.08,
+      "beta_turn": 0.04,
+      "beta_fail_move": 0.25,
+      "beta_stay": 0.12,
+      "beta_invalid_plant": 0.6,
+      "lambda_uniformity": 3,
+      "lambda_underplanting": 1.5,
+      "goal_reward": 50,
+      "collision_penalty": 0.3,
+      "step_penalty": 0,
+      "action_scale": 1,
+      "max_speed": 50,
+      "accel": 40,
+      "damping": 0.6,
+      "dt": 0.01,
+      "terrain_penalty": 0.03,
+      "algorithm": "ppo",
+      "mode": "patrol"
+    }
+  },
+  "preview_payload": {
+    "terrain_map": [
+      [
+        0.43355149030685425,
+        0.37040939927101135,
+        0.011102601885795593,
+        0.21803107857704163,
+        0.11287086457014084,
+        0.06338014453649521,
+        0.33791646361351013,
+        0.3285430371761322,
+        0.2799396812915802,
+        0.06627099961042404,
+        0.2899731397628784,
+        0.285243421792984
+      ],
+      [
+        0.08788774907588959,
+        0.18662619590759277,
+        0.13499745726585388,
+        0.3012218475341797,
+        0.07803280651569366,
+        0.18709179759025574,
+        0.20774494111537933,
+        0.10780052840709686,
+        0.4049432873725891,
+        0.03256051614880562,
+        0.10534984618425369,
+        0.03284831717610359
+      ],
+      [
+        0.013650753535330296,
+        0.2754058837890625,
+        0.40418562293052673,
+        0.10159874707460403,
+        0.005608659703284502,
+        0.20029222965240479,
+        0.02773522026836872,
+        0.21215878427028656,
+        0.2223159372806549,
+        0.056546732783317566,
+        0.052465133368968964,
+        0.11810377240180969
+      ],
+      [
+        0.023856908082962036,
+        0.18804039061069489,
+        0.2643245458602905,
+        0.22586669027805328,
+        0.04726652801036835,
+        0.21566241979599,
+        0.1502334177494049,
+        0.26038357615470886,
+        0.4363078773021698,
+        0.08864735066890717,
+        0.052022114396095276,
+        0.3590967059135437
+      ],
+      [
+        0.24956899881362915,
+        0.1590205729007721,
+        0.09662622958421707,
+        0.25712719559669495,
+        0.0631905347108841,
+        0.2767907381057739,
+        0.36109820008277893,
+        0.40382319688796997,
+        0.44971171021461487,
+        0.18482187390327454,
+        0.4104825258255005,
+        0.003074347972869873
+      ],
+      [
+        0.17320750653743744,
+        0.4100901782512665,
+        0.1117810606956482,
+        0.29773274064064026,
+        0.28220829367637634,
+        0.24279838800430298,
+        0.253319650888443,
+        0.13988102972507477,
+        0.1584591120481491,
+        0.36079803109169006,
+        0.36651650071144104,
+        0.3048853874206543
+      ],
+      [
+        0.40134328603744507,
+        0.07606007158756256,
+        0.018129641190171242,
+        0.2930344343185425,
+        0.2614675760269165,
+        0.3955706059932709,
+        0.28781816363334656,
+        0.09733961522579193,
+        0.428549587726593,
+        0.17617470026016235,
+        0.038250043988227844,
+        0.3097466826438904
+      ],
+      [
+        0.28780701756477356,
+        0.16231878101825714,
+        0.10244984179735184,
+        0.363419771194458,
+        0.022568803280591965,
+        0.18597425520420074,
+        0.1593300998210907,
+        0.24606773257255554,
+        0.03345484286546707,
+        0.29988282918930054,
+        0.02427806705236435,
+        0.26873645186424255
+      ],
+      [
+        0.24811170995235443,
+        0.05020899325609207,
+        0.2749193012714386,
+        0.42620277404785156,
+        0.13150116801261902,
+        0.020189980044960976,
+        0.2975057065486908,
+        0.21165688335895538,
+        0.136576846241951,
+        0.4360722005367279,
+        0.19740019738674164,
+        0.15557388961315155
+      ],
+      [
+        0.2580144703388214,
+        0.08229508250951767,
+        0.3101864159107208,
+        0.1286483108997345,
+        0.038663800805807114,
+        0.42301055788993835,
+        0.24844078719615936,
+        0.23834310472011566,
+        0.41720542311668396,
+        0.07779261469841003,
+        0.14743252098560333,
+        0.41578245162963867
+      ],
+      [
+        0.08308061957359314,
+        0.3380354344844818,
+        0.09881635755300522,
+        0.028993042185902596,
+        0.35297641158103943,
+        0.03920850530266762,
+        0.3622458875179291,
+        0.16652488708496094,
+        0.07710111886262894,
+        0.3971424996852875,
+        0.1822374314069748,
+        0.09053152799606323
+      ],
+      [
+        0.3919210135936737,
+        0.3665289580821991,
+        0.19979651272296906,
+        0.08457533270120621,
+        0.1870647817850113,
+        0.09321756660938263,
+        0.012268558144569397,
+        0.25607582926750183,
+        0.19386284053325653,
+        0.07682868093252182,
+        0.3963179290294647,
+        0.424072265625
+      ]
+    ],
+    "agent_pos": [
+      [
+        5.0,
+        3.0
+      ]
+    ],
+    "goal_pos": [
+      [
+        7.0,
+        7.0
+      ]
+    ],
+    "landmark_pos": []
+  },
+  "runtime_context": {
+    "simulator_3d": {
+      "world_descriptor": {
+        "seed": 1498851986,
+        "preview_size": 12,
+        "tree_density": 0.25,
+        "terrain_hilliness": 0.45,
+        "task_params": {
+          "learning_rate": 0.0003,
+          "gamma": 0.99,
+          "tau": 0.005,
+          "grid_size": 12,
+          "max_steps": 240,
+          "obstacle_density": 0.12,
+          "plantable_density": 0.7,
+          "initial_seedlings": 30,
+          "min_plant_distance": 1,
+          "uniformity_radius": 1,
+          "target_density": 0.35,
+          "alpha_plant": 4,
+          "alpha_quality": 2,
+          "beta_move": 0.08,
+          "beta_turn": 0.04,
+          "beta_fail_move": 0.25,
+          "beta_stay": 0.12,
+          "beta_invalid_plant": 0.6,
+          "lambda_uniformity": 3,
+          "lambda_underplanting": 1.5,
+          "goal_reward": 50,
+          "collision_penalty": 0.3,
+          "step_penalty": 0,
+          "action_scale": 1,
+          "max_speed": 50,
+          "accel": 40,
+          "damping": 0.6,
+          "dt": 0.01,
+          "terrain_penalty": 0.03,
+          "algorithm": "ppo",
+          "mode": "patrol"
+        },
+        "intruder_positions": [
+          [
+            7,
+            7
+          ]
+        ],
+        "agent_start": [
+          5,
+          3
+        ]
+      }
+    },
+    "patrol": {
+      "agent_pos": [
+        5,
+        3
+      ],
+      "intruder_positions": [
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    "request_intruder_types": [],
+    "seed": 1498851986
+  },
+  "validation_messages": [],
+  "validation_passed": true,
+  "validation_report": {
+    "passed": true,
+    "issues": []
+  },
+  "request": {
+    "environment_kind": "simulator_3d",
+    "task_kind": "patrol",
+    "seed": null,
+    "terrain_params": {
+      "preview_size": 12
+    },
+    "forest_params": {
+      "tree_density": 0.25,
+      "terrain_hilliness": 0.45
+    },
+    "task_params": {
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "tau": 0.005,
+      "grid_size": 12,
+      "max_steps": 240,
+      "obstacle_density": 0.12,
+      "plantable_density": 0.7,
+      "initial_seedlings": 30,
+      "min_plant_distance": 1,
+      "uniformity_radius": 1,
+      "target_density": 0.35,
+      "alpha_plant": 4,
+      "alpha_quality": 2,
+      "beta_move": 0.08,
+      "beta_turn": 0.04,
+      "beta_fail_move": 0.25,
+      "beta_stay": 0.12,
+      "beta_invalid_plant": 0.6,
+      "lambda_uniformity": 3,
+      "lambda_underplanting": 1.5,
+      "goal_reward": 50,
+      "collision_penalty": 0.3,
+      "step_penalty": 0,
+      "action_scale": 1,
+      "max_speed": 50,
+      "accel": 40,
+      "damping": 0.6,
+      "dt": 0.01,
+      "terrain_penalty": 0.03,
+      "algorithm": "ppo",
+      "mode": "patrol"
+    },
+    "visualization_options": {},
+    "metadata": {}
+  },
+  "runtime_config": {
+    "world_descriptor": {
+      "seed": 1498851986,
+      "preview_size": 12,
+      "tree_density": 0.25,
+      "terrain_hilliness": 0.45,
+      "task_params": {
+        "learning_rate": 0.0003,
+        "gamma": 0.99,
+        "tau": 0.005,
+        "grid_size": 12,
+        "max_steps": 240,
+        "obstacle_density": 0.12,
+        "plantable_density": 0.7,
+        "initial_seedlings": 30,
+        "min_plant_distance": 1,
+        "uniformity_radius": 1,
+        "target_density": 0.35,
+        "alpha_plant": 4,
+        "alpha_quality": 2,
+        "beta_move": 0.08,
+        "beta_turn": 0.04,
+        "beta_fail_move": 0.25,
+        "beta_stay": 0.12,
+        "beta_invalid_plant": 0.6,
+        "lambda_uniformity": 3,
+        "lambda_underplanting": 1.5,
+        "goal_reward": 50,
+        "collision_penalty": 0.3,
+        "step_penalty": 0,
+        "action_scale": 1,
+        "max_speed": 50,
+        "accel": 40,
+        "damping": 0.6,
+        "dt": 0.01,
+        "terrain_penalty": 0.03,
+        "algorithm": "ppo",
+        "mode": "patrol"
+      },
+      "intruder_positions": [
+        [
+          7,
+          7
+        ]
+      ],
+      "agent_start": [
+        5,
+        3
+      ]
+    }
+  },
+  "layers": [
+    {
+      "name": "terrain_preview",
+      "layer_type": "terrain_preview",
+      "file_uri": "/app/data/scenarios/generated/scenario_2/version_1_run_2/terrain_preview.npy",
+      "file_format": "npy",
+      "description": "Low-resolution 3D terrain preview"
+    },
+    {
+      "name": "intruders_initial",
+      "layer_type": "intruders_initial",
+      "file_uri": "/app/data/scenarios/generated/scenario_2/version_1_run_2/intruders_initial.npy",
+      "file_format": "npy",
+      "description": "Initial intruder positions for grid patrol"
+    }
+  ],
+  "preview_uri": "/app/data/scenarios/generated/scenario_2/version_1_run_2/preview.json"
+}
