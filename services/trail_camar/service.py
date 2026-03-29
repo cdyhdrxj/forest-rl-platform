@@ -4,6 +4,7 @@ from services.scenario_generator import (
     extract_continuous_runtime_kwargs,
     get_default_environment_generation_service,
 )
+from services.scenario_generator.models import GeneratedScenario
 from services.trail_camar.callback import CamarCallback
 from services.trail_camar.wrapper import CamarGymWrapper
 
@@ -15,6 +16,8 @@ class CamarService(SB3Trainer):
         self.env = None
         self.model = None
         self.training_state = self._make_state()
+        self.loaded_scenario: GeneratedScenario | None = None
+        self.loaded_runtime_kwargs: dict | None = None
 
     def start(self, params: dict) -> None:
         self.training_state["mode"] = params.get("mode", "trail")
@@ -26,6 +29,18 @@ class CamarService(SB3Trainer):
     def reset(self) -> None:
         self.stop()
         self.training_state = self._make_state()
+        if self.loaded_scenario is not None:
+            self._apply_preview_state(self.loaded_scenario)
+
+    def load_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> None:
+        self.stop()
+        self.env = None
+        self.model = None
+        self.training_state = self._make_state()
+        self.training_state["mode"] = scenario.task_kind.value
+        self.loaded_scenario = scenario
+        self.loaded_runtime_kwargs = dict(runtime_config or extract_continuous_runtime_kwargs(scenario))
+        self._apply_preview_state(scenario)
 
     def get_state(self) -> dict:
         s = self.training_state
@@ -49,6 +64,9 @@ class CamarService(SB3Trainer):
         return base
 
     def _build_env(self, params: dict) -> CamarGymWrapper:
+        if self.loaded_runtime_kwargs is not None:
+            return CamarGymWrapper(**self.loaded_runtime_kwargs)
+
         generation_service = get_default_environment_generation_service()
         scenario = generation_service.generate(build_continuous_trail_request(params))
         return CamarGymWrapper(**extract_continuous_runtime_kwargs(scenario))
@@ -90,3 +108,18 @@ class CamarService(SB3Trainer):
             "trajectory": [],
             "terrain_map": None,
         }
+
+    def _apply_preview_state(self, scenario: GeneratedScenario) -> None:
+        preview = scenario.preview_payload
+        self.training_state.update(
+            {
+                "running": False,
+                "agent_pos": list(preview.get("agent_pos") or []),
+                "goal_pos": list(preview.get("goal_pos") or []),
+                "landmark_pos": list(preview.get("landmark_pos") or []),
+                "trajectory": [],
+                "is_collision": False,
+                "new_episode": False,
+                "terrain_map": preview.get("terrain_map"),
+            }
+        )
