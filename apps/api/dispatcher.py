@@ -448,11 +448,10 @@ class ExperimentDispatcher:
         if "algorithm" not in start_params:
             start_params["algorithm"] = session.route.default_algorithm
 
-        session.training_params = start_params
-        session.service.start(start_params)
-
         if session.observer is not None:
             session.observer.stop()
+        session.training_params = start_params
+        session.service.start(start_params)
         session.observer = RunObserver(
             run_id=run_id,
             route_key=session.route.route_key,
@@ -559,11 +558,12 @@ class ExperimentDispatcher:
         session.last_error = session.last_error or getattr(session.service, "last_error", None)
         state = dict(session.service.get_state())
         execution_phase = "running" if state.get("running") else "preview"
-        observer_finished = session.observer is not None and not session.observer.is_alive()
         if session.last_error:
             execution_phase = "failed"
-        elif observer_finished and session.observer.final_status is not None:
+        elif session.observer is not None and session.observer.final_status is not None:
             execution_phase = session.observer.final_status.value
+        elif session.observer is not None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
+            execution_phase = "finished"
         elif session.observer is None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
             execution_phase = "stopped"
 

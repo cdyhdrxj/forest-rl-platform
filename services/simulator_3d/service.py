@@ -28,9 +28,14 @@ class Simulator3DService:
             raise RuntimeError("Simulator3DService.start() requires a scenario loaded by the dispatcher")
 
         self.last_error = None
+        if int(self._state.get("step") or 0) > 0 or int(self._state.get("episode") or 0) > 0:
+            self._state = self._make_state()
+            self._state["mode"] = self.loaded_scenario.task_kind.value
+            self._apply_preview_state(self.loaded_scenario)
         self._stop_event.clear()
         self._state["running"] = True
         self._state["mode"] = self.loaded_scenario.task_kind.value
+        self._pending_events.clear()
         self._thread = threading.Thread(target=self._loop, args=(dict(params),), daemon=True)
         self._thread.start()
 

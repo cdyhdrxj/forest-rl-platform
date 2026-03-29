@@ -83,6 +83,7 @@ class RunObserver:
         self.final_status: RunStatus | None = None
 
         self._episode_offset = 0
+        self._baseline_local_episode = 0
         self._last_completed_local_episode = 0
         self._episode_boundary_step = 0
         self._episode_boundary_goal_count = 0
@@ -98,7 +99,9 @@ class RunObserver:
         if self._thread is not None and self._thread.is_alive():
             return
 
-        self._bootstrap_from_db()
+        initial_state = dict(self.service.get_state())
+        self._running_seen = bool(initial_state.get("running"))
+        self._bootstrap_from_db(initial_state)
         self._register_replay_artifacts()
         write_service_log(
             run_id=self.run_id,
@@ -120,7 +123,7 @@ class RunObserver:
     def is_alive(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 
-    def _bootstrap_from_db(self) -> None:
+    def _bootstrap_from_db(self, initial_state: dict[str, Any]) -> None:
         with db_session() as db:
             max_episode_index = (
                 db.query(func.max(Episode.episode_index))
@@ -128,6 +131,11 @@ class RunObserver:
                 .scalar()
             )
             self._episode_offset = int(max_episode_index or 0)
+        self._baseline_local_episode = int(initial_state.get("episode") or 0)
+        self._last_completed_local_episode = self._baseline_local_episode
+        self._episode_boundary_step = int(initial_state.get("step") or 0)
+        self._episode_boundary_goal_count = int(initial_state.get("goal_count") or 0)
+        self._episode_boundary_collision_count = int(initial_state.get("collision_count") or 0)
 
     def _register_replay_artifacts(self) -> None:
         replay_name = self._replay_path.name
@@ -211,7 +219,11 @@ class RunObserver:
             "intruders_remaining": ("count", "snapshot", "dispatcher"),
         }
 
-        episode_index = self._episode_offset + int(state.get("episode") or 0)
+        local_episode = int(state.get("episode") or 0)
+        episode_index = self._global_episode_index(
+            local_episode,
+            include_pending=bool(state.get("step") or 0) > self._episode_boundary_step and not bool(state.get("new_episode")),
+        )
         for metric_name, (unit, aggregation, source) in metric_specs.items():
             value = state.get(metric_name)
             if isinstance(value, bool) or value is None:
@@ -230,7 +242,7 @@ class RunObserver:
                     metric_series_id=handle.series_id,
                     point_index=handle.next_point_index,
                     train_step=int(state.get("step") or 0),
-                    episode_index=episode_index if episode_index > 0 else None,
+                    episode_index=episode_index if episode_index is not None and episode_index > 0 else None,
                     wall_time_sec=time.time(),
                     value=float(value),
                 )
@@ -242,7 +254,7 @@ class RunObserver:
         if observed_completed <= self._last_completed_local_episode:
             return
 
-        persisted_index = self._episode_offset + observed_completed
+        persisted_index = self._global_episode_index(observed_completed)
         self._upsert_episode(
             db,
             episode_index=persisted_index,
@@ -317,10 +329,12 @@ class RunObserver:
 
     def _ensure_event_episode(self, db, state: dict[str, Any], *, completed_this_tick: bool) -> Episode:
         local_completed = int(state.get("episode") or 0)
-        if completed_this_tick and local_completed > 0:
-            episode_index = self._episode_offset + local_completed
-        else:
-            episode_index = self._episode_offset + max(local_completed + 1, 1)
+        episode_index = self._global_episode_index(
+            local_completed,
+            include_pending=not completed_this_tick,
+        )
+        if episode_index is None:
+            episode_index = self._global_episode_index(local_completed, include_pending=True)
         episode = (
             db.query(Episode)
             .filter(Episode.run_id == self.run_id, Episode.episode_index == episode_index)
@@ -428,7 +442,10 @@ class RunObserver:
         if status in {RunStatus.cancelled, RunStatus.finished, RunStatus.failed}:
             with db_session() as db:
                 if self._has_partial_episode(state):
-                    partial_index = self._episode_offset + max(int(state.get("episode") or 0) + 1, 1)
+                    partial_index = self._global_episode_index(
+                        int(state.get("episode") or 0),
+                        include_pending=True,
+                    )
                     self._upsert_episode(
                         db,
                         episode_index=partial_index,
@@ -474,6 +491,14 @@ class RunObserver:
         if bool(state.get("new_episode")):
             return False
         return current_step > 0
+
+    def _global_episode_index(self, local_episode: int, *, include_pending: bool = False) -> int | None:
+        completed_delta = max(0, int(local_episode) - self._baseline_local_episode)
+        if include_pending:
+            return self._episode_offset + completed_delta + 1
+        if completed_delta <= 0:
+            return None
+        return self._episode_offset + completed_delta
 
 
 def _episode_success(task_kind: TaskKind, state: dict[str, Any], goal_delta: int) -> bool | None:
