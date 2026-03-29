@@ -5,11 +5,7 @@ from apps.api.sb3.sb3_trainer import SB3Trainer
 from services.reforestation_planting.callback import PlantingCallback
 from services.reforestation_planting.environment import SeedlingPlantingEnv
 from services.reforestation_planting.models import PlantingEnvConfig, PlantingTrainState
-from services.scenario_generator import (
-    build_reforestation_request,
-    extract_reforestation_runtime_layout,
-    get_default_environment_generation_service,
-)
+from services.scenario_generator import extract_reforestation_runtime_layout
 from services.scenario_generator.models import GeneratedScenario
 
 
@@ -72,21 +68,11 @@ class SeedlingPlantingService(SB3Trainer):
         }
 
     def _build_env(self, params: dict):
-        if self.loaded_config is not None and self.loaded_layout is not None:
-            def factory():
-                env = SeedlingPlantingEnv(self.loaded_config, generated_layout=self.loaded_layout)
-                env.train_state = self.training_state
-                return env
-
-            return make_vec_env(factory, n_envs=1)
-
-        config = PlantingEnvConfig.model_validate(params)
-        generation_service = get_default_environment_generation_service()
-        scenario = generation_service.generate(build_reforestation_request(config))
-        generated_layout = extract_reforestation_runtime_layout(scenario)
+        if self.loaded_config is None or self.loaded_layout is None:
+            raise RuntimeError("SeedlingPlantingService.start() requires a scenario loaded by the dispatcher")
 
         def factory():
-            env = SeedlingPlantingEnv(config, generated_layout=generated_layout)
+            env = SeedlingPlantingEnv(self.loaded_config, generated_layout=self.loaded_layout)
             env.train_state = self.training_state
             return env
 

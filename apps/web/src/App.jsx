@@ -196,6 +196,7 @@ export default function App() {
     ws.onmessage = event => {
       const data = JSON.parse(event.data)
       setState(data)
+      setRunning(Boolean(data?.running))
       if (data.terrain_map) setTerrain(data.terrain_map)
       if (data.new_episode) {
         setChartData(prev => {
@@ -213,6 +214,20 @@ export default function App() {
     if (canvasRef.current) drawCanvas(canvasRef.current, state, terrain)
   }, [state, terrain])
 
+  const generate = useCallback(() => {
+    const mode = activeTask === "Trail" ? "trail" : activeTask === "Planting" ? "reforestation" : "patrol"
+    wsRef.current?.send(JSON.stringify({
+      action: "generate",
+      params: {
+        ...params,
+        algorithm: algo.toLowerCase(),
+        mode,
+      },
+    }))
+    setChartData([])
+    setRunning(false)
+  }, [activeTask, algo, params])
+
   const start = useCallback(() => {
     const mode = activeTask === "Trail" ? "trail" : activeTask === "Planting" ? "reforestation" : "patrol"
     wsRef.current?.send(JSON.stringify({
@@ -229,6 +244,11 @@ export default function App() {
 
   const stop = useCallback(() => {
     wsRef.current?.send(JSON.stringify({ action: "stop" }))
+    setRunning(false)
+  }, [])
+
+  const reset = useCallback(() => {
+    wsRef.current?.send(JSON.stringify({ action: "reset" }))
     setRunning(false)
   }, [])
 
@@ -253,6 +273,12 @@ export default function App() {
 
   const TABS = ["Algorithm", "Map", "Robot"]
   const isPlanting = activeTask === "Planting"
+  const scenarioReady = Boolean(state?.scenario_generated && state?.run_id)
+  const statusLabel = running
+    ? `Running · run ${state?.run_id ?? "?"}`
+    : scenarioReady
+      ? `Preview ready · run ${state?.run_id ?? "?"}`
+      : "Waiting for generation"
 
   return (
     <div style={{ minHeight: "100vh", background: Theme.bg, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
@@ -390,8 +416,13 @@ export default function App() {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <Btn onClick={start} disabled={running || !endpoint} color={Theme.green}>Start</Btn>
+              <Btn onClick={generate} disabled={running || !endpoint} color={Theme.accent}>Generate</Btn>
+              <Btn onClick={start} disabled={running || !endpoint || !scenarioReady} color={Theme.green}>Start</Btn>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <Btn onClick={stop} disabled={!running} color={Theme.red}>Stop</Btn>
+              <Btn onClick={reset} disabled={running || !scenarioReady} color={Theme.textMuted}>Reset</Btn>
             </div>
           </div>
 
@@ -415,10 +446,15 @@ export default function App() {
             <div style={{ ...card, padding: 16 }}>
               <div style={secLabel}>Live State</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: Theme.textSecond }}>
+                <div>Run ID: <strong style={{ color: Theme.textPrimary }}>{state?.run_id ?? "—"}</strong></div>
+                <div>Scenario version: <strong style={{ color: Theme.textPrimary }}>{state?.scenario_version_id ?? "—"}</strong></div>
                 <div>Coverage: <strong style={{ color: Theme.textPrimary }}>{state?.coverage_ratio != null ? state.coverage_ratio.toFixed(2) : "0.00"}</strong></div>
                 <div>Seedlings left: <strong style={{ color: Theme.textPrimary }}>{state?.remaining_seedlings ?? 0}</strong></div>
                 <div>Invalid plants: <strong style={{ color: Theme.textPrimary }}>{state?.invalid_plant_count ?? 0}</strong></div>
                 <div>Endpoint: <strong style={{ color: Theme.textPrimary }}>{endpoint ?? "Unavailable"}</strong></div>
+                <div>Scenario ready: <strong style={{ color: Theme.textPrimary }}>{scenarioReady ? "yes" : "no"}</strong></div>
+                <div>Validation: <strong style={{ color: Theme.textPrimary }}>{state?.validation_passed == null ? "n/a" : state.validation_passed ? "ok" : "failed"}</strong></div>
+                <div>Status: <strong style={{ color: Theme.textPrimary }}>{statusLabel}</strong></div>
               </div>
             </div>
           </div>
