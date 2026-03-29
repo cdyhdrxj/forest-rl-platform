@@ -1,9 +1,5 @@
 from apps.api.sb3.sb3_trainer import SB3Trainer
-from services.scenario_generator import (
-    build_continuous_trail_request,
-    extract_continuous_runtime_kwargs,
-    get_default_environment_generation_service,
-)
+from services.scenario_generator import extract_continuous_runtime_kwargs
 from services.scenario_generator.models import GeneratedScenario
 from services.trail_camar.callback import CamarCallback
 from services.trail_camar.wrapper import CamarGymWrapper
@@ -64,12 +60,10 @@ class CamarService(SB3Trainer):
         return base
 
     def _build_env(self, params: dict) -> CamarGymWrapper:
-        if self.loaded_runtime_kwargs is not None:
-            return CamarGymWrapper(**self.loaded_runtime_kwargs)
+        if self.loaded_runtime_kwargs is None:
+            raise RuntimeError("CamarService.start() requires a scenario loaded by the dispatcher")
 
-        generation_service = get_default_environment_generation_service()
-        scenario = generation_service.generate(build_continuous_trail_request(params))
-        return CamarGymWrapper(**extract_continuous_runtime_kwargs(scenario))
+        return CamarGymWrapper(**self.loaded_runtime_kwargs)
 
     def _make_callback(self) -> CamarCallback:
         return CamarCallback(self.training_state)

@@ -400,10 +400,12 @@ class ExperimentDispatcher:
                 "scenario_version_id": None,
                 "scenario_loaded": False,
                 "scenario_generated": False,
+                "execution_phase": "idle",
             }
 
         session = self.load_run(run_id)
         state = dict(session.service.get_state())
+        execution_phase = "running" if state.get("running") else "preview"
         state.update(
             {
                 "route_key": session.route.route_key,
@@ -413,6 +415,7 @@ class ExperimentDispatcher:
                 "scenario_version_id": session.scenario_version_id,
                 "scenario_loaded": True,
                 "scenario_generated": True,
+                "execution_phase": execution_phase,
                 "world_file_uri": str(session.stored_scenario.manifest_path),
                 "preview_uri": str(session.stored_scenario.preview_path),
                 "validation_passed": session.stored_scenario.scenario.validation_passed,

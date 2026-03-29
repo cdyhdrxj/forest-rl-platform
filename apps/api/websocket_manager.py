@@ -32,8 +32,12 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
 
             try:
                 if action == "generate":
+                    if active_run_id is not None:
+                        dispatcher.dispose_run(active_run_id)
                     active_run_id = dispatcher.generate_and_load(route_key, params).run_id
                 elif action == "load":
+                    if active_run_id is not None:
+                        dispatcher.dispose_run(active_run_id)
                     if data.get("run_id") is not None:
                         active_run_id = dispatcher.load_run(int(data["run_id"])).run_id
                     elif data.get("scenario_version_id") is not None:

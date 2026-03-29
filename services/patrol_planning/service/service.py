@@ -6,11 +6,6 @@ from services.patrol_planning.assets.envs.environment import GridWorld
 from services.patrol_planning.assets.envs.models import GridWorldConfig
 from services.patrol_planning.service.callback import GridWorldCallback
 from services.patrol_planning.service.models import GridWorldTrainState
-from services.scenario_generator import (
-    apply_patrol_generation,
-    build_patrol_grid_request,
-    get_default_environment_generation_service,
-)
 from services.scenario_generator.models import GeneratedScenario
 
 
@@ -76,16 +71,10 @@ class GridWorldService(SB3Trainer):
         return base
 
     def _build_env(self, params: dict) -> GridWorld:
-        if self.loaded_config is not None:
-            env = GridWorld.load(self.loaded_config, static_layers=self.loaded_static_layers)
-            env.train_state = self.training_state
-            return make_vec_env(lambda: env, n_envs=1)
+        if self.loaded_config is None:
+            raise RuntimeError("GridWorldService.start() requires a scenario loaded by the dispatcher")
 
-        config = GridWorldConfig.model_validate(params.get("grid_world_config", params))
-        generation_service = get_default_environment_generation_service()
-        scenario = generation_service.generate(build_patrol_grid_request(config))
-        config, static_layers = apply_patrol_generation(config, scenario)
-        env = GridWorld.load(config, static_layers=static_layers)
+        env = GridWorld.load(self.loaded_config, static_layers=self.loaded_static_layers)
         env.train_state = self.training_state
         return make_vec_env(lambda: env, n_envs=1)
 
