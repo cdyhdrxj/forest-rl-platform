@@ -1,4 +1,5 @@
 from stable_baselines3.common.env_util import make_vec_env
+import numpy as np
 
 from apps.api.sb3.sb3_trainer import SB3Trainer
 from services.reforestation_planting.callback import PlantingCallback
@@ -9,6 +10,7 @@ from services.scenario_generator import (
     extract_reforestation_runtime_layout,
     get_default_environment_generation_service,
 )
+from services.scenario_generator.models import GeneratedScenario
 
 
 class SeedlingPlantingService(SB3Trainer):
@@ -16,6 +18,9 @@ class SeedlingPlantingService(SB3Trainer):
         self.env = None
         self.model = None
         self.training_state = PlantingTrainState()
+        self.loaded_scenario: GeneratedScenario | None = None
+        self.loaded_config: PlantingEnvConfig | None = None
+        self.loaded_layout: dict | None = None
 
     def start(self, params: dict) -> None:
         self.training_state["mode"] = params.get("mode", "reforestation")
@@ -27,6 +32,19 @@ class SeedlingPlantingService(SB3Trainer):
     def reset(self) -> None:
         self.stop()
         self.training_state = PlantingTrainState()
+        if self.loaded_scenario is not None:
+            self._apply_preview_state(self.loaded_scenario)
+
+    def load_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> None:
+        self.stop()
+        self.env = None
+        self.model = None
+        self.training_state = PlantingTrainState()
+        self.training_state["mode"] = scenario.task_kind.value
+        self.loaded_scenario = scenario
+        self.loaded_config = PlantingEnvConfig.model_validate(runtime_config or {})
+        self.loaded_layout = extract_reforestation_runtime_layout(scenario)
+        self._apply_preview_state(scenario)
 
     def get_state(self) -> dict:
         s = self.training_state
@@ -54,6 +72,14 @@ class SeedlingPlantingService(SB3Trainer):
         }
 
     def _build_env(self, params: dict):
+        if self.loaded_config is not None and self.loaded_layout is not None:
+            def factory():
+                env = SeedlingPlantingEnv(self.loaded_config, generated_layout=self.loaded_layout)
+                env.train_state = self.training_state
+                return env
+
+            return make_vec_env(factory, n_envs=1)
+
         config = PlantingEnvConfig.model_validate(params)
         generation_service = get_default_environment_generation_service()
         scenario = generation_service.generate(build_reforestation_request(config))
@@ -71,3 +97,28 @@ class SeedlingPlantingService(SB3Trainer):
 
     def _reset_counters(self) -> None:
         self.training_state.reset_counters()
+
+    def _apply_preview_state(self, scenario: GeneratedScenario) -> None:
+        preview = scenario.preview_payload
+        layout = dict(scenario.runtime_context.get("reforestation") or {})
+        free_mask = np.asarray(layout.get("free_mask")) if "free_mask" in layout else None
+        plantable_mask = np.asarray(layout.get("plantable_mask")) if "plantable_mask" in layout else None
+
+        self.training_state.agent_pos = list(preview.get("agent_pos") or [])
+        self.training_state.goal_pos = list(preview.get("goal_pos") or [])
+        self.training_state.landmark_pos = list(preview.get("landmark_pos") or [])
+        self.training_state.planted_pos = []
+        self.training_state.trajectory = []
+        self.training_state.is_collision = False
+        self.training_state.new_episode = False
+        self.training_state.running = False
+        self.training_state.coverage_ratio = 0.0
+        self.training_state.remaining_seedlings = int(self.loaded_config.initial_seedlings) if self.loaded_config else 0
+        if free_mask is not None and free_mask.size:
+            self.training_state.terrain_map = (1.0 - free_mask).tolist()
+        else:
+            self.training_state.terrain_map = preview.get("terrain_map")
+        self.training_state.plantable_map = plantable_mask.tolist() if plantable_mask is not None else None
+        self.training_state.planted_map = (
+            np.zeros_like(plantable_mask, dtype=np.float32).tolist() if plantable_mask is not None else None
+        )

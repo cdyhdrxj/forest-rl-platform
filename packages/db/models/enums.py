@@ -5,6 +5,7 @@ class ProjectMode(enum.Enum):
     robot = "robot"
     patrol = "patrol"
     fast_grid = "fast_grid"
+    reforestation = "reforestation"
 
 class RunStatus(enum.Enum):
     created = "created"
