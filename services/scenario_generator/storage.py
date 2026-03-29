@@ -14,6 +14,7 @@ from services.scenario_generator.models import (
     GeneratedScenario,
     GenerationRequest,
     TaskKind,
+    ValidationReport,
 )
 
 
@@ -72,6 +73,7 @@ def store_generated_scenario(
             "preview_payload": _to_jsonable(scenario.preview_payload),
             "validation_passed": scenario.validation_passed,
             "validation_messages": list(scenario.validation_messages),
+            "validation_report": scenario.validation_report.to_payload(),
         },
     )
 
@@ -114,6 +116,7 @@ def store_generated_scenario(
             "runtime_context": _to_jsonable(scenario.runtime_context),
             "validation_messages": list(scenario.validation_messages),
             "validation_passed": scenario.validation_passed,
+            "validation_report": scenario.validation_report.to_payload(),
             "request": {
                 "environment_kind": request.environment_kind.value,
                 "task_kind": request.task_kind.value,
@@ -167,7 +170,10 @@ def load_stored_scenario(manifest_path: str | Path) -> StoredScenario:
         runtime_context=dict(payload.get("runtime_context") or {}),
         validation_messages=list(payload.get("validation_messages") or []),
         validation_passed=bool(payload.get("validation_passed", True)),
+        validation_report=ValidationReport.from_payload(payload.get("validation_report")),
     )
+    if not scenario.validation_messages and scenario.validation_report.issues:
+        scenario.apply_validation_report(scenario.validation_report)
 
     layer_paths: dict[str, Path] = {}
     for layer_meta in payload.get("layers", []):

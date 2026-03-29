@@ -37,10 +37,10 @@ async def ws_discrete_reforestation(websocket: WebSocket):
 # async def ws_discrete_trail(websocket: WebSocket):
 #     await handle_ws(websocket, _discrete_trail)
 
-# @app.websocket("/threed/patrol")
-# async def ws_threed(websocket: WebSocket):
-#     await handle_ws(websocket, _threed_patrol)
+@app.websocket("/threed/patrol")
+async def ws_threed_patrol(websocket: WebSocket):
+    await handle_ws(websocket, _dispatcher, "threed/patrol")
 
-# @app.websocket("/threed/trail")
-# async def ws_threed(websocket: WebSocket):
-#     await handle_ws(websocket, _threed)
+@app.websocket("/threed/trail")
+async def ws_threed_trail(websocket: WebSocket):
+    await handle_ws(websocket, _dispatcher, "threed/trail")

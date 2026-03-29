@@ -4,6 +4,7 @@ import random
 
 from services.scenario_generator.models import GeneratedScenario, GenerationRequest
 from services.scenario_generator.registry import GeneratorRegistry
+from services.scenario_generator.validation import report_from_messages
 
 
 class EnvironmentGenerationService:
@@ -22,7 +23,12 @@ class EnvironmentGenerationService:
         for validator in self.registry.get_validators(request.task_kind, request.environment_kind):
             messages.extend(validator.validate(scenario))
 
-        scenario.validation_messages = messages
-        scenario.validation_passed = not messages
+        scenario.apply_validation_report(
+            report_from_messages(
+                messages,
+                stage="generator.semantic",
+                code_prefix=f"{request.environment_kind.value}_{request.task_kind.value}_semantic",
+            )
+        )
         scenario.runtime_context.setdefault("seed", seed)
         return scenario

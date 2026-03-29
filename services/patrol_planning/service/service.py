@@ -64,6 +64,7 @@ class GridWorldService(SB3Trainer):
             "is_collision": s.is_collision,
             "goal_count": s.goal_count,
             "collision_count": s.collision_count,
+            "intruders_remaining": s.i_count,
             "terrain_map": s.terrain_map,
         }
         if s.mode == "trail":
@@ -88,6 +89,19 @@ class GridWorldService(SB3Trainer):
     def _make_state() -> GridWorldTrainState:
         return GridWorldTrainState()
 
+    def validate_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> list[str]:
+        messages: list[str] = []
+        if scenario.environment_kind.value != "grid":
+            messages.append("GridWorld runtime can load only grid scenarios")
+        if scenario.runtime_context.get("patrol") is None:
+            messages.append("GridWorld runtime requires patrol runtime context")
+        terrain = scenario.get_layer_data("terrain")
+        if terrain is None:
+            messages.append("GridWorld runtime requires a terrain layer")
+        if runtime_config is None:
+            messages.append("GridWorld runtime requires serialized runtime config")
+        return messages
+
     def _apply_preview_state(self, scenario: GeneratedScenario) -> None:
         preview = scenario.preview_payload
         terrain = scenario.get_layer_data("terrain")
@@ -99,6 +113,7 @@ class GridWorldService(SB3Trainer):
         self.training_state.is_collision = False
         self.training_state.new_episode = False
         self.training_state.running = False
+        self.training_state.i_count = len(preview.get("goal_pos") or [])
         if terrain is not None:
             self.training_state.terrain_map = np.asarray(terrain, dtype=np.float32).tolist()
         else:

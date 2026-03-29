@@ -84,6 +84,18 @@ class SeedlingPlantingService(SB3Trainer):
     def _reset_counters(self) -> None:
         self.training_state.reset_counters()
 
+    def validate_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> list[str]:
+        messages: list[str] = []
+        if scenario.environment_kind.value != "grid":
+            messages.append("Reforestation runtime can load only grid scenarios")
+        if scenario.runtime_context.get("reforestation") is None:
+            messages.append("Reforestation runtime requires reforestation layout in runtime context")
+        if scenario.get_layer_data("free_mask") is None:
+            messages.append("Reforestation runtime requires a free_mask layer")
+        if runtime_config is None:
+            messages.append("Reforestation runtime requires serialized runtime config")
+        return messages
+
     def _apply_preview_state(self, scenario: GeneratedScenario) -> None:
         preview = scenario.preview_payload
         layout = dict(scenario.runtime_context.get("reforestation") or {})

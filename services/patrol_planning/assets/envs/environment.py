@@ -119,6 +119,7 @@ class GridWorld(gym.Env):
         self.train_state.new_episode = truncated or terminated
 
         if truncated or terminated:
+            self.train_state.episode += 1
             self.train_state.last_episode_reward = self.train_state.total_reward
             self.train_state.total_reward = 0.0
             self.train_state.trajectory = []
