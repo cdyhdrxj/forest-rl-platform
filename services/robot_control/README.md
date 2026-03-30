@@ -4,11 +4,11 @@
 
 ## Роли модулей
 
-- `packages/env_bridge` — общие контракты и модели данных между обучением, runtime и транспортным слоем.
-- `services/robot_control/policy_runner.py` — исполнение политики вне цикла обучения.
-- `services/robot_control/safety.py` — отдельный safety-layer, который фильтрует команды до отправки в транспорт.
+- `packages/env_bridge` — общие контракты и модели данных между обучением, исполнением и транспортным слоем.
+- `services/robot_control/policy_runner.py` — выполнение политики вне цикла обучения.
+- `services/robot_control/safety.py` — отдельный слой безопасности, который фильтрует команды до отправки в транспорт.
 - `services/robot_control/bridge.py` — мост к ROS или другой транспортной шине.
-- `services/robot_control/runtime.py` — orchestration-слой для режима исполнения.
+- `services/robot_control/runtime.py` — координирующий слой режима исполнения.
 
 ## Контуры выполнения
 
@@ -23,5 +23,5 @@
 
 `PolicyRunner -> SafetySupervisor -> RobotBridge -> simulator/robot`
 
-`EnvironmentAdapter` в runtime-контуре отвечает за синхронизацию шага и получение нового наблюдения,
-но не заменяет safety-layer и не смешивает transport-логику с политикой.
+`EnvironmentAdapter` в контуре исполнения отвечает за синхронизацию шага и получение нового наблюдения,
+но не заменяет слой безопасности и не смешивает транспортную логику с политикой.

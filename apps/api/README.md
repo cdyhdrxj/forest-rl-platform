@@ -1,126 +1,119 @@
-# 1. Запуск
+# API и диспетчер экспериментов
 
-## Запуск через окружение (Conda)
+Сервис `apps/api` поднимает FastAPI-приложение и публикует WebSocket-маршруты,
+через которые фронтенд управляет генерацией сценариев, загрузкой рантайма и запуском обучения.
 
-Сервер использует [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
+Каноническое описание внешнего протокола находится в:
 
-Создать и активировать окружение:
+- `contracts/websocket_protocol.md`
+- `contracts/openapi.yaml`
+- `docs/api/README.md`
+
+## Запуск
+
+### Локально через Python
+
+Из корня репозитория:
 
 ```powershell
-conda create -n api python=3.10
-conda activate api
-```
-
-Установить зависимости внутри conda окружения из корня репозитория:
-
-```powershell
-pip install -r packages/common/requirements.txt
-```
-
-> Текущий `requirements.txt` содержит зависимости для примера среды — CAMAR (непрерывная 2-мерная). При подключении других сред следует установить их зависимости отдельно.
-
----
-
-### Локальный запуск
-
-Из корня:
-
-```
-conda activate api
 python apps/api/main.py
 ```
 
----
+По умолчанию сервер слушает `http://127.0.0.1:8000`.
 
-## Запуск через Docker
+### Через Docker
 
-Первый запуск или при изменении зависимостей:
-
-```bash
-docker-compose up --build server
-```
-
-Обычный запуск:
+Первый запуск или пересборка:
 
 ```bash
-docker-compose up server
+docker compose up --build server
 ```
 
-# 2. Подключение к вебсокету
+Повторный запуск:
 
-## Структура
-
-```
-apps/api/
-├── main.py                  # точка входа
-├── app.py                   # FastAPI приложение, WebSocket роуты
-├── websocket_manager.py     # общий WebSocket handler
-└── sb3/
-    ├── sb3_trainer.py       # базовый класс для SB3-сред
-    └── model_params.py      # дефолтные параметры PPO/SAC/A2C
+```bash
+docker compose up server
 ```
 
-#### Модуль для CAMAR:
+## Поддерживаемые WebSocket-маршруты
 
+Активные маршруты определены в `apps/api/app.py`:
+
+- `/continuous/trail`
+- `/discrete/patrol`
+- `/discrete/reforestation`
+- `/threed/patrol`
+- `/threed/trail`
+
+Закомментированные маршруты не считаются частью текущего публичного интерфейса.
+
+## Как устроен запрос
+
+Клиент отправляет JSON-объект вида:
+
+```json
+{
+  "action": "generate",
+  "params": {}
+}
 ```
-services/
-└── trail_camar/
-    ├── service.py           #  принимает команды от websocket_manager и возвращает состояние
-    ├── wrapper.py           # адаптер JAX-среды CAMAR под gymnasium
-    └── callback.py          # запись состояния среды в training_state
-```
 
-## Среды
+Поддерживаемые действия:
 
-| Эндпоинт             | Среда                              |
-| -------------------- | ---------------------------------- |
-| `/continuous/trail`  | CAMAR (непрерывная 2-мерная среда) |
-| `/continuous/patrol` |                                    |
-| `/discrete/trail`    | Клеточная 2-мерная среда           |
-| `/discrete/patrol`   |                                    |
-| `/threed/trail`      | 3-мерная среда                     |
-| `/threed/patrol`     |                                    |
+- `generate` — сгенерировать сценарий и загрузить его в сессию;
+- `load` — загрузить существующий `run_id` или `scenario_version_id`;
+- `start` — запустить загруженную сессию;
+- `stop` — остановить выполнение;
+- `reset` — сбросить состояние и повторно загрузить сценарий;
+- `dispose` — освободить текущую сессию.
 
-## Подключение среды к серверу
+Дополнительные поля:
 
-1. Реализовать сервис в `/services/<name>`, в котором будут:
-    - start(params) — запуск обучения с параметрами от фронта
-    - stop() — остановка обучения
-    - reset() — сброс среды и модели
-    - get_state() — возврат текущего состояния обучения (dict)
-2. Передавать параметры в get_state():
+- `run_id` — для повторной загрузки существующего запуска;
+- `scenario_version_id` — для загрузки сохранённой версии сценария;
+- `params` — параметры генерации, загрузки или старта.
 
-    ```python
-        {
-            # счётчики эпизода
-            "episode": int,          # номер текущего эпизода
-            "step": int,             # счетчик шагов внутри эпизода (сбрасывается каждый эпизод)
-            "total_reward": float,   # накопленная награда за текущий эпизод
-            "goal_count": int,       # сколько раз агент достиг цели за эпизод
-            "collision_count": int,  # сколько столкновений за эпизод
+## Как устроен ответ
 
-            # состояние среды (позиции)
-            # float для непрерывных, int для дискретных
-            "agent_pos": [[x, y]],          # позиция агента
-            "goal_pos": [[x, y]],           # позиция цели
-            "landmark_pos": [[x, y], ...],  # позиции препятствий, [] если нет
+Сервер непрерывно отправляет снимки состояния в JSON.
+В каждом сообщении есть общий слой полей от `ExperimentDispatcher`, а также
+специфические поля конкретного runtime-сервиса.
 
-            #  визуальные слои
-            "trajectory": [[x, y], ...],  # путь агента, накапливается за эпизод
-            "terrain_map": [[float, ...], ...],  # float 0..1 значение для каждой клетки, размер grid_size×grid_size, null если нет рельефа
-        }
-    ```
+Общие поля:
 
-    > Счетчики эпизода нужны для отображения в интерфейсе во время обучения:![alt text](/apps/api/docs/image.png)
+- `running`
+- `route_key`
+- `environment_kind`
+- `task_kind`
+- `run_id`
+- `scenario_version_id`
+- `scenario_loaded`
+- `scenario_generated`
+- `execution_phase`
 
-    > Для режима trail (планирование пути) есть: agent_pos, goal_pos, landmark_pos - без них canvas не отрисует позиции объектов.![alt text](/apps/api/docs/image-1.png)
+Когда сценарий уже загружен, дополнительно приходят:
 
-3. Подключить сервис в `app.py` по примеру:
+- `world_file_uri`
+- `preview_uri`
+- `validation_passed`
+- `validation_messages`
+- `validation_report`
+- `error` — если во время выполнения произошла ошибка
 
-    ```python
-    _camar_trail = CamarService()
+Подробная структура состояния и набор зависящих от маршрута полей описаны в `contracts/websocket_protocol.md`.
 
-    @app.websocket("/continuous/trail")
-    async def ws_continuous(websocket: WebSocket):
-        await handle_ws(websocket, _camar_trail)
-    ```
+## Основные модули
+
+- `app.py` — объявляет FastAPI-приложение и WebSocket-маршруты;
+- `websocket_manager.py` — управляет сокетом, приёмом команд и отправкой состояния;
+- `dispatcher.py` — связывает маршруты с генерацией сценариев, БД, runtime-сервисами и наблюдением за запуском;
+- `runtime_monitor.py` — пишет replay, метрики, события эпизодов и сервисные логи.
+
+## Поток выполнения
+
+1. Фронтенд подключается к одному из WebSocket-маршрутов.
+2. `handle_ws(...)` принимает команду клиента.
+3. `ExperimentDispatcher` создаёт или загружает `run` и связывает его со сценарием.
+4. Сервис исполнения получает `load_scenario(...)` и затем `start(...)`.
+5. `RunObserver` сохраняет replay, метрики и события.
+6. Сервер продолжает отправлять клиенту текущее состояние, пока сокет открыт.

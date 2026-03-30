@@ -1,6 +1,230 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Описание сценария",
+  "title": "Манифест сгенерированного сценария",
+  "description": "Каноническая схема для сохраняемых файлов scenario.json, которые формируются в services/scenario_generator/storage.py.",
   "version": "1.0.0",
-  "type": "object"
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "environment_kind",
+    "task_kind",
+    "seed",
+    "generator_name",
+    "generator_version",
+    "effective_params",
+    "preview_payload",
+    "runtime_context",
+    "validation_messages",
+    "validation_passed",
+    "validation_report",
+    "request",
+    "runtime_config",
+    "layers",
+    "preview_uri"
+  ],
+  "properties": {
+    "environment_kind": {
+      "$ref": "#/$defs/environmentKind"
+    },
+    "task_kind": {
+      "$ref": "#/$defs/taskKind"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "generator_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effective_params": {
+      "$ref": "#/$defs/freeObject"
+    },
+    "preview_payload": {
+      "$ref": "#/$defs/freeObject"
+    },
+    "runtime_context": {
+      "$ref": "#/$defs/freeObject"
+    },
+    "validation_messages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_passed": {
+      "type": "boolean"
+    },
+    "validation_report": {
+      "$ref": "#/$defs/validationReport"
+    },
+    "request": {
+      "$ref": "#/$defs/generationRequest"
+    },
+    "runtime_config": {
+      "$ref": "#/$defs/freeObject"
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/layerEntry"
+      }
+    },
+    "preview_uri": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "environmentKind": {
+      "type": "string",
+      "enum": [
+        "grid",
+        "continuous_2d",
+        "simulator_3d"
+      ]
+    },
+    "taskKind": {
+      "type": "string",
+      "enum": [
+        "trail",
+        "patrol",
+        "reforestation",
+        "robot"
+      ]
+    },
+    "freeObject": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "validationIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "code",
+        "message",
+        "severity"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "$ref": "#/$defs/freeObject"
+        }
+      }
+    },
+    "validationReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "issues"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/validationIssue"
+          }
+        }
+      }
+    },
+    "generationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment_kind",
+        "task_kind",
+        "seed",
+        "terrain_params",
+        "forest_params",
+        "task_params",
+        "visualization_options",
+        "metadata"
+      ],
+      "properties": {
+        "environment_kind": {
+          "$ref": "#/$defs/environmentKind"
+        },
+        "task_kind": {
+          "$ref": "#/$defs/taskKind"
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "terrain_params": {
+          "$ref": "#/$defs/freeObject"
+        },
+        "forest_params": {
+          "$ref": "#/$defs/freeObject"
+        },
+        "task_params": {
+          "$ref": "#/$defs/freeObject"
+        },
+        "visualization_options": {
+          "$ref": "#/$defs/freeObject"
+        },
+        "metadata": {
+          "$ref": "#/$defs/freeObject"
+        }
+      }
+    },
+    "layerEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "layer_type",
+        "file_uri",
+        "file_format"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layer_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_uri": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
 }

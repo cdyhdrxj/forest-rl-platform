@@ -1,26 +1,26 @@
-# Scenario Generator
+# Генератор сценариев
 
-Shared environment-generation module for the platform.
+Общий модуль генерации среды для платформы.
 
-## Responsibilities
+## Зоны ответственности
 
-- accept a common generation request;
-- choose a family generator by environment kind;
-- apply task-specific overlays;
-- validate the generated scenario;
-- return a canonical generated-scenario object for runtime adapters.
+- принимать единый запрос на генерацию;
+- выбирать семейство генераторов по типу среды;
+- применять расширения, зависящие от задачи;
+- валидировать сгенерированный сценарий;
+- возвращать канонический объект сценария для runtime-адаптеров.
 
-## Main entrypoint
+## Основная точка входа
 
 - `get_default_environment_generation_service()`
 
-## Built-in support
+## Встроенная поддержка
 
 - `grid`
 - `continuous_2d`
 - `simulator_3d`
 
-## Current integrations
+## Текущие интеграции
 
 - `services/patrol_planning`
 - `services/reforestation_planting`

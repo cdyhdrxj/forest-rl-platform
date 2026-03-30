@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Превью сгенерированного сценария",
+  "description": "Каноническая схема для сохраняемых файлов preview.json, которые формируются в services/scenario_generator/storage.py.",
+  "version": "1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "environment_kind",
+    "task_kind",
+    "preview_payload",
+    "validation_passed",
+    "validation_messages",
+    "validation_report"
+  ],
+  "properties": {
+    "environment_kind": {
+      "$ref": "#/$defs/environmentKind"
+    },
+    "task_kind": {
+      "$ref": "#/$defs/taskKind"
+    },
+    "preview_payload": {
+      "$ref": "#/$defs/freeObject"
+    },
+    "validation_passed": {
+      "type": "boolean"
+    },
+    "validation_messages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_report": {
+      "$ref": "#/$defs/validationReport"
+    }
+  },
+  "$defs": {
+    "environmentKind": {
+      "type": "string",
+      "enum": [
+        "grid",
+        "continuous_2d",
+        "simulator_3d"
+      ]
+    },
+    "taskKind": {
+      "type": "string",
+      "enum": [
+        "trail",
+        "patrol",
+        "reforestation",
+        "robot"
+      ]
+    },
+    "freeObject": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "validationIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "code",
+        "message",
+        "severity"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "$ref": "#/$defs/freeObject"
+        }
+      }
+    },
+    "validationReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "issues"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/validationIssue"
+          }
+        }
+      }
+    }
+  }
+}

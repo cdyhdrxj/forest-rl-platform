@@ -1,4 +1,4 @@
-# Forest RL Platform
+# Платформа Forest RL
 
 Единая платформа для моделирования, обучения, испытаний и анализа интеллектуального поведения агентов в лесной среде.
 
@@ -68,15 +68,19 @@ forest-rl-platform/
 
 Общие контракты системы хранятся в каталоге `contracts/`. Это центральная точка согласования между всеми модулями.
 
-`contracts/scenario.schema.json` задаёт формат описания сценария.
+`contracts/v1/scenario.schema.json` задаёт формат сохранённого `scenario.json`.
 
-`contracts/episode_log.schema.json` задаёт формат журнала эпизода.
+`contracts/v1/preview.schema.json` задаёт формат сохранённого `preview.json`.
 
-`contracts/replay.schema.json` задаёт формат реплея.
+`contracts/v1/episode_log.schema.json` задаёт канонический формат экспорта журнала эпизодов.
 
-`contracts/metrics.schema.json` задаёт формат сводных и временных метрик.
+`contracts/v1/replay.schema.json` задаёт формат одной строки `replay_*.jsonl`.
 
-`contracts/openapi.yaml` задаёт программный интерфейс диспетчера экспериментов.
+`contracts/v1/metrics.schema.json` задаёт канонический формат экспорта сводных и временных метрик.
+
+`contracts/openapi.yaml` задаёт HTTP-метаданные backend-сервиса.
+
+`contracts/websocket_protocol.md` фиксирует runtime WebSocket-протокол диспетчера экспериментов.
 
 `contracts/v1/ros_interfaces.md` и `contracts/v2/ros_interfaces.md` фиксируют версии соглашений по топикам, сервисам и сообщениям ROS 2.
 
