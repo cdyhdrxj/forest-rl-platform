@@ -1,6 +1,123 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Метрики эксперимента",
+  "title": "Экспорт метрик",
+  "description": "Канонический JSON-формат экспорта серий метрик и точек, собранных для одного run.",
   "version": "1.0.0",
-  "type": "object"
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "series"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "route_key": {
+      "$ref": "#/$defs/routeKey"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "series": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/metricSeries"
+      }
+    }
+  },
+  "$defs": {
+    "routeKey": {
+      "type": "string",
+      "enum": [
+        "continuous/trail",
+        "discrete/patrol",
+        "discrete/reforestation",
+        "threed/patrol",
+        "threed/trail"
+      ]
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metricPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "point_index",
+        "value"
+      ],
+      "properties": {
+        "point_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "train_step": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "episode_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "wall_time_sec": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "value": {
+          "type": "number"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "metricSeries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "points"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "aggregation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "source": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "description": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/metricPoint"
+          }
+        }
+      }
+    }
+  }
 }

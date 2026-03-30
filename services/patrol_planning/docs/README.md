@@ -10,7 +10,7 @@
 uv sync
 ```
 
-## GridWorld
+## Среда GridWorld
 
 ### Обучение агента
 
@@ -54,9 +54,9 @@ uv run services/patrol_planning/learning/test/test_with_input.py
   <figcaption>Так выглядит графическое представление среды в терминале</figcaption>
 </figure>
 
-## Pydantic Модели
+## Pydantic-модели
 
-### GridWorldTrainState
+### Модель GridWorldTrainState
 
 [`services/patrol_planning/service/models.py`](../service/models.py)
 
@@ -142,7 +142,7 @@ with open(
 config = GridWorldConfig.model_validate(data)
 ```
 
-### GridWorldConfig
+### Модель GridWorldConfig
 
 [`services/patrol_planning/assets/envs/models.py`](../assets/envs/models.py)
 
@@ -245,7 +245,7 @@ config = GridWorldTrainState.model_validate(data)
 
 Блуждающий нарушитель (движется случайно).
 
-### Наблюдения (Observations)
+### Наблюдения
 
 #### `ObservationConfig` (базовый)
 

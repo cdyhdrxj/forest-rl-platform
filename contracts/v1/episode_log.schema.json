@@ -1,6 +1,225 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Журнал эпизода",
+  "title": "Экспорт журнала эпизодов",
+  "description": "Канонический JSON-формат экспорта эпизодов и эпизодных событий, собранных для одного run.",
   "version": "1.0.0",
-  "type": "object"
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "episodes"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "route_key": {
+      "$ref": "#/$defs/routeKey"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "episodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/episode"
+      }
+    }
+  },
+  "$defs": {
+    "routeKey": {
+      "type": "string",
+      "enum": [
+        "continuous/trail",
+        "discrete/patrol",
+        "discrete/reforestation",
+        "threed/patrol",
+        "threed/trail"
+      ]
+    },
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "collision",
+        "collision_passable",
+        "collision_impassable",
+        "goal_reached",
+        "flip",
+        "intruder_appeared",
+        "intruder_detected",
+        "intruder_caught",
+        "timeout",
+        "deadlock",
+        "fire_started",
+        "fire_detected",
+        "fire_missed",
+        "violator_started",
+        "violator_detected",
+        "violator_intercepted",
+        "patrol_zone_visited"
+      ]
+    },
+    "freeObjectOrNull": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "episodeEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_type"
+      ],
+      "properties": {
+        "step_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "sim_time_sec": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "event_type": {
+          "$ref": "#/$defs/eventType"
+        },
+        "x": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "y": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "z": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "intruder_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "payload_json": {
+          "$ref": "#/$defs/freeObjectOrNull"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_index"
+      ],
+      "properties": {
+        "episode_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "success": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "terminated_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reward_total": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "steps_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "duration_sec": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "path_length": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "path_cost": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "collisions_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "coverage_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "avg_detection_delay": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "total_damage": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/episodeEvent"
+          }
+        }
+      }
+    }
+  }
 }

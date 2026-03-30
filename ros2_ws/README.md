@@ -1,14 +1,14 @@
-# ROS 2 TCP ENDPOINT
+# TCP-шлюз для ROS 2
 
-# Build
+## Сборка
 
 docker build -t ros2-endpoint .
 
-# Network
+## Сеть
 
 docker network create ros-unity-net
 
-# Run
+## Запуск
 
 docker run --rm -it \
   --name ros2-endpoint \
@@ -17,6 +17,6 @@ docker run --rm -it \
   -p 9090:9090 \
   ros2-endpoint
 
-# ROS 2 Activation
+## Активация ROS 2
 
 source /opt/ros/humble/setup.bash

@@ -1,5 +1,22 @@
 openapi: 3.1.0
 info:
-  title: Forest RL Platform API
-  version: 0.1.0
+  title: HTTP API платформы Forest RL
+  version: 1.0.0
+  description: |
+    Этот OpenAPI-документ описывает HTTP-метаданные backend-а.
+
+    Runtime-управление и телеметрия сейчас построены на WebSocket.
+    Канонический realtime-контракт описан в `contracts/websocket_protocol.md`.
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер разработки
 paths: {}
+x-runtime-transport:
+  type: websocket
+  contract_file: contracts/websocket_protocol.md
+  supported_routes:
+    - /continuous/trail
+    - /discrete/patrol
+    - /discrete/reforestation
+    - /threed/patrol
+    - /threed/trail
