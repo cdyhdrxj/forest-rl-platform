@@ -82,6 +82,8 @@ def _extract_points(state: dict[str, Any], replay_path: Path) -> list[tuple[floa
 
 def _build_svg_document(run_payload: dict[str, Any], state: dict[str, Any], points: list[tuple[float, float]]) -> str:
     terrain_map = state.get("terrain_map") if isinstance(state.get("terrain_map"), list) else None
+    coverage_target_map = state.get("coverage_target_map") if isinstance(state.get("coverage_target_map"), list) else None
+    covered_map = state.get("covered_map") if isinstance(state.get("covered_map"), list) else None
     rows = len(terrain_map or [])
     cols = len(terrain_map[0]) if rows else 0
 
@@ -96,6 +98,18 @@ def _build_svg_document(run_payload: dict[str, Any], state: dict[str, Any], poin
                 grid_markup.append(
                     f'<rect x="{x * cell_w:.2f}" y="{y * cell_h:.2f}" width="{cell_w:.2f}" height="{cell_h:.2f}" fill="{fill}" stroke="#e5e7eb" stroke-width="1" />'
                 )
+                if coverage_target_map and y < len(coverage_target_map) and x < len(coverage_target_map[y]):
+                    target_value = float((coverage_target_map[y] or [0])[x] or 0.0)
+                    if target_value > 0.0:
+                        grid_markup.append(
+                            f'<rect x="{x * cell_w + 2:.2f}" y="{y * cell_h + 2:.2f}" width="{max(cell_w - 4, 1):.2f}" height="{max(cell_h - 4, 1):.2f}" fill="rgba(34,197,94,0.18)" stroke="none" />'
+                        )
+                if covered_map and y < len(covered_map) and x < len(covered_map[y]):
+                    covered_value = float((covered_map[y] or [0])[x] or 0.0)
+                    if covered_value > 0.0:
+                        grid_markup.append(
+                            f'<rect x="{x * cell_w + 4:.2f}" y="{y * cell_h + 4:.2f}" width="{max(cell_w - 8, 1):.2f}" height="{max(cell_h - 8, 1):.2f}" fill="rgba(22,163,74,0.55)" stroke="none" />'
+                        )
 
     overlay_markup = []
     if rows and cols and points:

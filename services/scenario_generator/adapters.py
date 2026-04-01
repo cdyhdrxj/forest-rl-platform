@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 
+from services.agrocare_coverage.generator import build_runtime_config
 from services.patrol_planning.assets.envs.models import GridWorldConfig
 from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.reforestation_planting.models import PlantingEnvConfig
@@ -105,8 +106,41 @@ def build_continuous_trail_request(params: dict[str, Any]) -> GenerationRequest:
     )
 
 
+def build_continuous_coverage_request(params: dict[str, Any]) -> GenerationRequest:
+    source = dict(params)
+    grid_size = int(source.get("grid_size", 32))
+    return GenerationRequest(
+        environment_kind=EnvironmentKind.CONTINUOUS_2D,
+        task_kind=TaskKind.COVERAGE,
+        seed=source.get("seed"),
+        terrain_params={
+            "grid_size": grid_size,
+        },
+        forest_params={
+            "obstacle_density": 0.0,
+            "curvature_level": source.get("curvature_level", "low"),
+            "gap_probability": source.get("gap_probability", 0.0),
+            "obstacle_count": source.get("obstacle_count"),
+            "obstacle_count_range": source.get("obstacle_count_range"),
+        },
+        task_params=dict(source),
+        metadata={
+            "family": source.get("family"),
+            "split": source.get("split"),
+        },
+    )
+
+
 def extract_continuous_runtime_kwargs(scenario: GeneratedScenario) -> dict[str, Any]:
     return dict(scenario.runtime_context["continuous_2d"]["wrapper_kwargs"])
+
+
+def extract_coverage_runtime_layout(scenario: GeneratedScenario) -> dict[str, Any]:
+    return dict(scenario.runtime_context["coverage"])
+
+
+def build_coverage_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
+    return build_runtime_config(params, scenario).model_dump(mode="json")
 
 
 def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -> GenerationRequest:

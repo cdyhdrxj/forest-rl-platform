@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from services.scenario_generator.builtin import (
+    CoverageTaskOverlay,
     Continuous2DFamilyGenerator,
     DefaultScenarioValidator,
     GridFamilyGenerator,
@@ -25,6 +26,7 @@ def get_default_environment_generation_service() -> EnvironmentGenerationService
     registry.register_overlay(PatrolTaskOverlay())
     registry.register_overlay(ReforestationTaskOverlay())
     registry.register_overlay(TrailTaskOverlay())
+    registry.register_overlay(CoverageTaskOverlay())
 
     registry.register_validator(DefaultScenarioValidator())
     return EnvironmentGenerationService(registry)

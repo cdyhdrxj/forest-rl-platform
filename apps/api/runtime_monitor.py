@@ -215,8 +215,17 @@ class RunObserver:
             "goal_count": ("count", "snapshot", "dispatcher"),
             "collision_count": ("count", "snapshot", "dispatcher"),
             "coverage_ratio": ("ratio", "snapshot", "dispatcher"),
+            "missed_area_ratio": ("ratio", "snapshot", "dispatcher"),
+            "return_error": ("distance", "snapshot", "dispatcher"),
+            "path_length": ("distance", "snapshot", "dispatcher"),
+            "task_time_sec": ("seconds", "snapshot", "dispatcher"),
+            "transition_count": ("count", "snapshot", "dispatcher"),
+            "repeat_coverage_ratio": ("ratio", "snapshot", "dispatcher"),
+            "angular_work_rad": ("radians", "snapshot", "dispatcher"),
+            "compute_time_sec": ("seconds", "snapshot", "dispatcher"),
             "remaining_seedlings": ("count", "snapshot", "dispatcher"),
             "intruders_remaining": ("count", "snapshot", "dispatcher"),
+            "remaining_rows": ("count", "snapshot", "dispatcher"),
         }
 
         local_episode = int(state.get("episode") or 0)
@@ -317,6 +326,11 @@ class RunObserver:
             previous_goals = int(self._last_state.get("goal_count") or 0)
             for _ in range(max(0, current_goals - previous_goals)):
                 events.append((EventType.goal_reached, None))
+        elif self.task_kind is TaskKind.COVERAGE:
+            current_goals = int(state.get("goal_count") or 0)
+            previous_goals = int(self._last_state.get("goal_count") or 0)
+            for _ in range(max(0, current_goals - previous_goals)):
+                events.append((EventType.goal_reached, {"kind": "row_completed"}))
         elif self.task_kind is TaskKind.PATROL:
             previous_targets = len(self._last_state.get("goal_pos") or [])
             current_targets = len(state.get("goal_pos") or [])
@@ -374,9 +388,10 @@ class RunObserver:
         reward_key = "last_episode_reward" if complete else "total_reward"
         episode.reward_total = float(state.get(reward_key) or 0.0)
         episode.steps_count = steps_delta
+        episode.duration_sec = _optional_float(state.get("task_time_sec"))
         episode.collisions_count = collision_delta
         episode.coverage_ratio = _optional_float(state.get("coverage_ratio"))
-        episode.path_length = float(steps_delta)
+        episode.path_length = _optional_float(state.get("path_length")) or float(steps_delta)
         episode.path_cost = float(collision_delta)
         episode.avg_detection_delay = None
         episode.total_damage = None
@@ -505,6 +520,12 @@ def _episode_success(task_kind: TaskKind, state: dict[str, Any], goal_delta: int
     if task_kind is TaskKind.REFORESTATION:
         coverage = _optional_float(state.get("coverage_ratio"))
         return None if coverage is None else coverage > 0.0
+    if task_kind is TaskKind.COVERAGE:
+        success = state.get("success")
+        if success is not None:
+            return bool(success)
+        coverage = _optional_float(state.get("coverage_ratio"))
+        return None if coverage is None else coverage >= 0.999 and bool(state.get("return_to_start_success"))
     if task_kind is TaskKind.PATROL:
         return len(state.get("goal_pos") or []) == 0 or goal_delta > 0
     return goal_delta > 0

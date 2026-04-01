@@ -21,6 +21,10 @@ _dispatcher = ExperimentDispatcher()
 async def ws_continuous(websocket: WebSocket):
     await handle_ws(websocket, _dispatcher, "continuous/trail")
 
+@app.websocket("/continuous/coverage")
+async def ws_continuous_coverage(websocket: WebSocket):
+    await handle_ws(websocket, _dispatcher, "continuous/coverage")
+
 # @app.websocket("/continuous/patrol")
 # async def ws_continuous(websocket: WebSocket):
 #     await handle_ws(websocket, _camar)

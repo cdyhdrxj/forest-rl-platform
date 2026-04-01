@@ -187,6 +187,54 @@
               "null"
             ]
           },
+          "missed_area_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "return_error_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "path_length_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "task_time_sec_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "transition_count_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "repeat_coverage_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "angular_work_rad_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "compute_time_sec_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "episode_steps_mean": {
             "type": [
               "number",
@@ -262,6 +310,12 @@
               "null"
             ]
           },
+          "success": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "algorithm_code": {
             "type": [
               "string",
@@ -305,6 +359,60 @@
             ]
           },
           "coverage_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "missed_area_ratio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "return_to_start_success": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "return_error": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "path_length": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "task_time_sec": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "transition_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "repeat_coverage_ratio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "angular_work_rad": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "compute_time_sec": {
             "type": [
               "number",
               "null"
@@ -364,4 +472,3 @@
     }
   }
 }
-

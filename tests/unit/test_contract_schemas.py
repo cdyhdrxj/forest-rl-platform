@@ -340,3 +340,42 @@ def test_scientific_report_payload_conforms_to_contract():
     }
 
     _assert_valid("scientific_report.schema.json", payload)
+
+
+def test_replay_payload_with_coverage_state_conforms_to_contract():
+    payload = {
+        "timestamp": "2026-04-01T18:00:00Z",
+        "route_key": "continuous/coverage",
+        "state": {
+            "running": False,
+            "mode": "coverage",
+            "episode": 1,
+            "step": 8,
+            "total_reward": 0.0,
+            "last_episode_reward": 12.5,
+            "new_episode": True,
+            "agent_pos": [[5.0, 0.0]],
+            "goal_pos": [],
+            "landmark_pos": [[3.0, 4.0]],
+            "trajectory": [[5.0, 0.0], [5.0, 1.0]],
+            "goal_count": 6,
+            "collision_count": 0,
+            "terrain_map": [[0.0, 1.0], [0.0, 0.0]],
+            "coverage_ratio": 1.0,
+            "missed_area_ratio": 0.0,
+            "return_to_start_success": True,
+            "return_error": 0.0,
+            "path_length": 42.0,
+            "task_time_sec": 1.3,
+            "transition_count": 5,
+            "repeat_coverage_ratio": 0.1,
+            "angular_work_rad": 3.14,
+            "compute_time_sec": 0.05,
+            "remaining_rows": 0,
+            "success": True,
+            "coverage_target_map": [[1.0, 0.0], [0.0, 1.0]],
+            "covered_map": [[1.0, 0.0], [0.0, 1.0]]
+        }
+    }
+
+    _assert_valid("replay.schema.json", payload)
