@@ -17,3 +17,4 @@ class User(Base):
     owned_projects = relationship("Project", back_populates="owner", foreign_keys="Project.owner_user_id")
     created_scenarios = relationship("Scenario", back_populates="creator", foreign_keys="Scenario.created_by_user_id")
     created_runs = relationship("Run", back_populates="creator", foreign_keys="Run.created_by_user_id")
+    created_suites = relationship("ExperimentSuite", back_populates="creator", foreign_keys="ExperimentSuite.created_by_user_id")
