@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from threading import RLock
+import time
 from typing import Any, Callable
 import shutil
 
 from sqlalchemy import func
 
+from apps.api.run_exports import build_run_result_payload, export_run_bundle
 from apps.api.runtime_monitor import RunObserver, write_service_log
 from packages.db.models.algorithm import Algorithm
 from packages.db.models.artifact import Artifact
@@ -587,6 +589,29 @@ class ExperimentDispatcher:
         if session.last_error:
             state["error"] = session.last_error
         return state
+
+    def wait_run(
+        self,
+        run_id: int,
+        *,
+        poll_interval: float = 0.1,
+        timeout_sec: float = 300.0,
+    ) -> dict[str, Any]:
+        session = self.load_run(run_id)
+        deadline = time.time() + max(0.0, float(timeout_sec))
+        while True:
+            state = self.get_state(session.route.route_key, run_id)
+            if state.get("execution_phase") in {"finished", "failed", "cancelled", "stopped"}:
+                return state
+            if time.time() >= deadline:
+                raise TimeoutError(f"Run '{run_id}' did not finish within {timeout_sec} seconds")
+            time.sleep(max(0.01, float(poll_interval)))
+
+    def get_run_result(self, run_id: int) -> dict[str, Any]:
+        return build_run_result_payload(run_id)
+
+    def export_run_bundle(self, run_id: int) -> dict[str, str]:
+        return export_run_bundle(run_id)
 
     def _get_route(self, route_key: str) -> RuntimeRoute:
         try:

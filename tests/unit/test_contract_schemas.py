@@ -205,3 +205,138 @@ def test_episode_log_payload_conforms_to_contract():
     }
 
     _assert_valid("episode_log.schema.json", payload)
+
+
+def test_scientific_suite_config_conforms_to_contract():
+    payload = {
+        "suite_code": "trail-smoke-suite",
+        "title": "Three-D Trail Scientific Smoke Suite",
+        "route_key": "threed/trail",
+        "task_kind": "trail",
+        "environment_kind": "simulator_3d",
+        "report_dir": "data/scientific/suites",
+        "seed": 101,
+        "scenarios": [
+            {
+                "family": "smoke",
+                "split": "test",
+                "count": 1,
+                "generation_params": {
+                    "preview_size": 12,
+                    "tree_density": 0.25
+                },
+                "evaluation_params": {
+                    "max_steps": 12,
+                    "tick_sleep": 0.001
+                }
+            }
+        ],
+        "methods": [
+            {
+                "code": "ppo",
+                "algorithm": "ppo",
+                "enabled": True,
+                "repeats": 1,
+                "start_params": {
+                    "max_steps": 12
+                },
+                "role": "eval"
+            }
+        ],
+        "report": {
+            "formats": ["json", "csv", "html"],
+            "representative_runs_per_method": 1,
+            "save_trajectory_plots": True,
+            "save_distribution_plots": True
+        }
+    }
+
+    _assert_valid("scientific_suite.schema.json", payload)
+
+
+def test_scientific_report_payload_conforms_to_contract():
+    payload = {
+        "generated_at": "2026-04-01T18:00:00Z",
+        "suite": {
+            "suite_id": 1,
+            "suite_code": "trail-smoke-suite",
+            "title": "Three-D Trail Scientific Smoke Suite",
+            "route_key": "threed/trail",
+            "mode": "trail",
+            "status": "finished",
+            "started_at": "2026-04-01T18:00:00Z",
+            "finished_at": "2026-04-01T18:00:10Z"
+        },
+        "config": {
+            "suite_code": "trail-smoke-suite"
+        },
+        "overview": {
+            "total_runs": 1,
+            "methods": ["ppo"],
+            "scenario_families": ["smoke"],
+            "splits": ["test"],
+            "status_counts": {
+                "finished": 1
+            }
+        },
+        "aggregates": [
+            {
+                "method_code": "ppo",
+                "runs_count": 1,
+                "finished_runs_count": 1,
+                "scenario_families": ["smoke"],
+                "splits": ["test"],
+                "duration_sec_mean": 1.2,
+                "duration_sec_std": 0.0,
+                "episode_success_rate_mean": 1.0,
+                "episode_reward_mean": 10.0,
+                "episode_reward_median": 10.0,
+                "episode_reward_min": 10.0,
+                "episode_reward_max": 10.0,
+                "coverage_ratio_mean": 0.75,
+                "episode_steps_mean": 8.0,
+                "status_counts": {
+                    "finished": 1
+                }
+            }
+        ],
+        "runs": [
+            {
+                "run_id": 12,
+                "scenario_family": "smoke",
+                "dataset_split": "test",
+                "method_code": "ppo",
+                "replicate_index": 1,
+                "role": "eval",
+                "train_seed": 1101,
+                "eval_seed": 1001101,
+                "group_key": "smoke:test:sv4:ppo:r1",
+                "status": "finished",
+                "algorithm_code": "ppo_trail",
+                "duration_sec": 1.2,
+                "episodes_count": 1,
+                "episode_success_rate": 1.0,
+                "episode_reward_mean": 10.0,
+                "episode_reward_median": 10.0,
+                "episode_steps_mean": 8.0,
+                "coverage_ratio_mean": 0.75,
+                "run_result_path": "data/runs/run_12/exports/run_result.json",
+                "metrics_export_path": "data/runs/run_12/exports/metrics_export.json",
+                "episode_log_path": "data/runs/run_12/exports/episode_log.json",
+                "trajectory_path": "data/scientific/suites/trail-smoke-suite/trajectories/run_12/trajectory.svg",
+                "config_json": {
+                    "route_key": "threed/trail"
+                }
+            }
+        ],
+        "artifacts": {
+            "plots": [
+                "plots/reward_by_method.svg"
+            ],
+            "trajectories": [
+                "trajectories/smoke_test_ppo_run_12/trajectory.svg"
+            ]
+        }
+    }
+
+    _assert_valid("scientific_report.schema.json", payload)
