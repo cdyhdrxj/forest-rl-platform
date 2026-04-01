@@ -17,6 +17,7 @@ class TaskKind(str, Enum):
     TRAIL = "trail"
     PATROL = "patrol"
     REFORESTATION = "reforestation"
+    COVERAGE = "coverage"
     ROBOT = "robot"
 
 
