@@ -7,6 +7,10 @@
 - `docs/architecture/forestrl_platform_architecture.drawio`
 - `docs/architecture/forestrl_platform_architecture.jpg`
 
+Целевое ТЗ на отдельный scientific mode для пакетных экспериментов и отчетности вынесено в:
+
+- `docs/experiments/scientific_mode_tz.md`
+
 ## Основные компоненты
 
 ### Веб-клиент
