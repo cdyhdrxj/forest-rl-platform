@@ -123,3 +123,27 @@ def test_continuous_coverage_generation_produces_valid_layout():
     assert free_mask[home_x, home_y] == 1
     assert len(layout["row_paths"]) == 7
     assert scenario.validation_passed is True
+
+
+def test_continuous_coverage_family_preset_applies_split_and_field_profile():
+    service = get_default_environment_generation_service()
+    scenario = service.generate(
+        build_continuous_coverage_request(
+            {
+                "seed": 43,
+                "family": "S4",
+                "split": "test",
+            }
+        )
+    )
+
+    layout = extract_coverage_runtime_layout(scenario)
+
+    assert scenario.effective_params["family"] == "S4"
+    assert scenario.effective_params["split"] == "test"
+    assert scenario.effective_params["field_profile"] == "concave"
+    assert layout["field_mask"].shape == (36, 36)
+    assert 8 <= int(layout["row_count"]) <= 12
+    assert layout["split"] == "test"
+    assert layout["family"] == "S4"
+    assert scenario.validation_passed is True

@@ -16,6 +16,7 @@ from packages.db.models.experiment_suite import ExperimentSuite
 from packages.db.models.experiment_suite_run import ExperimentSuiteRun
 from packages.db.models.user import User
 from packages.db.session import db_session
+from services.agrocare_coverage.families import normalize_coverage_family, resolve_coverage_family_params
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,12 +85,16 @@ class ExperimentSuiteOrchestrator:
 
     def _execute_suite(self, suite_id: int, config: ScientificSuiteConfig) -> None:
         enabled_methods = [method for method in config.methods if method.enabled]
-        for scenario_index, scenario in enumerate(config.scenarios):
+        expanded_scenarios = config.expanded_scenarios()
+        for scenario_index, scenario in enumerate(expanded_scenarios):
             base_seed = self._scenario_seed_base(config, scenario_index, scenario)
-            for item_index in range(scenario.count):
+            for item_index in range(scenario.effective_count):
                 scenario_seed = base_seed + item_index
-                generation_params = dict(scenario.generation_params)
-                generation_params.setdefault("seed", scenario_seed)
+                generation_params = self._build_generation_params(
+                    config=config,
+                    scenario=scenario,
+                    scenario_seed=scenario_seed,
+                )
 
                 base_session = self.dispatcher.generate_and_load(config.route_key, generation_params)
                 scenario_version_id = int(base_session.scenario_version_id)
@@ -97,7 +102,7 @@ class ExperimentSuiteOrchestrator:
 
                 try:
                     for method_index, method in enumerate(enabled_methods):
-                        for replicate_index in range(1, method.repeats + 1):
+                        for replicate_index in range(1, method.effective_repeats + 1):
                             handle = self._build_suite_run_handle(
                                 scenario=scenario,
                                 scenario_seed=scenario_seed,
@@ -150,7 +155,7 @@ class ExperimentSuiteOrchestrator:
         eval_seed: int,
     ) -> dict[str, Any]:
         params = dict(scenario.evaluation_params)
-        params.update(dict(method.start_params))
+        params.update(method.effective_start_params)
         params["algorithm"] = method.effective_algorithm
         params.setdefault("seed", train_seed)
         params.setdefault("train_seed", train_seed)
@@ -170,16 +175,16 @@ class ExperimentSuiteOrchestrator:
         train_seed = scenario_seed * 100 + method_index * 10 + replicate_index
         eval_seed = train_seed + 1_000_000
         group_key = (
-            f"{scenario.family}:{scenario.split}:sv{scenario_version_id}:{method.code}:r{replicate_index}"
+            f"{scenario.family}:{scenario.effective_split}:sv{scenario_version_id}:{method.code}:r{replicate_index}"
         )
         return SuiteRunHandle(
             run_id=0,
             scenario_version_id=scenario_version_id,
             scenario_family=scenario.family,
-            dataset_split=scenario.split,
+            dataset_split=scenario.effective_split,
             method_code=method.code,
             replicate_index=replicate_index,
-            role=method.role,
+            role=method.effective_role,
             train_seed=train_seed,
             eval_seed=eval_seed,
             group_key=group_key,
@@ -194,6 +199,21 @@ class ExperimentSuiteOrchestrator:
         if scenario.seed_start is not None:
             return int(scenario.seed_start)
         return int(config.seed) + scenario_index * 10_000
+
+    @staticmethod
+    def _build_generation_params(
+        *,
+        config: ScientificSuiteConfig,
+        scenario: ScientificScenarioConfig,
+        scenario_seed: int,
+    ) -> dict[str, Any]:
+        params = dict(scenario.generation_params)
+        if config.route_key == "continuous/coverage":
+            params = resolve_coverage_family_params(scenario.family, params)
+        params.setdefault("family", normalize_coverage_family(scenario.family))
+        params.setdefault("split", scenario.effective_split)
+        params.setdefault("seed", scenario_seed)
+        return params
 
     def _create_suite(self, config: ScientificSuiteConfig) -> int:
         route = self.dispatcher.routes.get(config.route_key)

@@ -126,6 +126,8 @@ class AgrocareCoverageService(SB3Trainer):
             messages.append("Coverage runtime requires coverage runtime context")
         if scenario.get_layer_data("coverage_mask") is None:
             messages.append("Coverage runtime requires a coverage_mask layer")
+        if scenario.get_layer_data("field_mask") is None:
+            messages.append("Coverage runtime requires a field_mask layer")
         if scenario.get_layer_data("obstacle_mask") is None:
             messages.append("Coverage runtime requires an obstacle_mask layer")
         if runtime_config is None:
@@ -204,4 +206,3 @@ class AgrocareCoverageService(SB3Trainer):
             else None
         )
         self.training_state.row_completion = list(layout.get("row_completion_template") or [])
-

@@ -254,6 +254,63 @@ def test_scientific_suite_config_conforms_to_contract():
     _assert_valid("scientific_suite.schema.json", payload)
 
 
+def test_scientific_suite_paper_config_conforms_to_contract():
+    payload = {
+        "suite_code": "agrocare-paper-v1",
+        "title": "Agrocare coverage benchmark S1-S4",
+        "route_key": "continuous/coverage",
+        "task_kind": "coverage",
+        "environment_kind": "continuous_2d",
+        "report_dir": "data/scientific/suites",
+        "seed": 20260401,
+        "scenarios": [
+            {
+                "family": "S1",
+                "train_count": 300,
+                "val_count": 100,
+                "test_count": 150,
+                "generation_params": {
+                    "row_count_range": [8, 12],
+                    "curvature_level": "low",
+                    "obstacle_count_range": [0, 0]
+                }
+            }
+        ],
+        "methods": [
+            {
+                "code": "greedy_nearest",
+                "algorithm": "greedy_nearest",
+                "kind": "baseline",
+                "enabled": True,
+                "start_params": {
+                    "tick_sleep": 0.0
+                }
+            },
+            {
+                "code": "sac",
+                "algorithm": "sac",
+                "kind": "rl",
+                "enabled": True,
+                "training": {
+                    "repeats": 5,
+                    "total_timesteps": 500000
+                },
+                "evaluation": {
+                    "deterministic": True
+                }
+            }
+        ],
+        "report": {
+            "formats": ["json", "csv", "html"],
+            "representative_runs_per_method": 3,
+            "save_trajectory_plots": True,
+            "save_distribution_plots": True
+        }
+    }
+
+    _assert_valid("scientific_suite.schema.json", payload)
+
+
 def test_scientific_report_payload_conforms_to_contract():
     payload = {
         "generated_at": "2026-04-01T18:00:00Z",

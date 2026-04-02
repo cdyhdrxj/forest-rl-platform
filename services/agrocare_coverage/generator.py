@@ -5,6 +5,7 @@ from typing import Any
 
 import numpy as np
 
+from services.agrocare_coverage.families import normalize_coverage_family
 from services.agrocare_coverage.models import CoverageEnvConfig
 from services.agrocare_coverage.renderer import build_preview_payload
 from services.scenario_generator.models import GeneratedLayer, GeneratedScenario
@@ -24,7 +25,8 @@ def generate_coverage_layout(config: CoverageEnvConfig) -> dict[str, Any]:
 
     terrain = rng.random((size, size), dtype=np.float32) * 0.15
     obstacle_mask = np.zeros((size, size), dtype=np.float32)
-    free_mask = np.ones((size, size), dtype=np.float32)
+    field_mask = _build_field_mask(size, str(config.field_profile), rng)
+    free_mask = field_mask.astype(np.float32).copy()
     coverage_mask = np.zeros((size, size), dtype=np.float32)
     gap_mask = np.zeros((size, size), dtype=np.float32)
     row_id_map = np.full((size, size), -1, dtype=np.int32)
@@ -43,12 +45,15 @@ def generate_coverage_layout(config: CoverageEnvConfig) -> dict[str, Any]:
             row = int(np.clip(row, 1, size - 2))
             raw_points.append((row, col))
 
-        row_path = _deduplicate_points(_densify_polyline(raw_points))
+        row_path = _clip_row_path_to_field(
+            _deduplicate_points(_densify_polyline(raw_points)),
+            field_mask,
+        )
         for cell in row_path:
             path_buffer.add(tuple(cell))
         row_paths.append([[int(x), int(y)] for x, y in row_path])
 
-    for obstacle_cells in _sample_obstacles(rng, config, size, path_buffer):
+    for obstacle_cells in _sample_obstacles(rng, config, size, path_buffer, field_mask):
         for x, y in obstacle_cells:
             obstacle_mask[x, y] = 1.0
             free_mask[x, y] = 0.0
@@ -84,6 +89,7 @@ def generate_coverage_layout(config: CoverageEnvConfig) -> dict[str, Any]:
         "grid_size": size,
         "row_count": row_count,
         "terrain": terrain.astype(np.float32),
+        "field_mask": field_mask.astype(np.float32),
         "free_mask": free_mask.astype(np.float32),
         "coverage_mask": coverage_mask.astype(np.float32),
         "gap_mask": gap_mask.astype(np.float32),
@@ -115,18 +121,23 @@ def apply_coverage_layout_to_scenario(
             "grid_size": config.grid_size,
             "row_count": config.row_count,
             "curvature_level": config.curvature_level,
+            "field_profile": config.field_profile,
             "gap_probability": config.gap_probability,
             "obstacle_count": config.obstacle_count,
             "max_steps": config.max_steps,
         }
     )
     if family:
-        scenario.effective_params["family"] = family
+        normalized_family = normalize_coverage_family(family)
+        scenario.effective_params["family"] = normalized_family
+        layout["family"] = normalized_family
     if split:
         scenario.effective_params["split"] = split
+        layout["split"] = str(split)
 
     scenario.runtime_context["coverage"] = layout
     scenario.preview_payload = preview_payload
+    scenario.add_layer(GeneratedLayer("field_mask", "field_mask", layout["field_mask"], description="Traversable field area"))
     scenario.add_layer(GeneratedLayer("coverage_mask", "coverage_mask", layout["coverage_mask"], description="Cells to cover"))
     scenario.add_layer(GeneratedLayer("gap_mask", "gap_mask", layout["gap_mask"], description="Coverage gaps"))
     scenario.add_layer(GeneratedLayer("obstacle_mask", "obstacle_mask", layout["obstacle_mask"], description="Internal obstacles"))
@@ -147,6 +158,7 @@ def build_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) ->
         "grid_size": effective.get("grid_size", params.get("grid_size", 32)),
         "row_count": effective.get("row_count", params.get("row_count", 8)),
         "curvature_level": effective.get("curvature_level", params.get("curvature_level", "low")),
+        "field_profile": effective.get("field_profile", params.get("field_profile", "simple")),
         "gap_probability": effective.get("gap_probability", params.get("gap_probability", 0.0)),
         "obstacle_count": effective.get("obstacle_count", params.get("obstacle_count", 0)),
         "max_steps": effective.get("max_steps", params.get("max_steps", 24)),
@@ -179,6 +191,7 @@ def _sample_obstacles(
     config: CoverageEnvConfig,
     size: int,
     protected_cells: set[tuple[int, int]],
+    field_mask: np.ndarray,
 ) -> list[list[tuple[int, int]]]:
     obstacles: list[list[tuple[int, int]]] = []
     attempts = 0
@@ -193,6 +206,9 @@ def _sample_obstacles(
             for y in range(max(1, center_y - radius), min(size - 1, center_y + radius + 1)):
                 if (x - center_x) ** 2 + (y - center_y) ** 2 > radius ** 2:
                     continue
+                if field_mask[x, y] != 1:
+                    overlap = True
+                    break
                 cells.append((x, y))
                 if any((nx, ny) in protected_cells for nx, ny in _neighbors_with_margin(x, y)):
                     overlap = True
@@ -277,3 +293,71 @@ def _neighbors_with_margin(x: int, y: int) -> list[tuple[int, int]]:
         for dy in (-1, 0, 1)
     ]
 
+
+def _build_field_mask(
+    size: int,
+    field_profile: str,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    field_mask = np.zeros((size, size), dtype=np.float32)
+    profile = str(field_profile or "simple")
+
+    for col in range(1, size - 1):
+        if profile == "tapered":
+            taper = abs(col - (size - 1) / 2.0) / max(1.0, size / 2.0)
+            inset = int(round(1 + 2 * taper))
+            top = inset
+            bottom = size - inset - 1
+        elif profile == "concave":
+            phase = 2.0 * np.pi * col / max(size - 2, 1)
+            pinch = int(round((np.sin(phase) ** 2) * max(2.0, size * 0.08)))
+            waviness = int(round(np.sin(phase * 0.5 + 0.35) * max(1.0, size * 0.04)))
+            top = max(1, 1 + pinch + waviness)
+            bottom = min(size - 2, size - 2 - pinch + waviness)
+            if bottom - top < 5:
+                center = size // 2
+                top = max(1, center - 3)
+                bottom = min(size - 2, center + 3)
+        else:
+            top = 1
+            bottom = size - 2
+
+        field_mask[top:bottom + 1, col] = 1.0
+
+    if int(np.count_nonzero(field_mask)) == 0:
+        field_mask[1:size - 1, 1:size - 1] = 1.0
+
+    return field_mask
+
+
+def _clip_row_path_to_field(
+    points: list[tuple[int, int]],
+    field_mask: np.ndarray,
+) -> list[tuple[int, int]]:
+    if not points:
+        return []
+
+    segments: list[list[tuple[int, int]]] = []
+    current: list[tuple[int, int]] = []
+    previous_col: int | None = None
+
+    for x, y in points:
+        if field_mask[x, y] != 1:
+            if current:
+                segments.append(current)
+                current = []
+            previous_col = None
+            continue
+        if previous_col is not None and y - previous_col > 1:
+            if current:
+                segments.append(current)
+            current = []
+        current.append((x, y))
+        previous_col = y
+
+    if current:
+        segments.append(current)
+
+    if not segments:
+        return []
+    return max(segments, key=len)
