@@ -13,18 +13,27 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from services.patrol_planning.assets.envs.environment import GridWorld
+from services.patrol_planning.assets.envs.forest import GridForest
+from services.patrol_planning.assets.envs.models import GridForestConfig
 
 from services.patrol_planning.src.renderer_extended import GridWorldRendererExt
 
-from services.patrol_planning.assets.envs.models import GridWorldConfig
-#Загружаем конфиг среды
-with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
+
+#GridWorld
+# with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
+#     data = json.load(f)
+
+#GridForest
+with open("services/patrol_planning/learning/configs/FOREST_DEFAULT.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
-config = GridWorldConfig.model_validate(data)
 
-env = GridWorld.load(config)
+# config = GridWorldConfig.model_validate(data)
+config = GridForestConfig.model_validate(data)
 
+
+# env = GridWorld.load(config)
+env = GridForest.load(config)
 
 from stable_baselines3 import PPO
 
@@ -36,7 +45,7 @@ obs, _ = env.reset()
 #Рендер движок
 renderer = GridWorldRendererExt(env)
 env.renderer = renderer
-env.render_time_sleep = 0.5
+env.render_time_sleep = 0.2
 
 
 #Случайное управление
@@ -50,7 +59,8 @@ env.render_time_sleep = 0.5
 
 
 ##Обученное  + боты
-model = PPO.load("services/patrol_planning/learning/models/ppo_gridworld_agent_1")
+#model = PPO.load("services/patrol_planning/learning/models/ppo_gridworld_agent_1")
+model = PPO.load("services/patrol_planning/learning/models/ppo_forest_agent_1")
 
 with renderer.live:
     while True:

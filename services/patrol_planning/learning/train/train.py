@@ -13,10 +13,11 @@ if PROJECT_ROOT not in sys.path:
 
 
 from services.patrol_planning.assets.envs.environment import GridWorld
+from services.patrol_planning.assets.envs.forest import GridForest
 from services.patrol_planning.src.renderer_extended import GridWorldRendererExt
 
 from services.patrol_planning.service.models import GridWorldTrainState
-from services.patrol_planning.assets.envs.models import GridWorldConfig
+from services.patrol_planning.assets.envs.models import GridWorldConfig, GridForestConfig
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
@@ -30,23 +31,28 @@ from stable_baselines3.common.env_util import make_vec_env
 #     f.write(GW_STATE_DEFAULT.model_dump_json(indent=2))
 
 
-# Загружаем конфиг среды
+# GridWorld
 with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
+    grid_world_data = json.load(f)
 
-config = GridWorldConfig.model_validate(data)
+#Grid_Forest
+with open("services/patrol_planning/learning/configs/FOREST_DEFAULT.json", "r", encoding="utf-8") as f:
+    grid_forest_data = json.load(f)
 
 
-env = GridWorld.load(config)
+config = GridForestConfig.model_validate(grid_forest_data)
+
+
+env = GridForest.load(config)
 # Рендер движок
-renderer = GridWorldRendererExt(env)
+renderer = GridWorldRendererExt(env, True, "value")
 
 #Для регистрации состояния
 st = GridWorldTrainState()
 env.train_state = st
 # Для визуализации обучения - расскомментировать
-env.renderer = renderer
-env.render_time_sleep = 1.0
+# env.renderer = renderer
+# env.render_time_sleep = 0.5
 
 
 # Проверка reset
@@ -63,7 +69,7 @@ model = PPO(
 
 # Обучение
 with renderer.live:  # чтобы видеть в реальном времени
-    model.learn(total_timesteps=10000)
+    model.learn(total_timesteps=100000)
     
 #Сохранение модели
-model.save("services/patrol_planning/learning/models/ppo_gridworld_agent_1")
+model.save("services/patrol_planning/learning/models/ppo_forest_agent_1")
