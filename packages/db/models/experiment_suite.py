@@ -2,13 +2,13 @@ from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class ExperimentSuite(Base):
     __tablename__ = "experiment_suites"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     code = Column(String(120), nullable=False, unique=True)
     title = Column(String(255), nullable=False)
     route_key = Column(String(100), nullable=False)

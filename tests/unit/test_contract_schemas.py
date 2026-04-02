@@ -339,6 +339,8 @@ def test_scientific_report_payload_conforms_to_contract():
         "aggregates": [
             {
                 "method_code": "ppo",
+                "role": "eval",
+                "dataset_split": "test",
                 "runs_count": 1,
                 "finished_runs_count": 1,
                 "scenario_families": ["smoke"],
@@ -377,6 +379,13 @@ def test_scientific_report_payload_conforms_to_contract():
                 "episode_reward_median": 10.0,
                 "episode_steps_mean": 8.0,
                 "coverage_ratio_mean": 0.75,
+                "protocol_phase": "test_eval",
+                "checkpoint_in_path": "data/scientific/suites/trail-smoke-suite/checkpoints/smoke/ppo/best.zip",
+                "checkpoint_out_path": None,
+                "source_train_run_id": 10,
+                "checkpoint_paths": [
+                    "data/scientific/suites/trail-smoke-suite/checkpoints/smoke/ppo/best.zip"
+                ],
                 "run_result_path": "data/runs/run_12/exports/run_result.json",
                 "metrics_export_path": "data/runs/run_12/exports/metrics_export.json",
                 "episode_log_path": "data/runs/run_12/exports/episode_log.json",

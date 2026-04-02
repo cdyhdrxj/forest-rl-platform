@@ -2,13 +2,13 @@ from sqlalchemy import Column, BigInteger, String, Integer, Boolean, Text, Forei
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class Model(Base):
     __tablename__ = 'models'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     run_id = Column(BigInteger, ForeignKey('runs.id'), nullable=False)
     name = Column(String(255), nullable=False)
     framework = Column(String(100), nullable=False)

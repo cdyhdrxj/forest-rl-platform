@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey, TIMESTAM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class ExperimentSuiteRun(Base):
@@ -11,7 +11,7 @@ class ExperimentSuiteRun(Base):
         UniqueConstraint("suite_id", "run_id", name="uix_suite_run"),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     suite_id = Column(BigInteger, ForeignKey("experiment_suites.id"), nullable=False)
     run_id = Column(BigInteger, ForeignKey("runs.id"), nullable=False)
     scenario_family = Column(String(100), nullable=False)

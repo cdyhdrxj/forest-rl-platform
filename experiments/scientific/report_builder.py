@@ -175,6 +175,11 @@ def _build_run_row(suite_run: ExperimentSuiteRun) -> dict[str, Any]:
         "repeat_coverage_ratio": run_result.get("repeat_coverage_ratio"),
         "angular_work_rad": run_result.get("angular_work_rad"),
         "compute_time_sec": run_result.get("compute_time_sec"),
+        "protocol_phase": run_result.get("protocol_phase"),
+        "checkpoint_in_path": run_result.get("checkpoint_in_path"),
+        "checkpoint_out_path": run_result.get("checkpoint_out_path"),
+        "source_train_run_id": run_result.get("source_train_run_id"),
+        "checkpoint_paths": run_result.get("checkpoint_paths") or [],
         "run_result_path": bundle.get("run_result_path"),
         "metrics_export_path": bundle.get("metrics_path"),
         "episode_log_path": bundle.get("episode_log_path"),
@@ -185,16 +190,19 @@ def _build_run_row(suite_run: ExperimentSuiteRun) -> dict[str, Any]:
 
 
 def _aggregate_runs(run_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    by_method: dict[str, list[dict[str, Any]]] = {}
+    by_method: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     for row in run_rows:
-        by_method.setdefault(row["method_code"], []).append(row)
+        key = (row["method_code"], row["role"], row["dataset_split"])
+        by_method.setdefault(key, []).append(row)
 
     aggregates = []
-    for method_code, rows in sorted(by_method.items()):
+    for (method_code, role, dataset_split), rows in sorted(by_method.items()):
         finished_rows = [row for row in rows if row.get("status") == "finished"]
         aggregates.append(
             {
                 "method_code": method_code,
+                "role": role,
+                "dataset_split": dataset_split,
                 "runs_count": len(rows),
                 "finished_runs_count": len(finished_rows),
                 "scenario_families": sorted({row["scenario_family"] for row in rows}),
@@ -224,10 +232,11 @@ def _aggregate_runs(run_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _render_plot_set(aggregates: list[dict[str, Any]], plots_dir: Path) -> list[Path]:
     paths: list[Path] = []
+    plot_groups = [item for item in aggregates if item.get("role") != "train"]
 
     reward_values = [
-        (item["method_code"], item.get("episode_reward_mean"))
-        for item in aggregates
+        (_plot_label(item), item.get("episode_reward_mean"))
+        for item in plot_groups
     ]
     if any(value is not None for _, value in reward_values):
         reward_path = plots_dir / "reward_by_method.svg"
@@ -240,8 +249,8 @@ def _render_plot_set(aggregates: list[dict[str, Any]], plots_dir: Path) -> list[
         paths.append(reward_path)
 
     success_values = [
-        (item["method_code"], item.get("episode_success_rate_mean"))
-        for item in aggregates
+        (_plot_label(item), item.get("episode_success_rate_mean"))
+        for item in plot_groups
     ]
     if any(value is not None for _, value in success_values):
         success_path = plots_dir / "success_rate_by_method.svg"
@@ -268,12 +277,15 @@ def _render_representative_runs(
     selected_paths: list[Path] = []
     by_method: dict[str, list[dict[str, Any]]] = {}
     for row in run_rows:
+        if row.get("role") == "train":
+            continue
         by_method.setdefault(row["method_code"], []).append(row)
 
     for method_code, rows in sorted(by_method.items()):
         ranked = sorted(
             rows,
             key=lambda row: (
+                0 if row.get("dataset_split") == "test" else 1,
                 0 if row.get("status") == "finished" else 1,
                 -(row.get("episode_success_rate") or 0.0),
                 -(row.get("episode_reward_mean") or 0.0),
@@ -325,6 +337,10 @@ def _write_summary_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "repeat_coverage_ratio",
         "angular_work_rad",
         "compute_time_sec",
+        "protocol_phase",
+        "checkpoint_in_path",
+        "checkpoint_out_path",
+        "source_train_run_id",
         "run_result_path",
         "metrics_export_path",
         "episode_log_path",
@@ -517,6 +533,12 @@ def _status_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
         key = str(row.get("status") or "unknown")
         counts[key] = counts.get(key, 0) + 1
     return counts
+
+
+def _plot_label(row: dict[str, Any]) -> str:
+    role = str(row.get("role") or "")
+    split = str(row.get("dataset_split") or "")
+    return ":".join(part for part in [str(row.get("method_code") or ""), role, split] if part)
 
 
 def _relative_name(path: Path, root: Path) -> str:

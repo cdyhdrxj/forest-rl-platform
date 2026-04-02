@@ -121,6 +121,18 @@
           "method_code": {
             "type": "string"
           },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dataset_split": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "runs_count": {
             "type": "integer"
           },
@@ -417,6 +429,36 @@
               "number",
               "null"
             ]
+          },
+          "protocol_phase": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checkpoint_in_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checkpoint_out_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_train_run_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "checkpoint_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "run_result_path": {
             "type": [

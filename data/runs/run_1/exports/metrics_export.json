@@ -1,0 +1,357 @@
+{
+  "run_id": 1,
+  "route_key": "continuous/coverage",
+  "exported_at": "2026-04-02T06:45:14.252731Z",
+  "series": [
+    {
+      "name": "step",
+      "unit": "steps",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for step",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.845757,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "total_reward",
+      "unit": "reward",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for total_reward",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8487847,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "goal_count",
+      "unit": "count",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for goal_count",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8517766,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "collision_count",
+      "unit": "count",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for collision_count",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8547816,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "coverage_ratio",
+      "unit": "ratio",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for coverage_ratio",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8567824,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "missed_area_ratio",
+      "unit": "ratio",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for missed_area_ratio",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8594832,
+          "value": 1.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 1.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "return_error",
+      "unit": "distance",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for return_error",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8619084,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "path_length",
+      "unit": "distance",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for path_length",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.864099,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "task_time_sec",
+      "unit": "seconds",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for task_time_sec",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8670564,
+          "value": 5.900010000914335e-05,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 5.900010000914335e-05,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "transition_count",
+      "unit": "count",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for transition_count",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8699298,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "repeat_coverage_ratio",
+      "unit": "ratio",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for repeat_coverage_ratio",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8719661,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "angular_work_rad",
+      "unit": "radians",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for angular_work_rad",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8739667,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "compute_time_sec",
+      "unit": "seconds",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for compute_time_sec",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8759649,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 0.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    },
+    {
+      "name": "remaining_rows",
+      "unit": "count",
+      "aggregation": "snapshot",
+      "source": "dispatcher",
+      "description": "Dispatcher snapshot series for remaining_rows",
+      "points": [
+        {
+          "point_index": 0,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.8779645,
+          "value": 3.0,
+          "created_at": "2026-04-02T06:45:12"
+        },
+        {
+          "point_index": 1,
+          "train_step": 0,
+          "episode_index": null,
+          "wall_time_sec": 1775112312.904969,
+          "value": 3.0,
+          "created_at": "2026-04-02T06:45:12"
+        }
+      ]
+    }
+  ]
+}

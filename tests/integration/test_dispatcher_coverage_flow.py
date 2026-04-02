@@ -7,9 +7,6 @@ import types
 
 
 def _install_sb3_stub() -> None:
-    if "stable_baselines3" in sys.modules:
-        return
-
     sb3 = types.ModuleType("stable_baselines3")
     common = types.ModuleType("stable_baselines3.common")
     env_util = types.ModuleType("stable_baselines3.common.env_util")
@@ -43,6 +40,26 @@ def _install_sb3_stub() -> None:
     sys.modules["stable_baselines3.common"] = common
     sys.modules["stable_baselines3.common.env_util"] = env_util
     sys.modules["stable_baselines3.common.callbacks"] = callbacks
+
+    trainer_module = sys.modules.get("apps.api.sb3.sb3_trainer")
+    if trainer_module is not None:
+        trainer_module.PPO = _Algo
+        trainer_module.SAC = _Algo
+        trainer_module.A2C = _Algo
+        trainer_module.ALGORITHMS = {
+            "ppo": _Algo,
+            "sac": _Algo,
+            "a2c": _Algo,
+        }
+
+    coverage_service_module = sys.modules.get("services.agrocare_coverage.service")
+    if coverage_service_module is not None:
+        coverage_service_module.make_vec_env = env_util.make_vec_env
+        coverage_service_module.ALGORITHMS = {
+            "ppo": _Algo,
+            "sac": _Algo,
+            "a2c": _Algo,
+        }
 
 
 def test_dispatcher_runs_continuous_coverage_baseline_and_persists_runtime(tmp_path):
@@ -112,4 +129,3 @@ def test_dispatcher_runs_continuous_coverage_baseline_and_persists_runtime(tmp_p
         assert db.query(Episode).filter(Episode.run_id == session.run_id).count() >= 1
         assert db.query(MetricSeries).filter(MetricSeries.run_id == session.run_id).count() >= 1
         assert db.query(Replay).filter(Replay.run_id == session.run_id).count() >= 1
-
