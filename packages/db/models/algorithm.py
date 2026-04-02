@@ -2,14 +2,14 @@ from sqlalchemy import Column, BigInteger, String, Text, TIMESTAMP, JSON, Enum a
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 from .enums import AlgorithmFamily, ProjectMode
 
 
 class Algorithm(Base):
     __tablename__ = 'algorithms'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     code = Column(String(100), nullable=False, unique=True)
     name = Column(String(255), nullable=False)
     family = Column(SQLEnum(AlgorithmFamily), nullable=False)

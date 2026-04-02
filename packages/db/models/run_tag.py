@@ -1,7 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class RunTag(Base):
@@ -10,7 +10,7 @@ class RunTag(Base):
         UniqueConstraint('run_id', 'tag', name='uix_run_tag'),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     run_id = Column(BigInteger, ForeignKey('runs.id'), nullable=False)
     tag = Column(String(100), nullable=False)
 

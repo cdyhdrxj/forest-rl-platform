@@ -54,8 +54,6 @@ from services.scenario_generator.storage import (
     store_generated_scenario,
 )
 from services.scenario_generator.validation import report_for_runtime_validation
-from services.simulator_3d import Simulator3DService
-from services.trail_camar.service import CamarService
 
 
 RuntimeServiceFactory = Callable[[], Any]
@@ -92,6 +90,18 @@ class RunSession:
 def _build_patrol_request(params: dict[str, Any]) -> GenerationRequest:
     source = params.get("grid_world_config", params)
     return build_patrol_grid_request(GridWorldConfig.model_validate(source))
+
+
+def _make_continuous_trail_service():
+    from services.trail_camar.service import CamarService
+
+    return CamarService()
+
+
+def _make_simulator_3d_service():
+    from services.simulator_3d import Simulator3DService
+
+    return Simulator3DService()
 
 
 def _build_patrol_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
@@ -158,7 +168,7 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         task_kind=TaskKind.TRAIL,
         project_mode=ProjectMode.trail,
         training_mode="trail",
-        service_factory=CamarService,
+        service_factory=_make_continuous_trail_service,
         request_builder=_build_continuous_request,
         runtime_config_builder=_build_continuous_runtime_config,
     ),
@@ -199,7 +209,7 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         task_kind=TaskKind.TRAIL,
         project_mode=ProjectMode.trail,
         training_mode="trail",
-        service_factory=Simulator3DService,
+        service_factory=_make_simulator_3d_service,
         request_builder=_build_3d_trail_request,
         runtime_config_builder=_build_3d_runtime_config,
     ),
@@ -209,7 +219,7 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         task_kind=TaskKind.PATROL,
         project_mode=ProjectMode.patrol,
         training_mode="patrol",
-        service_factory=Simulator3DService,
+        service_factory=_make_simulator_3d_service,
         request_builder=_build_3d_patrol_request,
         runtime_config_builder=_build_3d_runtime_config,
     ),
@@ -590,7 +600,7 @@ class ExperimentDispatcher:
             execution_phase = "failed"
         elif session.observer is not None and session.observer.final_status is not None:
             execution_phase = session.observer.final_status.value
-        elif session.observer is not None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
+        elif session.observer is not None and session.training_params and not state.get("running") and not session.observer.is_alive():
             execution_phase = "finished"
         elif session.observer is None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
             execution_phase = "stopped"

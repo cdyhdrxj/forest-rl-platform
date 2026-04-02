@@ -100,7 +100,10 @@ class RunObserver:
             return
 
         initial_state = dict(self.service.get_state())
-        self._running_seen = bool(initial_state.get("running"))
+        # The observer is created only after the dispatcher has issued start_run(),
+        # so even ultra-fast runs that already flipped running=False must still
+        # be finalized as completed or failed.
+        self._running_seen = True
         self._bootstrap_from_db(initial_state)
         self._register_replay_artifacts()
         write_service_log(
@@ -263,14 +266,15 @@ class RunObserver:
         if observed_completed <= self._last_completed_local_episode:
             return
 
-        persisted_index = self._global_episode_index(observed_completed)
-        self._upsert_episode(
-            db,
-            episode_index=persisted_index,
-            state=state,
-            complete=True,
-            terminated_by="completed",
-        )
+        for local_episode_index in range(self._last_completed_local_episode + 1, observed_completed + 1):
+            persisted_index = self._global_episode_index(local_episode_index)
+            self._upsert_episode(
+                db,
+                episode_index=persisted_index,
+                state=state,
+                complete=True,
+                terminated_by="completed",
+            )
         self._episode_boundary_step = int(state.get("step") or 0)
         self._episode_boundary_goal_count = int(state.get("goal_count") or 0)
         self._episode_boundary_collision_count = int(state.get("collision_count") or 0)
@@ -377,6 +381,7 @@ class RunObserver:
         if episode is None:
             episode = Episode(run_id=self.run_id, episode_index=episode_index)
             db.add(episode)
+            db.flush()
 
         current_step = int(state.get("step") or 0)
         current_goal_count = int(state.get("goal_count") or 0)

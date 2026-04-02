@@ -187,12 +187,22 @@ def build_run_result_payload(run_id: int) -> dict[str, Any]:
             .order_by(Replay.created_at.desc(), Replay.id.desc())
             .first()
         )
+        checkpoint_artifacts = (
+            db.query(Artifact)
+            .filter(
+                Artifact.run_id == int(run_id),
+                Artifact.artifact_type == ArtifactType.model_checkpoint,
+            )
+            .order_by(Artifact.created_at.asc(), Artifact.id.asc())
+            .all()
+        )
 
         rewards = [episode.reward_total for episode in episodes if episode.reward_total is not None]
         steps = [episode.steps_count for episode in episodes if episode.steps_count is not None]
         coverage_values = [episode.coverage_ratio for episode in episodes if episode.coverage_ratio is not None]
         success_flags = [episode.success for episode in episodes if episode.success is not None]
         last_snapshot = read_last_replay_snapshot(Path(replay.storage_uri)) if replay is not None else None
+        training_params = dict((run.config_json or {}).get("training_params") or {})
 
         duration_sec = None
         if run.started_at is not None and run.finished_at is not None:
@@ -226,6 +236,12 @@ def build_run_result_payload(run_id: int) -> dict[str, Any]:
             "compute_time_sec": (last_snapshot.get("state") or {}).get("compute_time_sec") if isinstance(last_snapshot, dict) else None,
             "final_state": last_snapshot.get("state") if isinstance(last_snapshot, dict) else None,
             "replay_path": replay.storage_uri if replay is not None else None,
+            "protocol_phase": training_params.get("protocol_phase"),
+            "execution_role": training_params.get("execution_role"),
+            "checkpoint_in_path": training_params.get("load_checkpoint_path"),
+            "checkpoint_out_path": training_params.get("save_checkpoint_path"),
+            "source_train_run_id": training_params.get("source_train_run_id"),
+            "checkpoint_paths": [artifact.storage_uri for artifact in checkpoint_artifacts],
             "config_json": run.config_json,
         }
 
