@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://forest-rl-platform.local/contracts/v1/scientific_suite.schema.json",
+  "$id": "https://forest-robot-twin.local/contracts/v1/scientific_suite.schema.json",
   "title": "Scientific Suite Config",
   "type": "object",
   "additionalProperties": false,

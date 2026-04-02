@@ -338,7 +338,7 @@ export default function App() {
           boxShadow: Theme.shadowSm,
         }}
       >
-        <span style={{ fontSize: 14, fontWeight: 700, color: Theme.textPrimary }}>Forest RL</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: Theme.textPrimary }}>ForestRobotTwin</span>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: Theme.textSecond }}>
           <Dot color={executionPhase === "running" ? Theme.green : executionPhase === "failed" ? Theme.red : Theme.border} />
           {bannerLabel}

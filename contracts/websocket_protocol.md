@@ -1,4 +1,4 @@
-# WebSocket-протокол платформы Forest RL
+# WebSocket-протокол платформы ForestRobotTwin
 
 Версия: `v1`
 
