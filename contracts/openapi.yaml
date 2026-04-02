@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: HTTP API платформы Forest RL
+  title: HTTP API платформы ForestRobotTwin
   version: 1.0.0
   description: |
     Этот OpenAPI-документ описывает HTTP-метаданные backend-а.

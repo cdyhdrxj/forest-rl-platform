@@ -1,4 +1,4 @@
-# TODO проекта Forest RL Platform
+# TODO проекта ForestRobotTwin
 
 ## Архитектура
 
