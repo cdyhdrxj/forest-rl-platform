@@ -15,7 +15,8 @@ from services.patrol_planning.assets.observations.obs_box import ObservationBox
 from services.patrol_planning.assets.intruders.wanderer import Wanderer
 from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.patrol_planning.assets.intruders.controllable import Controllable
-
+from services.patrol_planning.assets.intruders.poacher_lite import Poacher
+from services.patrol_planning.service.models import GridWorldTrainState
 # TRAJECTORY_MAX_LEN = 200
 
 #Сеточный мир
@@ -47,12 +48,15 @@ class GridWorld(gym.Env):
         
         #Длина эпизода (в шагах)
         self.max_steps = max_steps
-        self.cur_step = 0
         
         #Передаётся вручную (снаружи)
         self.renderer = None
         self.render_time_sleep = 0.0
         self.train_state: GridWorldTrainState | None = None #В эту pydantic модель каждый шаг пишет среда
+        
+        #Если не задана структура сохранения данных обучения, создаём её вручную. Если класс используется внутри сервиса, то сервис перезапишет на свою модель.
+        if not self.train_state:
+            self.train_state = GridWorldTrainState()
         
     def reset(self, seed=None, options=None):
 
@@ -60,11 +64,14 @@ class GridWorld(gym.Env):
 
         #Сброс сеточного мира
         #TODO
-        self.word_layers = {  
-            "terrain": np.zeros((self.grid_world_size,self.grid_world_size)),
-            "intruders": np.zeros((self.grid_world_size,self.grid_world_size))
-        }
-        
+        # self.word_layers = {  
+        #     "terrain": np.zeros((self.grid_world_size,self.grid_world_size)),
+        #     "intruders": np.zeros((self.grid_world_size,self.grid_world_size))
+        # }
+        #Сбрасываем только известные слои, чтобы не удалить слои дочерних классов
+        self.word_layers["terrain"] = np.zeros((self.grid_world_size,self.grid_world_size))
+        self.word_layers["intruders"] = np.zeros((self.grid_world_size,self.grid_world_size))
+
         #Сброс агента
         self.agent.reset(self)
         
@@ -81,17 +88,32 @@ class GridWorld(gym.Env):
         return observation, info
 
     def step(self, action):
-
+        obs_reward = 0.0
+        
+        reward = 0 #Награда за этот шаг
+        
         #Обработка действия агента
-        self.agent.step(self, action)
+        reward += self.agent.step(self, action)
 
-        reward = 0
+        
         terminated = False
         truncated = False
+        
+        observation = self.obs.build_observation(self.word_layers, self.agent)
+        
+        #Получаем слой с нарушителями (1 слой начиная с 0)
+        intruders_layer = observation[1]
+        
+        #Даём награду за попадание в область видимости
+        for row in intruders_layer:
+            for e in row:
+                if e == 1:
+                    reward += obs_reward
         
         #Обновляем нарушителей
         for i in self.intruders:
             reward += i.step(self)
+            
         
         #Проверяем пойманы ли все нарушители?
         if len(self.intruders) == 0:
@@ -99,11 +121,11 @@ class GridWorld(gym.Env):
             terminated = True
             
         #Проверяем превышение по шагам
-        self.cur_step += 1
-        if self.cur_step >= self.max_steps:
+        self.train_state.step += 1
+        if self.train_state.step >= self.max_steps:
             truncated = True
         
-        observation = self.obs.build_observation(self.word_layers, self.agent)
+        
 
         info = {"intruders_left" : len(self.intruders)}
         
@@ -142,15 +164,12 @@ class GridWorld(gym.Env):
             self.train_state.i_count = len(self.intruders)
             
             #Шаг
-            self.train_state.step += 1
             self.train_state.new_episode = truncated or terminated
             
             
-            #Завершение эпизода
+            #Завершение эпизода со сбросом счётчиков в структуре данных обучения
             if truncated or terminated:
-                self.train_state.last_episode_reward = self.train_state.total_reward
-                self.train_state.total_reward = 0.0
-                self.train_state.trajectory = []
+                self.train_state.reset_counters()
         
 
     @staticmethod
@@ -190,8 +209,7 @@ class GridWorld(gym.Env):
                     # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
                     intruders.append(Controllable.load(intruder_config))
                 case 'PoacherConfig':
-                    # Заглушка - создаём Wanderer
-                    intruders.append(Wanderer.load(WandererConfig()))
+                    intruders.append(Poacher.load(intruder_config))
                 case _:
                     raise ValueError(f"Неподдерживаемый тип конфига нарушителя: {type(intruder_config).__name__}")
 
