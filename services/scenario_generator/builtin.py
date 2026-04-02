@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 
+from services.agrocare_coverage.families import resolve_coverage_family_params
 from services.agrocare_coverage.generator import apply_coverage_layout_to_scenario
 from services.agrocare_coverage.models import CoverageEnvConfig
 from services.scenario_generator.models import (
@@ -362,14 +363,18 @@ class CoverageTaskOverlay:
     supported_environments = {EnvironmentKind.CONTINUOUS_2D}
 
     def apply(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
-        task_params = dict(request.task_params or {})
+        family = str(request.metadata.get("family") or request.task_params.get("family") or "")
+        task_params = resolve_coverage_family_params(family, dict(request.task_params or {}))
+        forest_params = dict(task_params)
+        forest_params.update(dict(request.forest_params or {}))
         rng = np.random.default_rng(scenario.seed + 401)
         effective_params = {
             "grid_size": _get_int(task_params, "grid_size", _get_int(request.terrain_params, "grid_size", 32)),
             "row_count": _resolve_coverage_count(rng, task_params, "row_count", "row_count_range", default=8),
-            "curvature_level": str(request.forest_params.get("curvature_level", task_params.get("curvature_level", "low"))),
-            "gap_probability": _get_number(request.forest_params, "gap_probability", _get_number(task_params, "gap_probability", 0.0)),
-            "obstacle_count": _resolve_coverage_count(rng, request.forest_params, "obstacle_count", "obstacle_count_range", default=0),
+            "curvature_level": str(forest_params.get("curvature_level") or task_params.get("curvature_level", "low")),
+            "field_profile": str(forest_params.get("field_profile") or task_params.get("field_profile", "simple")),
+            "gap_probability": _get_number(forest_params, "gap_probability", _get_number(task_params, "gap_probability", 0.0)),
+            "obstacle_count": _resolve_coverage_count(rng, forest_params, "obstacle_count", "obstacle_count_range", default=0),
             "max_steps": _get_int(task_params, "max_steps", 24),
             "seed": scenario.seed,
         }
@@ -395,7 +400,7 @@ class CoverageTaskOverlay:
         apply_coverage_layout_to_scenario(
             scenario,
             config,
-            family=str(request.metadata.get("family") or task_params.get("family") or ""),
+            family=family,
             split=str(request.metadata.get("split") or task_params.get("split") or ""),
         )
 
@@ -479,11 +484,14 @@ class DefaultScenarioValidator:
             if ctx is None:
                 messages.append("Coverage scenario has no runtime layout")
             else:
+                field_mask = np.asarray(ctx.get("field_mask"))
                 free_mask = np.asarray(ctx["free_mask"])
                 coverage_mask = np.asarray(ctx["coverage_mask"])
                 start_x, start_y = ctx["start_position"]
                 home_x, home_y = ctx["home_position"]
                 row_paths = list(ctx.get("row_paths") or [])
+                if field_mask.size == 0:
+                    messages.append("Coverage scenario must contain a field mask")
                 if np.count_nonzero(coverage_mask) == 0:
                     messages.append("Coverage scenario must contain at least one target coverage cell")
                 if free_mask[start_x, start_y] != 1:

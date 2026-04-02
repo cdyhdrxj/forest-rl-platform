@@ -12,6 +12,7 @@ class CoverageEnvConfig(BaseModel):
     row_count: int = Field(default=8, ge=3, le=24)
     max_rows: int = Field(default=24, ge=3, le=32)
     curvature_level: Literal["low", "medium", "high"] = "low"
+    field_profile: Literal["simple", "tapered", "concave"] = "simple"
     gap_probability: float = Field(default=0.0, ge=0.0, le=1.0)
     gap_segment_length: int = Field(default=2, ge=1, le=8)
     obstacle_count: int = Field(default=0, ge=0, le=16)
@@ -115,4 +116,3 @@ class CoverageTrainState(DictLikeModel):
         self.coverage_target_map = None
         self.covered_map = None
         self.row_completion = []
-

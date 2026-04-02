@@ -109,6 +109,17 @@ def build_continuous_trail_request(params: dict[str, Any]) -> GenerationRequest:
 def build_continuous_coverage_request(params: dict[str, Any]) -> GenerationRequest:
     source = dict(params)
     grid_size = int(source.get("grid_size", 32))
+    forest_params = {
+        "obstacle_density": 0.0,
+        "curvature_level": source.get("curvature_level", "low"),
+        "gap_probability": source.get("gap_probability", 0.0),
+    }
+    if source.get("obstacle_count") is not None:
+        forest_params["obstacle_count"] = source.get("obstacle_count")
+    if source.get("obstacle_count_range") is not None:
+        forest_params["obstacle_count_range"] = source.get("obstacle_count_range")
+    if source.get("field_profile") is not None:
+        forest_params["field_profile"] = source.get("field_profile")
     return GenerationRequest(
         environment_kind=EnvironmentKind.CONTINUOUS_2D,
         task_kind=TaskKind.COVERAGE,
@@ -116,13 +127,7 @@ def build_continuous_coverage_request(params: dict[str, Any]) -> GenerationReque
         terrain_params={
             "grid_size": grid_size,
         },
-        forest_params={
-            "obstacle_density": 0.0,
-            "curvature_level": source.get("curvature_level", "low"),
-            "gap_probability": source.get("gap_probability", 0.0),
-            "obstacle_count": source.get("obstacle_count"),
-            "obstacle_count_range": source.get("obstacle_count_range"),
-        },
+        forest_params=forest_params,
         task_params=dict(source),
         metadata={
             "family": source.get("family"),
