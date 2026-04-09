@@ -15,7 +15,7 @@ from services.patrol_planning.assets.observations.obs_box import ObservationBox
 from services.patrol_planning.assets.intruders.wanderer import Wanderer
 from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.patrol_planning.assets.intruders.controllable import Controllable
-from services.patrol_planning.assets.intruders.poacher_lite import Poacher
+from services.patrol_planning.assets.intruders.poacher_simple import PoacherSimple
 from services.patrol_planning.service.models import GridWorldTrainState
 # TRAJECTORY_MAX_LEN = 200
 
@@ -23,14 +23,18 @@ from services.patrol_planning.service.models import GridWorldTrainState
 class GridWorld(gym.Env):
     """Сеточный мир"""
 
-    def __init__(self, agent: GridWorldAgent, obs_model: Observation, grid_world_size = 20, intruders: List[GridWorldIntruder] = [], max_steps: int = 50):
+    def __init__(self, agent: GridWorldAgent, obs_model: Observation,
+                 grid_world_size = 20, intruders: List[GridWorldIntruder] = [], max_steps: int = 50,
+                 intruder_detection_reward = 1, intruder_interception_reward = 1):
 
         self.grid_world_size = grid_world_size
         
         #Слои
-        self.word_layers = {  
+        self.world_layers = {  
             "terrain": np.zeros((grid_world_size,grid_world_size), dtype=np.float32),
-            "intruders": np.zeros((grid_world_size,grid_world_size), dtype=np.float32)
+            "intruders": np.zeros((grid_world_size,grid_world_size), dtype=np.float32),
+            "rows": np.tile(np.arange(grid_world_size, dtype=np.float32).reshape(-1, 1), (1, grid_world_size)),
+            "cols": np.tile(np.arange(grid_world_size, dtype=np.float32).reshape(1, -1), (grid_world_size, 1))
         }
         #Агент
         self.agent = agent
@@ -54,6 +58,10 @@ class GridWorld(gym.Env):
         self.render_time_sleep = 0.0
         self.train_state: GridWorldTrainState | None = None #В эту pydantic модель каждый шаг пишет среда
         
+        #Награды за нарушителей (множители)
+        self.intruder_detection_reward = intruder_detection_reward  #Попадание в область наблюдения
+        self.intruder_interception_reward = intruder_interception_reward #Перехват нарушителя, множитель к тому ущербу который нарушитель не успел нанести
+        
         #Если не задана структура сохранения данных обучения, создаём её вручную. Если класс используется внутри сервиса, то сервис перезапишет на свою модель.
         if not self.train_state:
             self.train_state = GridWorldTrainState()
@@ -64,13 +72,13 @@ class GridWorld(gym.Env):
 
         #Сброс сеточного мира
         #TODO
-        # self.word_layers = {  
+        # self.world_layers = {  
         #     "terrain": np.zeros((self.grid_world_size,self.grid_world_size)),
         #     "intruders": np.zeros((self.grid_world_size,self.grid_world_size))
         # }
         #Сбрасываем только известные слои, чтобы не удалить слои дочерних классов
-        self.word_layers["terrain"] = np.zeros((self.grid_world_size,self.grid_world_size))
-        self.word_layers["intruders"] = np.zeros((self.grid_world_size,self.grid_world_size))
+        # self.world_layers["terrain"] = np.zeros((self.grid_world_size,self.grid_world_size))
+        self.world_layers["intruders"] = np.zeros((self.grid_world_size,self.grid_world_size))
 
         #Сброс агента
         self.agent.reset(self)
@@ -81,7 +89,7 @@ class GridWorld(gym.Env):
             #Сбрасываем чтобы учесть случайное появление 
             i.reset(self)
 
-        observation = self.obs.build_observation(self.word_layers, self.agent)
+        observation = self.obs.build_observation(self.world_layers, self.agent)
 
         info = {}
 
@@ -99,7 +107,7 @@ class GridWorld(gym.Env):
         terminated = False
         truncated = False
         
-        observation = self.obs.build_observation(self.word_layers, self.agent)
+        observation = self.obs.build_observation(self.world_layers, self.agent)
         
         #Получаем слой с нарушителями (1 слой начиная с 0)
         intruders_layer = observation[1]
@@ -108,7 +116,7 @@ class GridWorld(gym.Env):
         for row in intruders_layer:
             for e in row:
                 if e == 1:
-                    reward += obs_reward
+                    reward += obs_reward * self.intruder_detection_reward
         
         #Обновляем нарушителей
         for i in self.intruders:
@@ -166,10 +174,6 @@ class GridWorld(gym.Env):
             #Шаг
             self.train_state.new_episode = truncated or terminated
             
-            
-            #Завершение эпизода со сбросом счётчиков в структуре данных обучения
-            if truncated or terminated:
-                self.train_state.reset_counters()
         
 
     @staticmethod
@@ -200,7 +204,7 @@ class GridWorld(gym.Env):
 
         # Создаем нарушителей из конфигураций
         intruders = []
-        for intruder_config in config.intruder_config:
+        for intruder_config in config.intruder_config: 
             match type(intruder_config).__name__:
                 case 'WandererConfig':
                     # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
@@ -208,8 +212,8 @@ class GridWorld(gym.Env):
                 case 'ControllableConfig':
                     # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
                     intruders.append(Controllable.load(intruder_config))
-                case 'PoacherConfig':
-                    intruders.append(Poacher.load(intruder_config))
+                case 'PoacherSimpleConfig':
+                    intruders.append(PoacherSimple.load(intruder_config))
                 case _:
                     raise ValueError(f"Неподдерживаемый тип конфига нарушителя: {type(intruder_config).__name__}")
 
@@ -219,6 +223,8 @@ class GridWorld(gym.Env):
             obs_model=obs_model,
             grid_world_size=config.grid_size,  # По умолчанию, можно сделать конфигурируемым
             intruders=intruders,
-            max_steps=config.max_steps
+            max_steps=config.max_steps,
+            intruder_detection_reward=config.intruder_detection_reward,
+            intruder_interception_reward=config.intruder_interception_reward
         )
     

@@ -57,7 +57,7 @@ class GridWorldAgent:
         
         #Проверка столкновения
         if type(env).__name__ == 'GridForest':
-            passability = env.word_layers["passability"]
+            passability = env.world_layers["passability"]
             if passability[self.x, self.y] == 0:
                 reward -= self.m_block #штрафуем за столкновение с препятствием
                 #Восстанавливаем корретную позицию
@@ -90,8 +90,8 @@ class GridWorldAgent:
                 y = env.np_random.integers(0, env.grid_world_size)
 
                 # проверяем что там нет нарушителя и это не препятствие
-                if env.word_layers["intruders"][x][y] == 0:
-                    if type(env).__name__ == 'GridForest' and env.word_layers["passability"][x][y] != 0:
+                if env.world_layers["intruders"][x][y] == 0:
+                    if type(env).__name__ == 'GridForest' and env.world_layers["passability"][x][y] != 0:
                         self.x = x
                         self.y = y
                         return
@@ -107,8 +107,8 @@ class GridWorldAgent:
             self.x = self.start_x
             self.y = self.start_y
             
-            if env.word_layers["intruders"][self.start_x][self.start_y] == 0 or \
-                type(env).__name__ == 'GridForest' and env.word_layers["passability"][self.start_x][self.start_y] != 0:
+            if env.world_layers["intruders"][self.start_x][self.start_y] == 0 or \
+                type(env).__name__ == 'GridForest' and env.world_layers["passability"][self.start_x][self.start_y] != 0:
                 pass
             else:
                 raise RuntimeError("Попытка разместить агента в непроходимой клетке! Проверьте позицию!")

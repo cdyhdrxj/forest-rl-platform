@@ -36,7 +36,10 @@ with open("services/patrol_planning/learning/configs/GW_DEFAULT.json", "r", enco
     grid_world_data = json.load(f)
 
 #Grid_Forest
-with open("services/patrol_planning/learning/configs/FOREST_DEFAULT.json", "r", encoding="utf-8") as f:
+# with open("services/patrol_planning/learning/configs/FOREST_DEFAULT.json", "r", encoding="utf-8") as f:
+#     grid_forest_data = json.load(f)
+    
+with open("services/patrol_planning/learning/configs/FOREST_DEFAULT_2.json", "r", encoding="utf-8") as f:
     grid_forest_data = json.load(f)
 
 
@@ -45,14 +48,14 @@ config = GridForestConfig.model_validate(grid_forest_data)
 
 env = GridForest.load(config)
 # Рендер движок
-renderer = GridWorldRendererExt(env, True, "value")
+renderer = GridWorldRendererExt(env, False, "value")
 
 #Для регистрации состояния
 st = GridWorldTrainState()
 env.train_state = st
 # Для визуализации обучения - расскомментировать
-# env.renderer = renderer
-# env.render_time_sleep = 0.5
+env.renderer = renderer
+env.render_time_sleep = 0.5
 
 
 # Проверка reset
