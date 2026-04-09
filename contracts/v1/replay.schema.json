@@ -1,6 +1,245 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Реплей эпизода",
+  "title": "Запись кадра реплея",
+  "description": "Схема одной строки в replay_*.jsonl. Replay-файлы хранятся в формате newline-delimited JSON, и каждая строка должна соответствовать этой схеме.",
   "version": "1.0.0",
-  "type": "object"
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timestamp",
+    "route_key",
+    "state"
+  ],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "route_key": {
+      "$ref": "#/$defs/routeKey"
+    },
+    "state": {
+      "$ref": "#/$defs/runtimeState"
+    }
+  },
+  "$defs": {
+    "routeKey": {
+      "type": "string",
+      "enum": [
+        "continuous/trail",
+        "continuous/coverage",
+        "discrete/patrol",
+        "discrete/reforestation",
+        "threed/patrol",
+        "threed/trail"
+      ]
+    },
+    "position2d": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number"
+      }
+    },
+    "positionList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position2d"
+      }
+    },
+    "runtimeState": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "running",
+        "episode",
+        "step",
+        "total_reward",
+        "last_episode_reward",
+        "new_episode",
+        "goal_count",
+        "collision_count"
+      ],
+      "properties": {
+        "running": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "episode": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_reward": {
+          "type": "number"
+        },
+        "last_episode_reward": {
+          "type": "number"
+        },
+        "new_episode": {
+          "type": "boolean"
+        },
+        "agent_pos": {
+          "$ref": "#/$defs/positionList"
+        },
+        "goal_pos": {
+          "$ref": "#/$defs/positionList"
+        },
+        "landmark_pos": {
+          "$ref": "#/$defs/positionList"
+        },
+        "planted_pos": {
+          "$ref": "#/$defs/positionList"
+        },
+        "trajectory": {
+          "$ref": "#/$defs/positionList"
+        },
+        "is_collision": {
+          "type": "boolean"
+        },
+        "goal_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "collision_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "terrain_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "plantable_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "planted_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "coverage_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "missed_area_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "return_to_start_success": {
+          "type": "boolean"
+        },
+        "return_error": {
+          "type": "number",
+          "minimum": 0
+        },
+        "path_length": {
+          "type": "number",
+          "minimum": 0
+        },
+        "task_time_sec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "transition_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeat_coverage_ratio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "angular_work_rad": {
+          "type": "number",
+          "minimum": 0
+        },
+        "compute_time_sec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "remaining_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "coverage_target_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "covered_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "remaining_seedlings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalid_plant_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "intruders_remaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "world_descriptor": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "max_steps": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
 }

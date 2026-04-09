@@ -1,0 +1,50 @@
+{
+  "suite_code": "trail-smoke-suite",
+  "title": "Three-D Trail Scientific Smoke Suite",
+  "route_key": "threed/trail",
+  "task_kind": "trail",
+  "environment_kind": "simulator_3d",
+  "report_dir": "data/scientific/suites",
+  "seed": 101,
+  "scenarios": [
+    {
+      "family": "smoke",
+      "split": "test",
+      "count": 1,
+      "generation_params": {
+        "preview_size": 12,
+        "tree_density": 0.25,
+        "terrain_hilliness": 0.2,
+        "max_steps": 12
+      },
+      "evaluation_params": {
+        "max_steps": 12,
+        "tick_sleep": 0.001
+      }
+    }
+  ],
+  "methods": [
+    {
+      "code": "ppo",
+      "algorithm": "ppo",
+      "enabled": true,
+      "repeats": 1,
+      "start_params": {
+        "max_steps": 12,
+        "tick_sleep": 0.001
+      },
+      "role": "eval"
+    }
+  ],
+  "report": {
+    "formats": [
+      "json",
+      "csv",
+      "html"
+    ],
+    "representative_runs_per_method": 1,
+    "save_trajectory_plots": true,
+    "save_distribution_plots": true
+  }
+}
+

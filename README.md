@@ -1,4 +1,4 @@
-# Forest RL Platform
+# Платформа ForestRobotTwin
 
 Единая платформа для моделирования, обучения, испытаний и анализа интеллектуального поведения агентов в лесной среде.
 
@@ -17,6 +17,7 @@
 ### Управление роботом
 
 Локальная навигация мобильного робота по сенсорным данным, где политика получает наблюдения из симулятора и формирует команды движения.
+Для этого режима архитектура разделена на четыре роли: `Environment Adapter` для обучения и оценки, `Policy Runner` для исполнения модели, `Safety Supervisor` для фильтрации опасных команд и `Robot Bridge` для работы с ROS 2.
 
 ### Патрулирование
 
@@ -41,7 +42,7 @@
 ## Структура репозитория
 
 ```text
-forest-rl-platform/
+forest-robot-twin/
 ├── README.md
 ├── LICENSE
 ├── .gitignore
@@ -67,17 +68,21 @@ forest-rl-platform/
 
 Общие контракты системы хранятся в каталоге `contracts/`. Это центральная точка согласования между всеми модулями.
 
-`contracts/scenario.schema.json` задаёт формат описания сценария.
+`contracts/v1/scenario.schema.json` задаёт формат сохранённого `scenario.json`.
 
-`contracts/episode_log.schema.json` задаёт формат журнала эпизода.
+`contracts/v1/preview.schema.json` задаёт формат сохранённого `preview.json`.
 
-`contracts/replay.schema.json` задаёт формат реплея.
+`contracts/v1/episode_log.schema.json` задаёт канонический формат экспорта журнала эпизодов.
 
-`contracts/metrics.schema.json` задаёт формат сводных и временных метрик.
+`contracts/v1/replay.schema.json` задаёт формат одной строки `replay_*.jsonl`.
 
-`contracts/openapi.yaml` задаёт программный интерфейс диспетчера экспериментов.
+`contracts/v1/metrics.schema.json` задаёт канонический формат экспорта сводных и временных метрик.
 
-`contracts/ros_interfaces.md` фиксирует соглашения по топикам, сервисам и сообщениям ROS 2.
+`contracts/openapi.yaml` задаёт HTTP-метаданные backend-сервиса.
+
+`contracts/websocket_protocol.md` фиксирует runtime WebSocket-протокол диспетчера экспериментов.
+
+`contracts/v1/ros_interfaces.md` и `contracts/v2/ros_interfaces.md` фиксируют версии соглашений по топикам, сервисам и сообщениям ROS 2.
 
 Все изменения контрактов должны быть согласованы до внесения изменений в прикладные модули.
 

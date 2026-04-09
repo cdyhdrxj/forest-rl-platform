@@ -2,14 +2,14 @@ from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 from .enums import ProjectMode, RunStatus
 
 
 class Run(Base):
     __tablename__ = 'runs'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     project_id = Column(BigInteger, ForeignKey('projects.id'), nullable=False)
     scenario_version_id = Column(BigInteger, ForeignKey('scenario_versions.id'), nullable=False)
     algorithm_id = Column(BigInteger, ForeignKey('algorithms.id'), nullable=False)

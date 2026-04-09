@@ -8,9 +8,9 @@
 - Время: ROS time
 - Все ключевые события среды публикуются как сообщения
 
-## 2. Topics
+## 2. Топики
 
-### 2.1 Observations (Environment -> Agent)
+### 2.1 Наблюдения (среда -> агент)
 
 #### `/freight/base_scan` (будет изменено)
 **Тип:** `sensor_msgs/LaserScan`  
@@ -30,7 +30,7 @@
 **Издатель:** Unity симулятор  
 **Подписчик:** RL агент
 
-### 2.2 Actions (Agent -> Environment)
+### 2.2 Действия (агент -> среда)
 
 #### `/cmd_vel`
 **Тип:** `geometry_msgs/Twist`  
@@ -38,7 +38,7 @@
 **Издатель:** RL агент
 **Подписчик:** Unity симулятор
 
-### 2.3 Control (Agent -> Environment)
+### 2.3 Управление (агент -> среда)
 
 #### `/reset_robot`
 **Тип:** `std_msgs/Empty`  
@@ -60,7 +60,7 @@
 
 Вычисляется внутри RL агента.
 
-## 3. ROS Bridge
+## 3. Мост ROS
 
 Для связи с Unity используется **rosbridge** (WebSocket).
 

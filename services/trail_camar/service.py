@@ -1,16 +1,19 @@
-import random
 from apps.api.sb3.sb3_trainer import SB3Trainer
-from services.trail_camar.wrapper import CamarGymWrapper
+from services.scenario_generator import extract_continuous_runtime_kwargs
+from services.scenario_generator.models import GeneratedScenario
 from services.trail_camar.callback import CamarCallback
+from services.trail_camar.wrapper import CamarGymWrapper
 
 
 class CamarService(SB3Trainer):
-    """Сервис обучения агента в среде CAMAR"""
+    """Training service for the CAMAR environment."""
 
     def __init__(self):
         self.env = None
         self.model = None
         self.training_state = self._make_state()
+        self.loaded_scenario: GeneratedScenario | None = None
+        self.loaded_runtime_kwargs: dict | None = None
 
     def start(self, params: dict) -> None:
         self.training_state["mode"] = params.get("mode", "trail")
@@ -20,12 +23,22 @@ class CamarService(SB3Trainer):
         super().stop()
 
     def reset(self) -> None:
-        """Сброс среды и модели к изначальным параметрам"""
         self.stop()
         self.training_state = self._make_state()
+        if self.loaded_scenario is not None:
+            self._apply_preview_state(self.loaded_scenario)
+
+    def load_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> None:
+        self.stop()
+        self.env = None
+        self.model = None
+        self.training_state = self._make_state()
+        self.training_state["mode"] = scenario.task_kind.value
+        self.loaded_scenario = scenario
+        self.loaded_runtime_kwargs = dict(runtime_config or extract_continuous_runtime_kwargs(scenario))
+        self._apply_preview_state(scenario)
 
     def get_state(self) -> dict:
-        """Снимок состояния для отправки на фронт"""
         s = self.training_state
         base = {
             "running": s["running"],
@@ -44,49 +57,75 @@ class CamarService(SB3Trainer):
         }
         if s["mode"] == "trail":
             base["trajectory"] = s["trajectory"]
-
         return base
 
     def _build_env(self, params: dict) -> CamarGymWrapper:
-        """Создание среды с параметрами от фронта"""
-        return CamarGymWrapper(
-            seed=random.randint(0, 100_000),
-            obstacle_density=params.get("obstacle_density", 0.2),
-            action_scale=params.get("action_scale", 1.0),
-            goal_reward=params.get("goal_reward", 1.0),
-            collision_penalty=params.get("collision_penalty", 0.3),
-            grid_size=params.get("grid_size", 10),
-            max_steps=params.get("max_steps", 200),
-            frameskip=params.get("frameskip", 5),
-            max_speed=params.get("max_speed", 50.0),
-            accel=params.get("accel", 40.0),
-            damping=params.get("damping", 0.6),
-            dt=params.get("dt", 0.01),
-            terrain_penalty=params.get("terrain_penalty", 0.3),
-        )
+        if self.loaded_runtime_kwargs is None:
+            raise RuntimeError("CamarService.start() requires a scenario loaded by the dispatcher")
+
+        return CamarGymWrapper(**self.loaded_runtime_kwargs)
 
     def _make_callback(self) -> CamarCallback:
         return CamarCallback(self.training_state)
 
     def _reset_counters(self) -> None:
-        """Сброс счётчиков и буферов между запусками"""
-        self.training_state.update({
-            "episode": 0, "step": 0,
-            "total_reward": 0.0, "last_episode_reward": 0.0,
-            "new_episode": False, "goal_count": 0,
-            "collision_count": 0, "trajectory": [],
-            "terrain_map": None,
-        })
+        self.training_state.update(
+            {
+                "episode": 0,
+                "step": 0,
+                "total_reward": 0.0,
+                "last_episode_reward": 0.0,
+                "new_episode": False,
+                "goal_count": 0,
+                "collision_count": 0,
+                "trajectory": [],
+                "terrain_map": None,
+            }
+        )
+
+    def validate_scenario(self, scenario: GeneratedScenario, runtime_config: dict | None = None) -> list[str]:
+        messages: list[str] = []
+        if scenario.environment_kind.value != "continuous_2d":
+            messages.append("Continuous trail runtime can load only continuous_2d scenarios")
+        if scenario.runtime_context.get("trail") is None:
+            messages.append("Continuous trail runtime requires trail runtime context")
+        if scenario.get_layer_data("terrain") is None:
+            messages.append("Continuous trail runtime requires a terrain layer")
+        if runtime_config is None:
+            messages.append("Continuous trail runtime requires serialized runtime config")
+        return messages
 
     @staticmethod
     def _make_state() -> dict:
         return {
-            "running": False, "mode": "trail",
-            "episode": 0, "step": 0,
-            "total_reward": 0.0, "last_episode_reward": 0.0,
+            "running": False,
+            "mode": "trail",
+            "episode": 0,
+            "step": 0,
+            "total_reward": 0.0,
+            "last_episode_reward": 0.0,
             "new_episode": False,
-            "agent_pos": [], "goal_pos": [], "landmark_pos": [],
+            "agent_pos": [],
+            "goal_pos": [],
+            "landmark_pos": [],
             "is_collision": False,
-            "goal_count": 0, "collision_count": 0,
-            "trajectory": [], "terrain_map": None,
+            "goal_count": 0,
+            "collision_count": 0,
+            "trajectory": [],
+            "terrain_map": None,
         }
+
+    def _apply_preview_state(self, scenario: GeneratedScenario) -> None:
+        preview = scenario.preview_payload
+        self.training_state.update(
+            {
+                "running": False,
+                "agent_pos": list(preview.get("agent_pos") or []),
+                "goal_pos": list(preview.get("goal_pos") or []),
+                "landmark_pos": list(preview.get("landmark_pos") or []),
+                "trajectory": [],
+                "is_collision": False,
+                "new_episode": False,
+                "terrain_map": preview.get("terrain_map"),
+            }
+        )

@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, Integer, Boolean, String, Float, Fore
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class Episode(Base):
@@ -11,7 +11,7 @@ class Episode(Base):
         UniqueConstraint('run_id', 'episode_index', name='uix_run_episode'),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     run_id = Column(BigInteger, ForeignKey('runs.id'), nullable=False)
     episode_index = Column(Integer, nullable=False)
     success = Column(Boolean)
