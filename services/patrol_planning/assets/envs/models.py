@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from services.patrol_planning.assets.agents.models import AgentConfig
-from services.patrol_planning.assets.intruders.models import IntruderConfigType, WandererConfig, ControllableConfig, PoacherConfig
+from services.patrol_planning.assets.intruders.models import IntruderConfigType, WandererConfig, ControllableConfig, PoacherSimpleConfig
 from services.patrol_planning.assets.observations.models import ObservationConfigType, ObsBoxConfig
 from typing import List, Optional
 
@@ -48,7 +48,7 @@ class GridForestConfig(GridWorldConfig):
     """Конфигурация лесной среды GridForest."""
 
     intruder_config: List[IntruderConfigType] = Field(
-        default_factory=lambda: [PoacherConfig()],
+        default_factory=lambda: [PoacherSimpleConfig()],
         description="Список с конфигурациями нарушителей (по умолчанию — Poacher)"
     )
     
