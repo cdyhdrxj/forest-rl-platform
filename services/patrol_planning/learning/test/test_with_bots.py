@@ -24,7 +24,7 @@ from services.patrol_planning.src.renderer_extended import GridWorldRendererExt
 #     data = json.load(f)
 
 #GridForest
-with open("services/patrol_planning/learning/configs/FOREST_DEFAULT.json", "r", encoding="utf-8") as f:
+with open("services/patrol_planning/learning/configs/FOREST_DEFAULT_2.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
 
@@ -43,9 +43,9 @@ from stable_baselines3 import PPO
 obs, _ = env.reset()
 
 #Рендер движок
-renderer = GridWorldRendererExt(env)
+renderer = GridWorldRendererExt(env, True, "passability")
 env.renderer = renderer
-env.render_time_sleep = 0.2
+env.render_time_sleep = 1.0
 
 
 #Случайное управление

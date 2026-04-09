@@ -27,7 +27,7 @@ PROJECT_ROOT = os.path.abspath(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from services.patrol_planning.assets.intruders.models import PoacherConfig
+from services.patrol_planning.assets.intruders.models import PoacherSimpleConfig
 from services.patrol_planning.assets.observations.models import ObsBoxConfig
 from services.patrol_planning.assets.envs.models import GridWorldConfig, GridForestConfig
 
@@ -59,16 +59,16 @@ from services.patrol_planning.assets.envs.models import GridWorldConfig, GridFor
 
 ## ССтандартная модель для лесного массива
 config = GridForestConfig()
-p_config = PoacherConfig()
+p_config = PoacherSimpleConfig()
 o_config = ObsBoxConfig()
 o_config.size = 4
-o_config.layers_count = 4
+o_config.layers_count = 6
 p_config.pos = [5,5]
 config.intruder_config = [p_config]
 config.obs_config = o_config
 config.grid_size = 8
 with open(
-    "services/patrol_planning/learning/configs/FOREST_DEFAULT.json",
+    "services/patrol_planning/learning/configs/FOREST_EXAMPLE.json",
     "w",
     encoding="utf-8"
 ) as f:

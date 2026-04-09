@@ -27,3 +27,5 @@ dist-ssr
 *.sw?
 uv.lock
 /services/patrol_planning/assets/intruders/poacher.py
+/services/patrol_planning/assets/intruders/poacher_lite.py
+/services/patrol_planning/assets/intruders/poacher_lite.old
