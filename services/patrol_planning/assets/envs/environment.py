@@ -14,25 +14,28 @@ from services.patrol_planning.assets.intruders.controllable import Controllable
 from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.patrol_planning.assets.intruders.wanderer import Wanderer
 from services.patrol_planning.assets.observations.obs_box import ObservationBox
+from services.patrol_planning.assets.intruders.wanderer import Wanderer
+from services.patrol_planning.assets.intruders.models import WandererConfig
+from services.patrol_planning.assets.intruders.controllable import Controllable
+from services.patrol_planning.assets.intruders.poacher_simple import PoacherSimple
 from services.patrol_planning.service.models import GridWorldTrainState
-
+# TRAJECTORY_MAX_LEN = 200
 
 class GridWorld(gym.Env):
     """Grid-based patrol environment."""
 
-    def __init__(
-        self,
-        agent: GridWorldAgent,
-        obs_model,
-        grid_world_size: int = 20,
-        intruders: List = [],
-        max_steps: int = 50,
-        static_layers: dict[str, np.ndarray] | None = None,
-    ):
+    def __init__(self, agent: GridWorldAgent, obs_model: Observation,
+                 grid_world_size = 20, intruders: List[GridWorldIntruder] = [], max_steps: int = 50,
+                 intruder_detection_reward = 1, intruder_interception_reward = 1):
+
         self.grid_world_size = grid_world_size
-        self.word_layers = {
-            "terrain": np.zeros((grid_world_size, grid_world_size), dtype=np.float32),
-            "intruders": np.zeros((grid_world_size, grid_world_size), dtype=np.float32),
+        
+        #Слои
+        self.world_layers = {  
+            "terrain": np.zeros((grid_world_size,grid_world_size), dtype=np.float32),
+            "intruders": np.zeros((grid_world_size,grid_world_size), dtype=np.float32),
+            "rows": np.tile(np.arange(grid_world_size, dtype=np.float32).reshape(-1, 1), (1, grid_world_size)),
+            "cols": np.tile(np.arange(grid_world_size, dtype=np.float32).reshape(1, -1), (grid_world_size, 1))
         }
         self.agent = agent
         self.intruders_start = copy.deepcopy(intruders)
@@ -41,88 +44,122 @@ class GridWorld(gym.Env):
         self.obs = obs_model
         self.observation_space = self.obs.space
         self.max_steps = max_steps
-        self.cur_step = 0
-        self.static_layers = static_layers or {}
-
+        
+        #Передаётся вручную (снаружи)
         self.renderer = None
         self.render_time_sleep = 0.0
-        self.train_state: GridWorldTrainState | None = None
-
+        self.train_state: GridWorldTrainState | None = None #В эту pydantic модель каждый шаг пишет среда
+        
+        #Награды за нарушителей (множители)
+        self.intruder_detection_reward = intruder_detection_reward  #Попадание в область наблюдения
+        self.intruder_interception_reward = intruder_interception_reward #Перехват нарушителя, множитель к тому ущербу который нарушитель не успел нанести
+        
+        #Если не задана структура сохранения данных обучения, создаём её вручную. Если класс используется внутри сервиса, то сервис перезапишет на свою модель.
+        if not self.train_state:
+            self.train_state = GridWorldTrainState()
+        
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.cur_step = 0
 
-        terrain = self.static_layers.get("terrain")
-        if terrain is None:
-            terrain = np.zeros((self.grid_world_size, self.grid_world_size), dtype=np.float32)
-        else:
-            terrain = np.array(terrain, dtype=np.float32, copy=True)
+        #Сброс сеточного мира
+        #TODO
+        # self.world_layers = {  
+        #     "terrain": np.zeros((self.grid_world_size,self.grid_world_size)),
+        #     "intruders": np.zeros((self.grid_world_size,self.grid_world_size))
+        # }
+        #Сбрасываем только известные слои, чтобы не удалить слои дочерних классов
+        # self.world_layers["terrain"] = np.zeros((self.grid_world_size,self.grid_world_size))
+        self.world_layers["intruders"] = np.zeros((self.grid_world_size,self.grid_world_size))
 
-        self.word_layers = {
-            "terrain": terrain,
-            "intruders": np.zeros((self.grid_world_size, self.grid_world_size), dtype=np.float32),
-        }
-
+        #Сброс агента
         self.agent.reset(self)
         self.intruders = copy.deepcopy(self.intruders_start)
         for intruder in self.intruders:
             intruder.reset(self)
 
-        observation = self.obs.build_observation(self.word_layers, self.agent)
-        if self.train_state:
-            self.train_state.terrain_map = self.word_layers["terrain"].tolist()
-        return observation, {}
+        observation = self.obs.build_observation(self.world_layers, self.agent)
+
+        info = {}
+
+        return observation, info
 
     def step(self, action):
-        self.agent.step(self, action)
+        obs_reward = 0.0
+        
+        reward = 0 #Награда за этот шаг
+        
+        #Обработка действия агента
+        reward += self.agent.step(self, action)
 
-        reward = 0.0
+        
         terminated = False
         truncated = False
-
-        for intruder in list(self.intruders):
-            reward += intruder.step(self)
-
+        
+        observation = self.obs.build_observation(self.world_layers, self.agent)
+        
+        #Получаем слой с нарушителями (1 слой начиная с 0)
+        intruders_layer = observation[1]
+        
+        #Даём награду за попадание в область видимости
+        for row in intruders_layer:
+            for e in row:
+                if e == 1:
+                    reward += obs_reward * self.intruder_detection_reward
+        
+        #Обновляем нарушителей
+        for i in self.intruders:
+            reward += i.step(self)
+            
+        
+        #Проверяем пойманы ли все нарушители?
         if len(self.intruders) == 0:
             terminated = True
-
-        self.cur_step += 1
-        if self.cur_step >= self.max_steps:
+            
+        #Проверяем превышение по шагам
+        self.train_state.step += 1
+        if self.train_state.step >= self.max_steps:
             truncated = True
+        
+        
 
-        observation = self.obs.build_observation(self.word_layers, self.agent)
-        info = {"intruders_left": len(self.intruders)}
-
+        info = {"intruders_left" : len(self.intruders)}
+        
+        #Обновляем рендер если включено
         if self.renderer is not None:
             self.renderer.live.update(self.renderer.render())
             time.sleep(self.render_time_sleep)
 
         self.update_train_state(truncated, terminated, reward, observation)
         return observation, reward, terminated, truncated, info
-
-    def update_train_state(self, truncated, terminated, reward, obs):
-        if not self.train_state:
-            return
-
-        self.train_state.agent_pos = [[self.agent.x, self.agent.y]]
-        self.train_state.trajectory.append([self.agent.x, self.agent.y])
-        self.train_state.total_reward += reward
-        self.train_state.obs_raw = obs
-        self.train_state.terrain_map = self.word_layers["terrain"].tolist()
-
-        goal_pos = []
-        for intruder in self.intruders:
-            goal_pos.append([intruder.x, intruder.y])
-        self.train_state.goal_pos = goal_pos.copy()
-        self.train_state.i_count = len(self.intruders)
-        self.train_state.step += 1
-        self.train_state.new_episode = truncated or terminated
-
-        if truncated or terminated:
-            self.train_state.episode += 1
-            self.train_state.last_episode_reward = self.train_state.total_reward
-            self.train_state.total_reward = 0.0
-            self.train_state.trajectory = []
+    
+    def update_train_state(self, truncated,
+                           terminated, reward, obs):
+        #Обновляем train_state если включено
+        if self.train_state:
+            #Позиция агента
+            self.train_state.agent_pos = [[self.agent.x, self.agent.y]]
+            #Маршрут
+            self.train_state.trajectory.append([self.agent.x, self.agent.y])
+            #Награда
+            self.train_state.total_reward += reward
+            #Наблюдение
+            self.train_state.obs_raw = obs
+            
+            
+            #Позиции нарушителей
+            goal_pos = []
+            for i in self.intruders:
+                goal_pos.append([i.x, i.y])
+            #Позиции
+            self.train_state.goal_pos = goal_pos.copy()
+            
+            #Осталось нарушителей
+            self.train_state.i_count = len(self.intruders)
+            
+            #Шаг
+            self.train_state.new_episode = truncated or terminated
+            
+        
 
     @staticmethod
     def load(config: GridWorldConfig, static_layers: dict[str, np.ndarray] | None = None) -> "GridWorld":
@@ -140,14 +177,14 @@ class GridWorld(gym.Env):
                 )
 
         intruders = []
-        for intruder_config in config.intruder_config:
+        for intruder_config in config.intruder_config: 
             match type(intruder_config).__name__:
                 case "WandererConfig":
                     intruders.append(Wanderer.load(intruder_config))
                 case "ControllableConfig":
                     intruders.append(Controllable.load(intruder_config))
-                case "PoacherConfig":
-                    intruders.append(Wanderer.load(WandererConfig()))
+                case 'PoacherSimpleConfig':
+                    intruders.append(PoacherSimple.load(intruder_config))
                 case _:
                     raise ValueError(
                         f"Unsupported intruder config type: {type(intruder_config).__name__}"
@@ -159,5 +196,6 @@ class GridWorld(gym.Env):
             grid_world_size=config.grid_size,
             intruders=intruders,
             max_steps=config.max_steps,
-            static_layers=static_layers,
+            intruder_detection_reward=config.intruder_detection_reward,
+            intruder_interception_reward=config.intruder_interception_reward
         )

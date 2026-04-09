@@ -15,6 +15,10 @@ class GridWorldIntruder:
         self.catch_reward = catch_reward
         self.is_random_spawned = is_random_spawned
         
+        #Метаданные
+        self.spawn_time: int = -1
+        self.death_time: int = -1
+        
     
     @abstractmethod
     def step(self, env: GridWorld):
@@ -55,13 +59,13 @@ class GridWorldIntruder:
                 # 1. нет другого нарушителя
                 # 2. нет агента
                 if (
-                    env.word_layers["intruders"][x, y] == 0
+                    env.world_layers["intruders"][x, y] == 0
                     and not (x == env.agent.x and y == env.agent.y)
                 ):
                     self.x = x
                     self.y = y
 
-                    env.word_layers["intruders"][x, y] = 1
+                    env.world_layers["intruders"][x, y] = 1
                     return
 
             raise RuntimeError("Не удалось найти свободную клетку для спавна нарушителя")
@@ -73,7 +77,7 @@ class GridWorldIntruder:
 
             self.x = self.start_x
             self.y = self.start_y
-            env.word_layers["intruders"][self.x, self.y] = 1
+            env.world_layers["intruders"][self.x, self.y] = 1
 
     @staticmethod
     def load(config: IntruderConfig) -> GridWorldIntruder:
