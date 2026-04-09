@@ -3,18 +3,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Theme, card, secLabel, selStyle } from "./constants/colors"
 
 const TASKS_BY_ENV = {
-  "Continuous 2D": ["Patrol", "Trail"],
+  "Continuous 2D": ["Trail"],
   "Three-dimensional": ["Patrol", "Trail"],
-  "Discrete": ["Patrol", "Trail", "Planting"],
+  "Discrete": ["Patrol", "Planting"],
 }
 
 const WS_MAP = {
-  "Continuous 2D/Patrol": "ws://127.0.0.1:8000/continuous/patrol",
   "Continuous 2D/Trail": "ws://127.0.0.1:8000/continuous/trail",
   "Three-dimensional/Patrol": "ws://127.0.0.1:8000/threed/patrol",
   "Three-dimensional/Trail": "ws://127.0.0.1:8000/threed/trail",
   "Discrete/Patrol": "ws://127.0.0.1:8000/discrete/patrol",
-  "Discrete/Trail": "ws://127.0.0.1:8000/discrete/trail",
   "Discrete/Planting": "ws://127.0.0.1:8000/discrete/reforestation",
 }
 
@@ -23,7 +21,7 @@ const CANVAS_SIZE = 380
 const METRICS = [
   ["Episode", s => s?.episode ?? 0, null],
   ["Step", s => s?.step ?? 0, null],
-  ["Reward", s => s?.total_reward != null ? s.total_reward.toFixed(1) : "0.0", null],
+  ["Reward", s => (s?.total_reward != null ? s.total_reward.toFixed(1) : "0.0"), null],
   ["Completed", s => s?.goal_count ?? 0, Theme.green],
   ["Blocked", s => s?.collision_count ?? 0, Theme.red],
 ]
@@ -41,7 +39,16 @@ const Label = ({ children }) => (
 )
 
 const Dot = ({ color, size = 7 }) => (
-  <span style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", background: color, flexShrink: 0 }} />
+  <span
+    style={{
+      display: "inline-block",
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      background: color,
+      flexShrink: 0,
+    }}
+  />
 )
 
 const Btn = ({ onClick, disabled, color, children }) => (
@@ -97,7 +104,7 @@ function drawCanvas(canvas, state, terrain) {
           px * cw + cw * inset,
           py * ch + ch * inset,
           cw * (1 - inset * 2),
-          ch * (1 - inset * 2)
+          ch * (1 - inset * 2),
         )
       })
     }
@@ -131,6 +138,35 @@ function drawCanvas(canvas, state, terrain) {
 
   ctx.strokeStyle = "#e5e7eb"
   ctx.strokeRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
+}
+
+function describeExecutionPhase(executionPhase, scenarioReady, activeEnv, activeTask, algo, runId) {
+  const runLabel = `run ${runId ?? "?"}`
+  const statusLabel = executionPhase === "running"
+    ? `Running - ${runLabel}`
+    : executionPhase === "finished"
+      ? `Finished - ${runLabel}`
+      : executionPhase === "cancelled" || executionPhase === "stopped"
+        ? `Stopped - ${runLabel}`
+        : executionPhase === "failed"
+          ? `Failed - ${runLabel}`
+          : scenarioReady
+            ? `Preview ready - ${runLabel}`
+            : "Waiting for generation"
+
+  const bannerLabel = executionPhase === "running"
+    ? `Training - ${activeEnv} / ${activeTask} - ${algo}`
+    : executionPhase === "finished"
+      ? `Finished - ${activeEnv} / ${activeTask}`
+      : executionPhase === "cancelled" || executionPhase === "stopped"
+        ? `Stopped - ${activeEnv} / ${activeTask}`
+        : executionPhase === "failed"
+          ? `Failed - ${activeEnv} / ${activeTask}`
+          : scenarioReady
+            ? `Preview ready - ${activeEnv} / ${activeTask}`
+            : "Waiting to start"
+
+  return { statusLabel, bannerLabel }
 }
 
 export default function App() {
@@ -182,10 +218,12 @@ export default function App() {
 
   useEffect(() => {
     if (!endpoint) return undefined
+
     if (running) {
       wsRef.current?.send(JSON.stringify({ action: "stop" }))
       setRunning(false)
     }
+
     setState(null)
     setChartData([])
     setTerrain(null)
@@ -196,6 +234,7 @@ export default function App() {
     ws.onmessage = event => {
       const data = JSON.parse(event.data)
       setState(data)
+      setRunning(data?.execution_phase === "running" || Boolean(data?.running))
       if (data.terrain_map) setTerrain(data.terrain_map)
       if (data.new_episode) {
         setChartData(prev => {
@@ -213,7 +252,23 @@ export default function App() {
     if (canvasRef.current) drawCanvas(canvasRef.current, state, terrain)
   }, [state, terrain])
 
+  const generate = useCallback(() => {
+    if (!endpoint) return
+    const mode = activeTask === "Trail" ? "trail" : activeTask === "Planting" ? "reforestation" : "patrol"
+    wsRef.current?.send(JSON.stringify({
+      action: "generate",
+      params: {
+        ...params,
+        algorithm: algo.toLowerCase(),
+        mode,
+      },
+    }))
+    setChartData([])
+    setRunning(false)
+  }, [activeTask, algo, endpoint, params])
+
   const start = useCallback(() => {
+    if (!endpoint) return
     const mode = activeTask === "Trail" ? "trail" : activeTask === "Planting" ? "reforestation" : "patrol"
     wsRef.current?.send(JSON.stringify({
       action: "start",
@@ -225,10 +280,15 @@ export default function App() {
     }))
     setChartData([])
     setRunning(true)
-  }, [activeTask, algo, params])
+  }, [activeTask, algo, endpoint, params])
 
   const stop = useCallback(() => {
     wsRef.current?.send(JSON.stringify({ action: "stop" }))
+    setRunning(false)
+  }, [])
+
+  const reset = useCallback(() => {
+    wsRef.current?.send(JSON.stringify({ action: "reset" }))
     setRunning(false)
   }, [])
 
@@ -253,14 +313,35 @@ export default function App() {
 
   const TABS = ["Algorithm", "Map", "Robot"]
   const isPlanting = activeTask === "Planting"
+  const scenarioReady = Boolean(state?.scenario_generated && state?.run_id)
+  const executionPhase = state?.execution_phase ?? (running ? "running" : scenarioReady ? "preview" : "idle")
+  const { statusLabel, bannerLabel } = describeExecutionPhase(
+    executionPhase,
+    scenarioReady,
+    activeEnv,
+    activeTask,
+    algo,
+    state?.run_id,
+  )
 
   return (
     <div style={{ minHeight: "100vh", background: Theme.bg, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
-      <div style={{ background: Theme.surface, borderBottom: `1px solid ${Theme.border}`, padding: "0 28px", height: 46, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: Theme.shadowSm }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: Theme.textPrimary }}>Forest RL</span>
+      <div
+        style={{
+          background: Theme.surface,
+          borderBottom: `1px solid ${Theme.border}`,
+          padding: "0 28px",
+          height: 46,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: Theme.shadowSm,
+        }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 700, color: Theme.textPrimary }}>ForestRobotTwin</span>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: Theme.textSecond }}>
-          <Dot color={running ? Theme.green : Theme.border} />
-          {running ? `Training · ${activeEnv} / ${activeTask} · ${algo}` : "Waiting to start"}
+          <Dot color={executionPhase === "running" ? Theme.green : executionPhase === "failed" ? Theme.red : Theme.border} />
+          {bannerLabel}
         </div>
       </div>
 
@@ -283,13 +364,25 @@ export default function App() {
                 {Object.keys(TASKS_BY_ENV).map(name => <option key={name}>{name}</option>)}
               </select>
               <Label>Task</Label>
-              <select value={activeTask} onChange={e => setActiveTask(e.target.value)} disabled={running} style={selStyle}>
+              <select
+                value={activeTask}
+                onChange={e => setActiveTask(e.target.value)}
+                disabled={running}
+                style={selStyle}
+              >
                 {TASKS_BY_ENV[activeEnv].map(name => <option key={name}>{name}</option>)}
               </select>
             </div>
 
             <div style={{ ...card, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#f8fafc", borderBottom: `1px solid ${Theme.border}` }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  background: "#f8fafc",
+                  borderBottom: `1px solid ${Theme.border}`,
+                }}
+              >
                 {TABS.map(name => (
                   <button
                     key={name}
@@ -311,54 +404,75 @@ export default function App() {
               </div>
 
               <div style={{ padding: 14 }}>
-                {tab === "Algorithm" && <>
-                  <Label>Algorithm</Label>
-                  <select value={algo} onChange={e => setAlgo(e.target.value)} disabled={running} style={{ ...selStyle, marginBottom: 14 }}>
-                    <option>PPO</option>
-                    <option>A2C</option>
-                    {!isPlanting && <option>SAC</option>}
-                    {!isPlanting && <option>TD3</option>}
-                  </select>
-                  <Slider label="Learning rate" param="learning_rate" min={0.00001} max={0.01} step={0.00001} />
-                  <Slider label="Gamma" param="gamma" min={0.9} max={0.999} step={0.001} />
-                  <Slider label="Max steps" param="max_steps" min={50} max={1000} step={10} />
-                  {(!isPlanting && (algo === "SAC" || algo === "TD3")) && <Slider label="Tau" param="tau" min={0.001} max={0.1} step={0.001} />}
-                  {isPlanting && <>
-                    <div style={{ borderTop: `1px solid ${Theme.border}`, margin: "12px 0" }} />
-                    <Slider label="Plant reward" param="alpha_plant" min={0.5} max={10} step={0.1} />
-                    <Slider label="Quality weight" param="alpha_quality" min={0} max={5} step={0.1} />
-                    <Slider label="Move penalty" param="beta_move" min={0} max={1} step={0.01} />
-                    <Slider label="Turn penalty" param="beta_turn" min={0} max={1} step={0.01} />
-                    <Slider label="Invalid plant penalty" param="beta_invalid_plant" min={0} max={2} step={0.01} />
-                  </>}
-                </>}
+                {tab === "Algorithm" && (
+                  <>
+                    <Label>Algorithm</Label>
+                    <select
+                      value={algo}
+                      onChange={e => setAlgo(e.target.value)}
+                      disabled={running}
+                      style={{ ...selStyle, marginBottom: 14 }}
+                    >
+                      <option>PPO</option>
+                      <option>A2C</option>
+                      {!isPlanting && <option>SAC</option>}
+                      {!isPlanting && <option>TD3</option>}
+                    </select>
+                    <Slider label="Learning rate" param="learning_rate" min={0.00001} max={0.01} step={0.00001} />
+                    <Slider label="Gamma" param="gamma" min={0.9} max={0.999} step={0.001} />
+                    <Slider label="Max steps" param="max_steps" min={50} max={1000} step={10} />
+                    {!isPlanting && (algo === "SAC" || algo === "TD3") && (
+                      <Slider label="Tau" param="tau" min={0.001} max={0.1} step={0.001} />
+                    )}
+                    {isPlanting && (
+                      <>
+                        <div style={{ borderTop: `1px solid ${Theme.border}`, margin: "12px 0" }} />
+                        <Slider label="Plant reward" param="alpha_plant" min={0.5} max={10} step={0.1} />
+                        <Slider label="Quality weight" param="alpha_quality" min={0} max={5} step={0.1} />
+                        <Slider label="Move penalty" param="beta_move" min={0} max={1} step={0.01} />
+                        <Slider label="Turn penalty" param="beta_turn" min={0} max={1} step={0.01} />
+                        <Slider label="Invalid plant penalty" param="beta_invalid_plant" min={0} max={2} step={0.01} />
+                      </>
+                    )}
+                  </>
+                )}
 
-                {tab === "Map" && <>
-                  <Slider label="Grid size" param="grid_size" min={5} max={20} step={1} />
-                  <Slider label="Obstacle density" param="obstacle_density" min={0} max={0.4} step={0.01} />
-                  {isPlanting && <>
-                    <Slider label="Plantable density" param="plantable_density" min={0.1} max={1} step={0.01} />
-                    <Slider label="Min plant distance" param="min_plant_distance" min={0} max={3} step={1} />
-                    <Slider label="Uniformity radius" param="uniformity_radius" min={0} max={3} step={1} />
-                    <Slider label="Target density" param="target_density" min={0.05} max={0.8} step={0.01} />
-                    <Slider label="Uniformity penalty" param="lambda_uniformity" min={0} max={10} step={0.1} />
-                    <Slider label="Underplant penalty" param="lambda_underplanting" min={0} max={10} step={0.1} />
-                  </>}
-                </>}
+                {tab === "Map" && (
+                  <>
+                    <Slider label="Grid size" param="grid_size" min={5} max={20} step={1} />
+                    <Slider label="Obstacle density" param="obstacle_density" min={0} max={0.4} step={0.01} />
+                    {isPlanting && (
+                      <>
+                        <Slider label="Plantable density" param="plantable_density" min={0.1} max={1} step={0.01} />
+                        <Slider label="Min plant distance" param="min_plant_distance" min={0} max={3} step={1} />
+                        <Slider label="Uniformity radius" param="uniformity_radius" min={0} max={3} step={1} />
+                        <Slider label="Target density" param="target_density" min={0.05} max={0.8} step={0.01} />
+                        <Slider label="Uniformity penalty" param="lambda_uniformity" min={0} max={10} step={0.1} />
+                        <Slider label="Underplant penalty" param="lambda_underplanting" min={0} max={10} step={0.1} />
+                      </>
+                    )}
+                  </>
+                )}
 
-                {tab === "Robot" && <>
-                  {isPlanting ? <>
-                    <Slider label="Seedlings on board" param="initial_seedlings" min={5} max={80} step={1} />
-                    <Slider label="Stay penalty" param="beta_stay" min={0} max={1} step={0.01} />
-                    <Slider label="Failed move penalty" param="beta_fail_move" min={0} max={2} step={0.01} />
-                  </> : <>
-                    <Slider label="Action scale" param="action_scale" min={0.1} max={5} step={0.1} />
-                    <Slider label="Max speed" param="max_speed" min={1} max={200} step={1} />
-                    <Slider label="Acceleration" param="accel" min={1} max={100} step={1} />
-                    <Slider label="Damping" param="damping" min={0.01} max={0.99} step={0.01} />
-                    <Slider label="Physics dt" param="dt" min={0.001} max={0.05} step={0.001} />
-                  </>}
-                </>}
+                {tab === "Robot" && (
+                  <>
+                    {isPlanting ? (
+                      <>
+                        <Slider label="Seedlings on board" param="initial_seedlings" min={5} max={80} step={1} />
+                        <Slider label="Stay penalty" param="beta_stay" min={0} max={1} step={0.01} />
+                        <Slider label="Failed move penalty" param="beta_fail_move" min={0} max={2} step={0.01} />
+                      </>
+                    ) : (
+                      <>
+                        <Slider label="Action scale" param="action_scale" min={0.1} max={5} step={0.1} />
+                        <Slider label="Max speed" param="max_speed" min={1} max={200} step={1} />
+                        <Slider label="Acceleration" param="accel" min={1} max={100} step={1} />
+                        <Slider label="Damping" param="damping" min={0.01} max={0.99} step={0.01} />
+                        <Slider label="Physics dt" param="dt" min={0.001} max={0.05} step={0.001} />
+                      </>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -367,31 +481,55 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
               {METRICS.map(([label, getter, color]) => (
                 <div key={label} style={{ ...card, padding: "8px 6px", textAlign: "center" }}>
-                  <div style={{ fontSize: 9, color: Theme.textMuted, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: color ?? Theme.textPrimary, fontFamily: Theme.mono }}>{getter(state)}</div>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: Theme.textMuted,
+                      fontWeight: 700,
+                      letterSpacing: "0.07em",
+                      textTransform: "uppercase",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: color ?? Theme.textPrimary, fontFamily: Theme.mono }}>
+                    {getter(state)}
+                  </div>
                 </div>
               ))}
             </div>
 
             <div style={{ ...card, padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: Theme.textPrimary }}>{activeEnv} · {activeTask}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: Theme.textPrimary }}>{activeEnv} - {activeTask}</span>
                 <div style={{ display: "flex", gap: 10, fontSize: 10, color: Theme.textSecond }}>
                   {LEGEND.map(([color, text]) => (
                     <span key={text} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                      <Dot color={color} size={6} />{text}
+                      <Dot color={color} size={6} />
+                      {text}
                     </span>
                   ))}
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "center" }}>
-                <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ display: "block", borderRadius: Theme.radiusSm, border: `1px solid ${Theme.border}` }} />
+                <canvas
+                  ref={canvasRef}
+                  width={CANVAS_SIZE}
+                  height={CANVAS_SIZE}
+                  style={{ display: "block", borderRadius: Theme.radiusSm, border: `1px solid ${Theme.border}` }}
+                />
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <Btn onClick={start} disabled={running || !endpoint} color={Theme.green}>Start</Btn>
+              <Btn onClick={generate} disabled={running || !endpoint} color={Theme.accent}>Generate</Btn>
+              <Btn onClick={start} disabled={running || !endpoint || !scenarioReady} color={Theme.green}>Start</Btn>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <Btn onClick={stop} disabled={!running} color={Theme.red}>Stop</Btn>
+              <Btn onClick={reset} disabled={running || !scenarioReady} color={Theme.textMuted}>Reset</Btn>
             </div>
           </div>
 
@@ -401,10 +539,24 @@ export default function App() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f2f5" />
-                  <XAxis dataKey="i" tick={{ fontSize: 10, fill: Theme.textMuted }} label={{ value: "Episode", position: "insideBottom", offset: -10, fontSize: 10, fill: Theme.textSecond }} />
-                  <YAxis width={40} tick={{ fontSize: 10, fill: Theme.textMuted }} label={{ value: "Reward", angle: -90, position: "insideLeft", fontSize: 10, fill: Theme.textSecond }} />
+                  <XAxis
+                    dataKey="i"
+                    tick={{ fontSize: 10, fill: Theme.textMuted }}
+                    label={{ value: "Episode", position: "insideBottom", offset: -10, fontSize: 10, fill: Theme.textSecond }}
+                  />
+                  <YAxis
+                    width={40}
+                    tick={{ fontSize: 10, fill: Theme.textMuted }}
+                    label={{ value: "Reward", angle: -90, position: "insideLeft", fontSize: 10, fill: Theme.textSecond }}
+                  />
                   <Tooltip
-                    contentStyle={{ fontSize: 11, borderRadius: Theme.radiusSm, border: `1px solid ${Theme.border}`, boxShadow: Theme.shadow, background: Theme.surface }}
+                    contentStyle={{
+                      fontSize: 11,
+                      borderRadius: Theme.radiusSm,
+                      border: `1px solid ${Theme.border}`,
+                      boxShadow: Theme.shadow,
+                      background: Theme.surface,
+                    }}
                     labelStyle={{ color: Theme.textSecond }}
                   />
                   <Line type="monotone" dataKey="r" stroke={Theme.accent} dot={false} strokeWidth={1.5} name="Reward" />
@@ -415,10 +567,20 @@ export default function App() {
             <div style={{ ...card, padding: 16 }}>
               <div style={secLabel}>Live State</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: Theme.textSecond }}>
+                <div>Run ID: <strong style={{ color: Theme.textPrimary }}>{state?.run_id ?? "-"}</strong></div>
+                <div>Scenario version: <strong style={{ color: Theme.textPrimary }}>{state?.scenario_version_id ?? "-"}</strong></div>
                 <div>Coverage: <strong style={{ color: Theme.textPrimary }}>{state?.coverage_ratio != null ? state.coverage_ratio.toFixed(2) : "0.00"}</strong></div>
                 <div>Seedlings left: <strong style={{ color: Theme.textPrimary }}>{state?.remaining_seedlings ?? 0}</strong></div>
                 <div>Invalid plants: <strong style={{ color: Theme.textPrimary }}>{state?.invalid_plant_count ?? 0}</strong></div>
                 <div>Endpoint: <strong style={{ color: Theme.textPrimary }}>{endpoint ?? "Unavailable"}</strong></div>
+                <div>Scenario ready: <strong style={{ color: Theme.textPrimary }}>{scenarioReady ? "yes" : "no"}</strong></div>
+                <div>Validation: <strong style={{ color: Theme.textPrimary }}>{state?.validation_passed == null ? "n/a" : state.validation_passed ? "ok" : "failed"}</strong></div>
+                <div>Status: <strong style={{ color: Theme.textPrimary }}>{statusLabel}</strong></div>
+                {state?.error && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    Error: <strong style={{ color: Theme.red }}>{state.error}</strong>
+                  </div>
+                )}
               </div>
             </div>
           </div>

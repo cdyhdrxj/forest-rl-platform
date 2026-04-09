@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, Integer, Boolean, Text, ForeignKey, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class ScenarioVersion(Base):
@@ -11,7 +11,7 @@ class ScenarioVersion(Base):
         UniqueConstraint('scenario_id', 'version_no', name='uix_scenario_version'),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     scenario_id = Column(BigInteger, ForeignKey('scenarios.id'), nullable=False)
     version_no = Column(Integer, nullable=False)
     seed = Column(BigInteger)

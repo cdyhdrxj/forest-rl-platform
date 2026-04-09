@@ -7,27 +7,28 @@ from typing import List, Optional
 class GridWorldStepImage(BaseModel):
     pass
 
+
 class GridWorldConfig(BaseModel):
     agent_config: AgentConfig = Field(
-        default_factory = AgentConfig,
-        description= "Конфигурация агента GridWorld"
+        default_factory=AgentConfig,
+        description="Конфигурация агента GridWorld",
     )
-    
+
     intruder_config: List[IntruderConfigType] = Field(
-        default_factory= lambda: [WandererConfig()],
-        description="Список с конфигурациями нарушителей"
+        default_factory=lambda: [WandererConfig()],
+        description="Список с конфигурациями нарушителей",
     )
-    
+
     obs_config: ObservationConfigType = Field(
         default_factory=ObsBoxConfig,
-        description="Конфигурация наблюдения"
+        description="Конфигурация наблюдения",
     )
-    
+
     max_steps: int = Field(
-        default= 50,
-        description= "Длина эпизода патрулирования, (сколько шагов до сброса среды)"
+        default=50,
+        description="Длина эпизода патрулирования в шагах",
     )
-    
+
     grid_size: int = Field(
         default= 20,
         description= "Длина стороны сеточного мира в ячейках"

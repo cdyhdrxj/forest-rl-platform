@@ -1,0 +1,84 @@
+suite_code: agrocare-paper-v1
+title: Agrocare coverage benchmark S1-S4
+route_key: continuous/coverage
+task_kind: coverage
+environment_kind: continuous_2d
+report_dir: data/scientific/suites
+seed: 20260401
+
+scenarios:
+  - family: S1
+    train_count: 300
+    val_count: 100
+    test_count: 150
+    generation_params:
+      row_count_range: [8, 12]
+      curvature_level: low
+      gap_probability: 0.0
+      obstacle_count_range: [0, 0]
+    evaluation_params:
+      tick_sleep: 0.0
+  - family: S2
+    train_count: 300
+    val_count: 100
+    test_count: 150
+    generation_params:
+      row_count_range: [8, 12]
+      curvature_level: low
+      gap_probability: 0.0
+      obstacle_count_range: [1, 2]
+    evaluation_params:
+      tick_sleep: 0.0
+  - family: S3
+    train_count: 300
+    val_count: 100
+    test_count: 150
+    generation_params:
+      row_count_range: [8, 12]
+      curvature_level: medium
+      gap_probability: 0.0
+      obstacle_count_range: [2, 4]
+    evaluation_params:
+      tick_sleep: 0.0
+  - family: S4
+    train_count: 300
+    val_count: 100
+    test_count: 150
+    generation_params:
+      row_count_range: [8, 12]
+      curvature_level: high
+      gap_probability: 0.2
+      obstacle_count_range: [2, 4]
+    evaluation_params:
+      tick_sleep: 0.0
+
+methods:
+  - code: greedy_nearest
+    algorithm: greedy_nearest
+    kind: baseline
+    enabled: true
+    start_params:
+      tick_sleep: 0.0
+  - code: greedy_two_step
+    algorithm: greedy_two_step
+    kind: baseline
+    enabled: true
+    start_params:
+      tick_sleep: 0.0
+  - code: sac
+    algorithm: sac
+    kind: rl
+    enabled: true
+    training:
+      repeats: 5
+      total_timesteps: 500000
+      eval_every_steps: 10000
+      early_stop_patience: 5
+    evaluation:
+      deterministic: true
+
+report:
+  formats: [html, json, csv]
+  representative_runs_per_method: 3
+  save_trajectory_plots: true
+  save_distribution_plots: true

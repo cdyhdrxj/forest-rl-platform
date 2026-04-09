@@ -1,9 +1,7 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from apps.api.dispatcher import ExperimentDispatcher
 from apps.api.websocket_manager import handle_ws
-from services.trail_camar.service  import CamarService
-from services.patrol_planning.service.service import GridWorldService
-from services.reforestation_planting.service import SeedlingPlantingService
 
 app = FastAPI()
 
@@ -15,15 +13,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_camar_trail = CamarService()
-_patrol_discrete = GridWorldService()
-_reforestation_discrete = SeedlingPlantingService()
+_dispatcher = ExperimentDispatcher()
 
 # _discrete_trail = DiscreteService()
 
 @app.websocket("/continuous/trail")
 async def ws_continuous(websocket: WebSocket):
-    await handle_ws(websocket, _camar_trail)
+    await handle_ws(websocket, _dispatcher, "continuous/trail")
+
+@app.websocket("/continuous/coverage")
+async def ws_continuous_coverage(websocket: WebSocket):
+    await handle_ws(websocket, _dispatcher, "continuous/coverage")
 
 # @app.websocket("/continuous/patrol")
 # async def ws_continuous(websocket: WebSocket):
@@ -31,20 +31,20 @@ async def ws_continuous(websocket: WebSocket):
 
 @app.websocket("/discrete/patrol")
 async def ws_discrete_patrol(websocket: WebSocket):
-    await handle_ws(websocket, _patrol_discrete)
+    await handle_ws(websocket, _dispatcher, "discrete/patrol")
 
 @app.websocket("/discrete/reforestation")
 async def ws_discrete_reforestation(websocket: WebSocket):
-    await handle_ws(websocket, _reforestation_discrete)
+    await handle_ws(websocket, _dispatcher, "discrete/reforestation")
 
 # @app.websocket("/discrete/trail")
 # async def ws_discrete_trail(websocket: WebSocket):
 #     await handle_ws(websocket, _discrete_trail)
 
-# @app.websocket("/threed/patrol")
-# async def ws_threed(websocket: WebSocket):
-#     await handle_ws(websocket, _threed_patrol)
+@app.websocket("/threed/patrol")
+async def ws_threed_patrol(websocket: WebSocket):
+    await handle_ws(websocket, _dispatcher, "threed/patrol")
 
-# @app.websocket("/threed/trail")
-# async def ws_threed(websocket: WebSocket):
-#     await handle_ws(websocket, _threed)
+@app.websocket("/threed/trail")
+async def ws_threed_trail(websocket: WebSocket):
+    await handle_ws(websocket, _dispatcher, "threed/trail")

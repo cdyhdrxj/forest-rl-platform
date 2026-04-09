@@ -24,3 +24,5 @@ from .metric_series import MetricSeries
 from .metric_point import MetricPoint
 from .replay import Replay
 from .service_log import ServiceLog
+from .experiment_suite import ExperimentSuite
+from .experiment_suite_run import ExperimentSuiteRun

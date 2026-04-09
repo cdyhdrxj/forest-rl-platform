@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import gymnasium as gym
-from gymnasium import spaces
-import numpy as np
-from typing import List, Type
-
 import copy
 import time
+from typing import List
 
-from services.patrol_planning.assets.envs.models import GridWorldConfig
-from services.patrol_planning.service.models import GridWorldTrainState
+import gymnasium as gym
+import numpy as np
+from gymnasium import spaces
+
 from services.patrol_planning.assets.agents.agent import GridWorldAgent
+from services.patrol_planning.assets.envs.models import GridWorldConfig
+from services.patrol_planning.assets.intruders.controllable import Controllable
+from services.patrol_planning.assets.intruders.models import WandererConfig
+from services.patrol_planning.assets.intruders.wanderer import Wanderer
 from services.patrol_planning.assets.observations.obs_box import ObservationBox
 from services.patrol_planning.assets.intruders.wanderer import Wanderer
 from services.patrol_planning.assets.intruders.models import WandererConfig
@@ -19,9 +21,8 @@ from services.patrol_planning.assets.intruders.poacher_simple import PoacherSimp
 from services.patrol_planning.service.models import GridWorldTrainState
 # TRAJECTORY_MAX_LEN = 200
 
-#Сеточный мир
 class GridWorld(gym.Env):
-    """Сеточный мир"""
+    """Grid-based patrol environment."""
 
     def __init__(self, agent: GridWorldAgent, obs_model: Observation,
                  grid_world_size = 20, intruders: List[GridWorldIntruder] = [], max_steps: int = 50,
@@ -36,21 +37,12 @@ class GridWorld(gym.Env):
             "rows": np.tile(np.arange(grid_world_size, dtype=np.float32).reshape(-1, 1), (1, grid_world_size)),
             "cols": np.tile(np.arange(grid_world_size, dtype=np.float32).reshape(1, -1), (grid_world_size, 1))
         }
-        #Агент
         self.agent = agent
-        
-        #Нарушители
-        self.intruders_start = copy.deepcopy(intruders) #Кешируем чтобы потом восстанавливать при reset
+        self.intruders_start = copy.deepcopy(intruders)
         self.intruders = copy.deepcopy(intruders)
-        
-        #Переопределяем параметр класса (#TODO Должен получать из агента!)
         self.action_space = spaces.Discrete(len(agent.ACTIONS))
-
-        #Переопределяем параметр класса
         self.obs = obs_model
         self.observation_space = self.obs.space
-        
-        #Длина эпизода (в шагах)
         self.max_steps = max_steps
         
         #Передаётся вручную (снаружи)
@@ -67,7 +59,6 @@ class GridWorld(gym.Env):
             self.train_state = GridWorldTrainState()
         
     def reset(self, seed=None, options=None):
-
         super().reset(seed=seed)
 
         #Сброс сеточного мира
@@ -82,12 +73,9 @@ class GridWorld(gym.Env):
 
         #Сброс агента
         self.agent.reset(self)
-        
-        #Сброс нарушителей
         self.intruders = copy.deepcopy(self.intruders_start)
-        for i in self.intruders:
-            #Сбрасываем чтобы учесть случайное появление 
-            i.reset(self)
+        for intruder in self.intruders:
+            intruder.reset(self)
 
         observation = self.obs.build_observation(self.world_layers, self.agent)
 
@@ -125,7 +113,6 @@ class GridWorld(gym.Env):
         
         #Проверяем пойманы ли все нарушители?
         if len(self.intruders) == 0:
-            #завершаем эпизод
             terminated = True
             
         #Проверяем превышение по шагам
@@ -141,10 +128,8 @@ class GridWorld(gym.Env):
         if self.renderer is not None:
             self.renderer.live.update(self.renderer.render())
             time.sleep(self.render_time_sleep)
-            
-        #Обновляем train_state
+
         self.update_train_state(truncated, terminated, reward, observation)
-           
         return observation, reward, terminated, truncated, info
     
     def update_train_state(self, truncated,
@@ -177,54 +162,40 @@ class GridWorld(gym.Env):
         
 
     @staticmethod
-    def load(config: GridWorldConfig) -> 'GridWorld':
-        """
-        Создает настроенный экземпляр GridWorld на основе конфигурации.
-
-        Args:
-            config: Конфигурация GridWorldConfig
-
-        Returns:
-            GridWorld: Настроенный экземпляр среды
-
-        """
-        # Проверка типа модели
+    def load(config: GridWorldConfig, static_layers: dict[str, np.ndarray] | None = None) -> "GridWorld":
         if not isinstance(config, GridWorldConfig):
-            raise ValueError(f"Ожидался GridWorldConfig, получено: {type(config)}")
+            raise ValueError(f"Expected GridWorldConfig, got: {type(config)}")
 
-        # Создаем агента из конфигурации
         agent = GridWorldAgent.load(config.agent_config)
 
-        # Создаем модель наблюдения из конфигурации
         match type(config.obs_config).__name__:
-            case 'ObsBoxConfig':
+            case "ObsBoxConfig":
                 obs_model = ObservationBox.load(config.obs_config)
             case _:
-                raise ValueError(f"Неподдерживаемый тип конфига наблюдения: {type(config.obs_config).__name__}")
+                raise ValueError(
+                    f"Unsupported observation config type: {type(config.obs_config).__name__}"
+                )
 
-        # Создаем нарушителей из конфигураций
         intruders = []
         for intruder_config in config.intruder_config: 
             match type(intruder_config).__name__:
-                case 'WandererConfig':
-                    # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
+                case "WandererConfig":
                     intruders.append(Wanderer.load(intruder_config))
-                case 'ControllableConfig':
-                    # По умолчанию создаем Wanderer, но можно добавить логику для определения типа
+                case "ControllableConfig":
                     intruders.append(Controllable.load(intruder_config))
                 case 'PoacherSimpleConfig':
                     intruders.append(PoacherSimple.load(intruder_config))
                 case _:
-                    raise ValueError(f"Неподдерживаемый тип конфига нарушителя: {type(intruder_config).__name__}")
+                    raise ValueError(
+                        f"Unsupported intruder config type: {type(intruder_config).__name__}"
+                    )
 
-        # Создаем и возвращаем настроенный экземпляр GridWorld
         return GridWorld(
             agent=agent,
             obs_model=obs_model,
-            grid_world_size=config.grid_size,  # По умолчанию, можно сделать конфигурируемым
+            grid_world_size=config.grid_size,
             intruders=intruders,
             max_steps=config.max_steps,
             intruder_detection_reward=config.intruder_detection_reward,
             intruder_interception_reward=config.intruder_interception_reward
         )
-    

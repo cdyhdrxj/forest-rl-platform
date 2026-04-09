@@ -3,6 +3,7 @@ fastapi
 uvicorn[standard]
 stable-baselines3
 gymnasium
+jsonschema
 jax[cpu]
 numpy
 orjson

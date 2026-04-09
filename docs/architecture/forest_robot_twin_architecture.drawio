@@ -1,0 +1,104 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.3.4">
+  <diagram id="forest-robot-twin" name="ForestRobotTwin">
+    <mxGraphModel dx="1376" dy="692" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" value="Веб-интерфейс&#xa;(визуализация, запуск экспериментов, реплеи)" vertex="1">
+          <mxGeometry height="70" width="670" x="250" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="Диспетчер экспериментов (FastAPI)&#xa;сценарии, запуски, метрики, артефакты" vertex="1">
+          <mxGeometry height="80" width="670" x="250" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" value="Среда исполнения&#xa;симулятор / робот через ROS 2&#xa;(рельеф, препятствия, датчики, события)" vertex="1">
+          <mxGeometry height="150" width="260" x="10" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" value="Environment Adapter&#xa;(Gym reset/step, sync control tick, observation/reward)" vertex="1">
+          <mxGeometry height="90" width="250" x="330" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="Модуль обучения и оценки:&#xa;прокладка троп&#xa;(стоимость, бенчмарки, сравнение)" vertex="1">
+          <mxGeometry height="110" width="240" x="300" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="Модуль обучения и оценки:&#xa;патрулирование&#xa;(покрытие, задержка обнаружения, ущерб)" vertex="1">
+          <mxGeometry height="110" width="240" x="560" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="Модуль обучения и оценки:&#xa;управление роботом&#xa;(train/eval через env adapter)" vertex="1">
+          <mxGeometry height="110" width="240" x="820" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" value="Policy Runner&#xa;(загрузка модели, inference, runtime loop)" vertex="1">
+          <mxGeometry height="90" width="220" x="650" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" value="Safety Supervisor&#xa;(clamp, stop zone, collision guard, e-stop)" vertex="1">
+          <mxGeometry height="90" width="220" x="650" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" value="ROS / Robot Bridge&#xa;(cmd_vel, cmd_step, pose, scan, events)" vertex="1">
+          <mxGeometry height="90" width="220" x="930" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=13;" value="Хранилище результатов&#xa;PostgreSQL + файловое хранилище&#xa;(сценарии, логи, метрики, модели)" vertex="1">
+          <mxGeometry height="90" width="420" x="380" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="13" edge="1" parent="1" source="2" target="3" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="14" edge="1" parent="1" source="3" target="4" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="15" edge="1" parent="1" source="3" target="6" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="16" edge="1" parent="1" source="3" target="7" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="17" edge="1" parent="1" source="3" target="8" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="18" edge="1" parent="1" source="3" target="9" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="19" edge="1" parent="1" source="4" target="5" value="ROS 2 topics/services" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="20" edge="1" parent="1" source="5" target="8" value="training / evaluation loop" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="21" edge="1" parent="1" source="9" target="10" value="policy command" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="22" edge="1" parent="1" source="10" target="11" value="safe command" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="23" edge="1" parent="1" source="11" target="4" value="cmd_vel / cmd_step" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="910" y="510" />
+              <mxPoint x="240" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="24" edge="1" parent="1" source="4" target="11" value="pose / scan / events" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="300" />
+              <mxPoint x="910" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="25" edge="1" parent="1" source="6" target="12" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="26" edge="1" parent="1" source="7" target="12" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="27" edge="1" parent="1" source="8" target="12" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="28" edge="1" parent="1" source="3" target="12" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="29" edge="1" parent="1" source="12" target="9" value="model artifact" style="endArrow=block;html=1;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
