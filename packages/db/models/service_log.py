@@ -2,13 +2,13 @@ from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class ServiceLog(Base):
     __tablename__ = 'service_logs'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     run_id = Column(BigInteger, ForeignKey('runs.id'))
     service_name = Column(String(100), nullable=False)
     level = Column(String(20), nullable=False)

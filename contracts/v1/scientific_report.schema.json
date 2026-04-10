@@ -1,0 +1,516 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forest-robot-twin.local/contracts/v1/scientific_report.schema.json",
+  "title": "Scientific Suite Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "suite",
+    "config",
+    "overview",
+    "aggregates",
+    "runs",
+    "artifacts"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suite_id",
+        "suite_code",
+        "title",
+        "route_key",
+        "mode",
+        "status"
+      ],
+      "properties": {
+        "suite_id": {
+          "type": "integer"
+        },
+        "suite_code": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "route_key": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "finished_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "config": {
+      "type": "object"
+    },
+    "overview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_runs",
+        "methods",
+        "scenario_families",
+        "splits",
+        "status_counts"
+      ],
+      "properties": {
+        "total_runs": {
+          "type": "integer"
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scenario_families": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "splits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "aggregates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method_code",
+          "runs_count",
+          "finished_runs_count",
+          "scenario_families",
+          "splits",
+          "status_counts"
+        ],
+        "properties": {
+          "method_code": {
+            "type": "string"
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dataset_split": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "runs_count": {
+            "type": "integer"
+          },
+          "finished_runs_count": {
+            "type": "integer"
+          },
+          "scenario_families": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration_sec_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "duration_sec_std": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_success_rate_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_reward_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_reward_median": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_reward_min": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_reward_max": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "coverage_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "missed_area_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "return_error_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "path_length_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "task_time_sec_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "transition_count_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "repeat_coverage_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "angular_work_rad_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "compute_time_sec_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_steps_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "status_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "scenario_family",
+          "dataset_split",
+          "method_code",
+          "replicate_index",
+          "role",
+          "group_key",
+          "status",
+          "run_result_path",
+          "metrics_export_path",
+          "episode_log_path",
+          "trajectory_path",
+          "config_json"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "integer"
+          },
+          "scenario_family": {
+            "type": "string"
+          },
+          "dataset_split": {
+            "type": "string"
+          },
+          "method_code": {
+            "type": "string"
+          },
+          "replicate_index": {
+            "type": "integer"
+          },
+          "role": {
+            "type": "string"
+          },
+          "train_seed": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "eval_seed": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "group_key": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "algorithm_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_sec": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episodes_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "episode_success_rate": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_reward_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_reward_median": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "episode_steps_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "coverage_ratio_mean": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "missed_area_ratio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "return_to_start_success": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "return_error": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "path_length": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "task_time_sec": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "transition_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "repeat_coverage_ratio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "angular_work_rad": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "compute_time_sec": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "protocol_phase": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checkpoint_in_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checkpoint_out_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_train_run_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "checkpoint_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "run_result_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metrics_export_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "episode_log_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "trajectory_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "config_json": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plots",
+        "trajectories"
+      ],
+      "properties": {
+        "plots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trajectories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -2,14 +2,14 @@ from sqlalchemy import Column, BigInteger, Integer, Float, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 from .enums import EventType
 
 
 class EpisodeEvent(Base):
     __tablename__ = 'episode_events'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     episode_id = Column(BigInteger, ForeignKey('episodes.id'), nullable=False)
     step_index = Column(Integer)
     sim_time_sec = Column(Float)

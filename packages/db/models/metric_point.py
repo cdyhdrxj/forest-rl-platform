@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, Integer, Float, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class MetricPoint(Base):
@@ -11,7 +11,7 @@ class MetricPoint(Base):
         UniqueConstraint('metric_series_id', 'point_index', name='uix_series_point'),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     metric_series_id = Column(BigInteger, ForeignKey('metric_series.id'), nullable=False)
     point_index = Column(Integer, nullable=False)
     train_step = Column(BigInteger)

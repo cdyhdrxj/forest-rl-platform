@@ -205,3 +205,243 @@ def test_episode_log_payload_conforms_to_contract():
     }
 
     _assert_valid("episode_log.schema.json", payload)
+
+
+def test_scientific_suite_config_conforms_to_contract():
+    payload = {
+        "suite_code": "trail-smoke-suite",
+        "title": "Three-D Trail Scientific Smoke Suite",
+        "route_key": "threed/trail",
+        "task_kind": "trail",
+        "environment_kind": "simulator_3d",
+        "report_dir": "data/scientific/suites",
+        "seed": 101,
+        "scenarios": [
+            {
+                "family": "smoke",
+                "split": "test",
+                "count": 1,
+                "generation_params": {
+                    "preview_size": 12,
+                    "tree_density": 0.25
+                },
+                "evaluation_params": {
+                    "max_steps": 12,
+                    "tick_sleep": 0.001
+                }
+            }
+        ],
+        "methods": [
+            {
+                "code": "ppo",
+                "algorithm": "ppo",
+                "enabled": True,
+                "repeats": 1,
+                "start_params": {
+                    "max_steps": 12
+                },
+                "role": "eval"
+            }
+        ],
+        "report": {
+            "formats": ["json", "csv", "html"],
+            "representative_runs_per_method": 1,
+            "save_trajectory_plots": True,
+            "save_distribution_plots": True
+        }
+    }
+
+    _assert_valid("scientific_suite.schema.json", payload)
+
+
+def test_scientific_suite_paper_config_conforms_to_contract():
+    payload = {
+        "suite_code": "agrocare-paper-v1",
+        "title": "Agrocare coverage benchmark S1-S4",
+        "route_key": "continuous/coverage",
+        "task_kind": "coverage",
+        "environment_kind": "continuous_2d",
+        "report_dir": "data/scientific/suites",
+        "seed": 20260401,
+        "scenarios": [
+            {
+                "family": "S1",
+                "train_count": 300,
+                "val_count": 100,
+                "test_count": 150,
+                "generation_params": {
+                    "row_count_range": [8, 12],
+                    "curvature_level": "low",
+                    "obstacle_count_range": [0, 0]
+                }
+            }
+        ],
+        "methods": [
+            {
+                "code": "greedy_nearest",
+                "algorithm": "greedy_nearest",
+                "kind": "baseline",
+                "enabled": True,
+                "start_params": {
+                    "tick_sleep": 0.0
+                }
+            },
+            {
+                "code": "sac",
+                "algorithm": "sac",
+                "kind": "rl",
+                "enabled": True,
+                "training": {
+                    "repeats": 5,
+                    "total_timesteps": 500000
+                },
+                "evaluation": {
+                    "deterministic": True
+                }
+            }
+        ],
+        "report": {
+            "formats": ["json", "csv", "html"],
+            "representative_runs_per_method": 3,
+            "save_trajectory_plots": True,
+            "save_distribution_plots": True
+        }
+    }
+
+    _assert_valid("scientific_suite.schema.json", payload)
+
+
+def test_scientific_report_payload_conforms_to_contract():
+    payload = {
+        "generated_at": "2026-04-01T18:00:00Z",
+        "suite": {
+            "suite_id": 1,
+            "suite_code": "trail-smoke-suite",
+            "title": "Three-D Trail Scientific Smoke Suite",
+            "route_key": "threed/trail",
+            "mode": "trail",
+            "status": "finished",
+            "started_at": "2026-04-01T18:00:00Z",
+            "finished_at": "2026-04-01T18:00:10Z"
+        },
+        "config": {
+            "suite_code": "trail-smoke-suite"
+        },
+        "overview": {
+            "total_runs": 1,
+            "methods": ["ppo"],
+            "scenario_families": ["smoke"],
+            "splits": ["test"],
+            "status_counts": {
+                "finished": 1
+            }
+        },
+        "aggregates": [
+            {
+                "method_code": "ppo",
+                "role": "eval",
+                "dataset_split": "test",
+                "runs_count": 1,
+                "finished_runs_count": 1,
+                "scenario_families": ["smoke"],
+                "splits": ["test"],
+                "duration_sec_mean": 1.2,
+                "duration_sec_std": 0.0,
+                "episode_success_rate_mean": 1.0,
+                "episode_reward_mean": 10.0,
+                "episode_reward_median": 10.0,
+                "episode_reward_min": 10.0,
+                "episode_reward_max": 10.0,
+                "coverage_ratio_mean": 0.75,
+                "episode_steps_mean": 8.0,
+                "status_counts": {
+                    "finished": 1
+                }
+            }
+        ],
+        "runs": [
+            {
+                "run_id": 12,
+                "scenario_family": "smoke",
+                "dataset_split": "test",
+                "method_code": "ppo",
+                "replicate_index": 1,
+                "role": "eval",
+                "train_seed": 1101,
+                "eval_seed": 1001101,
+                "group_key": "smoke:test:sv4:ppo:r1",
+                "status": "finished",
+                "algorithm_code": "ppo_trail",
+                "duration_sec": 1.2,
+                "episodes_count": 1,
+                "episode_success_rate": 1.0,
+                "episode_reward_mean": 10.0,
+                "episode_reward_median": 10.0,
+                "episode_steps_mean": 8.0,
+                "coverage_ratio_mean": 0.75,
+                "protocol_phase": "test_eval",
+                "checkpoint_in_path": "data/scientific/suites/trail-smoke-suite/checkpoints/smoke/ppo/best.zip",
+                "checkpoint_out_path": None,
+                "source_train_run_id": 10,
+                "checkpoint_paths": [
+                    "data/scientific/suites/trail-smoke-suite/checkpoints/smoke/ppo/best.zip"
+                ],
+                "run_result_path": "data/runs/run_12/exports/run_result.json",
+                "metrics_export_path": "data/runs/run_12/exports/metrics_export.json",
+                "episode_log_path": "data/runs/run_12/exports/episode_log.json",
+                "trajectory_path": "data/scientific/suites/trail-smoke-suite/trajectories/run_12/trajectory.svg",
+                "config_json": {
+                    "route_key": "threed/trail"
+                }
+            }
+        ],
+        "artifacts": {
+            "plots": [
+                "plots/reward_by_method.svg"
+            ],
+            "trajectories": [
+                "trajectories/smoke_test_ppo_run_12/trajectory.svg"
+            ]
+        }
+    }
+
+    _assert_valid("scientific_report.schema.json", payload)
+
+
+def test_replay_payload_with_coverage_state_conforms_to_contract():
+    payload = {
+        "timestamp": "2026-04-01T18:00:00Z",
+        "route_key": "continuous/coverage",
+        "state": {
+            "running": False,
+            "mode": "coverage",
+            "episode": 1,
+            "step": 8,
+            "total_reward": 0.0,
+            "last_episode_reward": 12.5,
+            "new_episode": True,
+            "agent_pos": [[5.0, 0.0]],
+            "goal_pos": [],
+            "landmark_pos": [[3.0, 4.0]],
+            "trajectory": [[5.0, 0.0], [5.0, 1.0]],
+            "goal_count": 6,
+            "collision_count": 0,
+            "terrain_map": [[0.0, 1.0], [0.0, 0.0]],
+            "coverage_ratio": 1.0,
+            "missed_area_ratio": 0.0,
+            "return_to_start_success": True,
+            "return_error": 0.0,
+            "path_length": 42.0,
+            "task_time_sec": 1.3,
+            "transition_count": 5,
+            "repeat_coverage_ratio": 0.1,
+            "angular_work_rad": 3.14,
+            "compute_time_sec": 0.05,
+            "remaining_rows": 0,
+            "success": True,
+            "coverage_target_map": [[1.0, 0.0], [0.0, 1.0]],
+            "covered_map": [[1.0, 0.0], [0.0, 1.0]]
+        }
+    }
+
+    _assert_valid("replay.schema.json", payload)

@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Enum as SQLEnum
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 from .enums import ProjectMode
 
 
@@ -13,7 +13,7 @@ class Scenario(Base):
         UniqueConstraint('project_id', 'code', name='uix_project_code'),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     project_id = Column(BigInteger, ForeignKey('projects.id'), nullable=False)
     code = Column(String(100), nullable=False)
     name = Column(String(255), nullable=False)

@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from threading import RLock
+import time
 from typing import Any, Callable
 import shutil
 
 from sqlalchemy import func
 
+from apps.api.run_exports import build_run_result_payload, export_run_bundle
 from apps.api.runtime_monitor import RunObserver, write_service_log
 from packages.db.models.algorithm import Algorithm
 from packages.db.models.artifact import Artifact
@@ -19,12 +21,15 @@ from packages.db.models.scenario_version import ScenarioVersion
 from packages.db.models.user import User
 from packages.db.models.enums import AlgorithmFamily, ArtifactType, ProjectMode, RunStatus
 from packages.db.session import db_session
+from services.agrocare_coverage.generator import build_runtime_config as build_coverage_runtime_config_model
+from services.agrocare_coverage.service import AgrocareCoverageService
 from services.patrol_planning.assets.envs.models import GridWorldConfig
 from services.patrol_planning.service.service import GridWorldService
 from services.reforestation_planting.models import PlantingEnvConfig
 from services.reforestation_planting.service import SeedlingPlantingService
 from services.scenario_generator import (
     apply_patrol_generation,
+    build_continuous_coverage_request,
     build_continuous_trail_request,
     build_patrol_grid_request,
     build_reforestation_request,
@@ -49,8 +54,6 @@ from services.scenario_generator.storage import (
     store_generated_scenario,
 )
 from services.scenario_generator.validation import report_for_runtime_validation
-from services.simulator_3d import Simulator3DService
-from services.trail_camar.service import CamarService
 
 
 RuntimeServiceFactory = Callable[[], Any]
@@ -89,6 +92,18 @@ def _build_patrol_request(params: dict[str, Any]) -> GenerationRequest:
     return build_patrol_grid_request(GridWorldConfig.model_validate(source))
 
 
+def _make_continuous_trail_service():
+    from services.trail_camar.service import CamarService
+
+    return CamarService()
+
+
+def _make_simulator_3d_service():
+    from services.simulator_3d import Simulator3DService
+
+    return Simulator3DService()
+
+
 def _build_patrol_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
     source = params.get("grid_world_config", params)
     config = GridWorldConfig.model_validate(source)
@@ -112,6 +127,14 @@ def _build_continuous_runtime_config(_: dict[str, Any], scenario: GeneratedScena
     return extract_continuous_runtime_kwargs(scenario)
 
 
+def _build_coverage_request(params: dict[str, Any]) -> GenerationRequest:
+    return build_continuous_coverage_request(params)
+
+
+def _build_coverage_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
+    return build_coverage_runtime_config_model(params, scenario).model_dump(mode="json")
+
+
 def _build_3d_trail_request(params: dict[str, Any]) -> GenerationRequest:
     return build_simulator_3d_request(params, task_kind=TaskKind.TRAIL)
 
@@ -125,12 +148,16 @@ def _build_3d_runtime_config(_: dict[str, Any], scenario: GeneratedScenario) -> 
 
 
 def _algorithm_family_for_key(algorithm_key: str) -> AlgorithmFamily:
+    if algorithm_key in {"greedy_nearest", "greedy_two_step"}:
+        return AlgorithmFamily.classic_planner
     return AlgorithmFamily.actor_critic
 
 
 def _task_display_name(task_kind: TaskKind) -> str:
     if task_kind is TaskKind.REFORESTATION:
         return "Reforestation"
+    if task_kind is TaskKind.COVERAGE:
+        return "Coverage"
     return task_kind.value.capitalize()
 
 
@@ -141,9 +168,20 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         task_kind=TaskKind.TRAIL,
         project_mode=ProjectMode.trail,
         training_mode="trail",
-        service_factory=CamarService,
+        service_factory=_make_continuous_trail_service,
         request_builder=_build_continuous_request,
         runtime_config_builder=_build_continuous_runtime_config,
+    ),
+    "continuous/coverage": RuntimeRoute(
+        route_key="continuous/coverage",
+        environment_kind=EnvironmentKind.CONTINUOUS_2D,
+        task_kind=TaskKind.COVERAGE,
+        project_mode=ProjectMode.coverage,
+        training_mode="coverage",
+        service_factory=AgrocareCoverageService,
+        request_builder=_build_coverage_request,
+        runtime_config_builder=_build_coverage_runtime_config,
+        default_algorithm="greedy_nearest",
     ),
     "discrete/patrol": RuntimeRoute(
         route_key="discrete/patrol",
@@ -171,7 +209,7 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         task_kind=TaskKind.TRAIL,
         project_mode=ProjectMode.trail,
         training_mode="trail",
-        service_factory=Simulator3DService,
+        service_factory=_make_simulator_3d_service,
         request_builder=_build_3d_trail_request,
         runtime_config_builder=_build_3d_runtime_config,
     ),
@@ -181,7 +219,7 @@ DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
         task_kind=TaskKind.PATROL,
         project_mode=ProjectMode.patrol,
         training_mode="patrol",
-        service_factory=Simulator3DService,
+        service_factory=_make_simulator_3d_service,
         request_builder=_build_3d_patrol_request,
         runtime_config_builder=_build_3d_runtime_config,
     ),
@@ -562,7 +600,7 @@ class ExperimentDispatcher:
             execution_phase = "failed"
         elif session.observer is not None and session.observer.final_status is not None:
             execution_phase = session.observer.final_status.value
-        elif session.observer is not None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
+        elif session.observer is not None and session.training_params and not state.get("running") and not session.observer.is_alive():
             execution_phase = "finished"
         elif session.observer is None and session.training_params and not state.get("running") and int(state.get("step") or 0) > 0:
             execution_phase = "stopped"
@@ -587,6 +625,29 @@ class ExperimentDispatcher:
         if session.last_error:
             state["error"] = session.last_error
         return state
+
+    def wait_run(
+        self,
+        run_id: int,
+        *,
+        poll_interval: float = 0.1,
+        timeout_sec: float = 300.0,
+    ) -> dict[str, Any]:
+        session = self.load_run(run_id)
+        deadline = time.time() + max(0.0, float(timeout_sec))
+        while True:
+            state = self.get_state(session.route.route_key, run_id)
+            if state.get("execution_phase") in {"finished", "failed", "cancelled", "stopped"}:
+                return state
+            if time.time() >= deadline:
+                raise TimeoutError(f"Run '{run_id}' did not finish within {timeout_sec} seconds")
+            time.sleep(max(0.01, float(poll_interval)))
+
+    def get_run_result(self, run_id: int) -> dict[str, Any]:
+        return build_run_result_payload(run_id)
+
+    def export_run_bundle(self, run_id: int) -> dict[str, str]:
+        return export_run_bundle(run_id)
 
     def _get_route(self, route_key: str) -> RuntimeRoute:
         try:
@@ -668,12 +729,13 @@ class ExperimentDispatcher:
         code = f"{algorithm_key}_{project_mode.value}"
         algorithm = db.query(Algorithm).filter(Algorithm.code == code).first()
         if algorithm is None:
+            family = _algorithm_family_for_key(algorithm_key)
             algorithm = Algorithm(
                 code=code,
                 name=algorithm_key.upper(),
-                family=_algorithm_family_for_key(algorithm_key),
+                family=family,
                 mode=project_mode,
-                framework="stable_baselines3",
+                framework="stable_baselines3" if family is AlgorithmFamily.actor_critic else "builtin",
                 description="Autogenerated algorithm entry for dispatcher-managed runs",
                 default_config_json={"algorithm": algorithm_key},
             )

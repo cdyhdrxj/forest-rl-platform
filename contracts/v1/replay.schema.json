@@ -27,6 +27,7 @@
       "type": "string",
       "enum": [
         "continuous/trail",
+        "continuous/coverage",
         "discrete/patrol",
         "discrete/reforestation",
         "threed/patrol",
@@ -150,6 +151,73 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "missed_area_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "return_to_start_success": {
+          "type": "boolean"
+        },
+        "return_error": {
+          "type": "number",
+          "minimum": 0
+        },
+        "path_length": {
+          "type": "number",
+          "minimum": 0
+        },
+        "task_time_sec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "transition_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeat_coverage_ratio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "angular_work_rad": {
+          "type": "number",
+          "minimum": 0
+        },
+        "compute_time_sec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "remaining_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "coverage_target_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "covered_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
         },
         "remaining_seedlings": {
           "type": "integer",

@@ -1,0 +1,48 @@
+{
+  "agent_config": {
+    "type": "default",
+    "pos": [
+      0,
+      0
+    ],
+    "is_random_spawned": false,
+    "m_block": 1.0,
+    "m_out": 1.0,
+    "m_stay": 0.0
+  },
+  "intruder_config": [
+    {
+      "type": "poacher_simple",
+      "pos": [
+        5,
+        5
+      ],
+      "is_random_spawned": false,
+      "catch_reward": 1.0,
+      "m_plan": 100.0,
+      "m_defence": 1.5,
+      "m_tool_power": 100.0,
+      "search_patience": 50,
+      "incoming_moment": 10
+    }
+  ],
+  "obs_config": {
+    "type": "box",
+    "size": 4,
+    "layers_count": 6
+  },
+  "max_steps": 50,
+  "grid_size": 8,
+  "intruder_detection_reward": 1.0,
+  "intruder_interception_reward": 1.5,
+  "random_spawn_position": true,
+  "random_spawn_time": true,
+  "tau_min": 5,
+  "tau_max": 10,
+  "map_seed": null,
+  "passability_low": 0.1,
+  "passability_high": 1.0,
+  "impassable_prob": 0.15,
+  "max_value": 1000.0,
+  "value_density": 0.7
+}

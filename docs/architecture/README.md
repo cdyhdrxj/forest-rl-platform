@@ -4,8 +4,12 @@
 Для исторического контекста в репозитории также оставлены:
 
 - `ENVIRONMENT_GENERATION_ARCHITECTURE.md`
-- `docs/architecture/forestrl_platform_architecture.drawio`
-- `docs/architecture/forestrl_platform_architecture.jpg`
+- `docs/architecture/forest_robot_twin_architecture.drawio`
+- `docs/architecture/forest_robot_twin_architecture.jpg`
+
+Целевое ТЗ на отдельный scientific mode для пакетных экспериментов и отчетности вынесено в:
+
+- `docs/experiments/scientific_mode_tz.md`
 
 ## Основные компоненты
 

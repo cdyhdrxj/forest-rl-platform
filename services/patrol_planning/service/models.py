@@ -18,10 +18,9 @@ class GridWorldTrainState(DictLikeModel):
         self.total_reward = 0.0
         self.last_episode_reward = 0.0
         self.new_episode = False
-        self.goal_count = 0
-        self.collision_count = 0
         self.trajectory = []
-        self.terrain_map = None
+        self.catch_latency = []
+        self.total_damage = 0
         
     #Параметры, обновляемые средой
     agent_pos: List[List[float]] = Field(
@@ -39,6 +38,11 @@ class GridWorldTrainState(DictLikeModel):
         description="Путь агента"
     )
     
+    catch_latency: List[int] = Field(
+        default_factory=list,
+        description="Среднее время между появлением и поимкой нарушителя"
+    )
+    
     step: int = Field(
         default=0,
         description="Счетчик шагов внутри эпизода"
@@ -48,7 +52,12 @@ class GridWorldTrainState(DictLikeModel):
         default=0.0,
         description="Накопленная награда за текущий эпизод"
     )
-    
+     
+    total_damage: float = Field(
+        default=0.0,
+        description="Ущерб, нанесённый нарушителями за текущий эпизод"
+    )
+
     episode: int = Field(
         default=0,
         description="Номер текущего эпизода"
@@ -73,6 +82,12 @@ class GridWorldTrainState(DictLikeModel):
         default= None,
         description= "Данные области наблюдения агента"
     )
+    
+    world_layers: dict | None  = Field(
+        default= None,
+        description= "Зона патрулирования (послойно). Ключи: \
+        intruders - нарушители, rows - индексы строк, cols -индексы столбцов, passability - проходимость, value - ценность"
+    )
 
     #Параметры, не обновляемые/не используемые средой
     running: bool = Field(
@@ -81,34 +96,10 @@ class GridWorldTrainState(DictLikeModel):
     )
 
     mode: str = Field(
-        default="trail",
+        default="patrol",
         description="Режим работы"
     )
 
-    landmark_pos: List[List[float]] = Field(
-        default_factory=list,
-        description="Позиции препятствий"
-    )
-
-    is_collision: bool = Field(
-        default=False,
-        description="Флаг столкновения"
-    )
-
-    goal_count: int = Field(
-        default=0,
-        description="Сколько раз агент достиг цели за эпизод"
-    )
-
-    collision_count: int = Field(
-        default=0,
-        description="Сколько столкновений за эпизод"
-    )
-
-    terrain_map: Optional[List[List[float]]] = Field(
-        default=None,
-        description="Карта рельефа [[float,...],...], значения 0..1 размер grid_size×grid_size"
-    )
     
 
     

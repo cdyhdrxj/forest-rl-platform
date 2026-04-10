@@ -6,9 +6,11 @@ from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.reforestation_planting.models import PlantingEnvConfig
 from services.scenario_generator import (
     apply_patrol_generation,
+    build_continuous_coverage_request,
     build_continuous_trail_request,
     build_patrol_grid_request,
     build_reforestation_request,
+    extract_coverage_runtime_layout,
     extract_continuous_runtime_kwargs,
     extract_reforestation_runtime_layout,
     get_default_environment_generation_service,
@@ -90,3 +92,58 @@ def test_continuous_generation_returns_wrapper_kwargs():
     assert wrapper_kwargs["grid_size"] == 12
     assert wrapper_kwargs["obstacle_density"] == 0.3
     assert wrapper_kwargs["frameskip"] == 4
+
+
+def test_continuous_coverage_generation_produces_valid_layout():
+    service = get_default_environment_generation_service()
+    scenario = service.generate(
+        build_continuous_coverage_request(
+            {
+                "seed": 41,
+                "grid_size": 28,
+                "row_count": 7,
+                "curvature_level": "medium",
+                "gap_probability": 0.2,
+                "obstacle_count": 2,
+                "max_steps": 10,
+            }
+        )
+    )
+
+    layout = extract_coverage_runtime_layout(scenario)
+    coverage_mask = layout["coverage_mask"]
+    free_mask = layout["free_mask"]
+    start_x, start_y = layout["start_position"]
+    home_x, home_y = layout["home_position"]
+
+    assert coverage_mask.shape == (28, 28)
+    assert free_mask.shape == (28, 28)
+    assert int(np.count_nonzero(coverage_mask)) > 0
+    assert free_mask[start_x, start_y] == 1
+    assert free_mask[home_x, home_y] == 1
+    assert len(layout["row_paths"]) == 7
+    assert scenario.validation_passed is True
+
+
+def test_continuous_coverage_family_preset_applies_split_and_field_profile():
+    service = get_default_environment_generation_service()
+    scenario = service.generate(
+        build_continuous_coverage_request(
+            {
+                "seed": 43,
+                "family": "S4",
+                "split": "test",
+            }
+        )
+    )
+
+    layout = extract_coverage_runtime_layout(scenario)
+
+    assert scenario.effective_params["family"] == "S4"
+    assert scenario.effective_params["split"] == "test"
+    assert scenario.effective_params["field_profile"] == "concave"
+    assert layout["field_mask"].shape == (36, 36)
+    assert 8 <= int(layout["row_count"]) <= 12
+    assert layout["split"] == "test"
+    assert layout["family"] == "S4"
+    assert scenario.validation_passed is True

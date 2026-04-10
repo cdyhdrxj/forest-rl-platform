@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forest-robot-twin.local/contracts/v1/scientific_suite.schema.json",
+  "title": "Scientific Suite Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "suite_code",
+    "title",
+    "route_key",
+    "seed",
+    "scenarios",
+    "methods",
+    "report"
+  ],
+  "properties": {
+    "suite_code": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "route_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_kind": {
+      "type": "string"
+    },
+    "environment_kind": {
+      "type": "string"
+    },
+    "report_dir": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "family"
+        ],
+        "properties": {
+          "family": {
+            "type": "string",
+            "minLength": 1
+          },
+          "split": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": "test"
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "train_count": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "val_count": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "test_count": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "seed_start": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "generation_params": {
+            "type": "object",
+            "default": {}
+          },
+          "evaluation_params": {
+            "type": "object",
+            "default": {}
+          }
+        }
+      }
+    },
+    "methods": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "algorithm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "repeats": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "start_params": {
+            "type": "object",
+            "default": {}
+          },
+          "training": {
+            "type": "object",
+            "default": {}
+          },
+          "evaluation": {
+            "type": "object",
+            "default": {}
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "json",
+              "csv",
+              "html"
+            ]
+          },
+          "default": [
+            "json",
+            "csv",
+            "html"
+          ]
+        },
+        "representative_runs_per_method": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1
+        },
+        "save_trajectory_plots": {
+          "type": "boolean",
+          "default": true
+        },
+        "save_distribution_plots": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}
