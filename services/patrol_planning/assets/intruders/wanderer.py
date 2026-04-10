@@ -25,7 +25,7 @@ class Wanderer(GridWorldIntruder):
     def step(self, env: GridWorld):
         
         #Удаляем свою старую позицию из мира
-        env.word_layers["intruders"][self.x][self.y] = 0
+        env.world_layers["intruders"][self.x][self.y] = 0
         
         #Выбирает случайное действие и реализовывает его
         action = Actions(env.np_random.integers(len(Actions)))
@@ -54,7 +54,7 @@ class Wanderer(GridWorldIntruder):
             return self.catch_reward #Возвращаем награду за поимку
         
         #Иначе переходим в новую позицию
-        env.word_layers["intruders"][self.x][self.y] = 1
+        env.world_layers["intruders"][self.x][self.y] = 1
 
         return 0
 

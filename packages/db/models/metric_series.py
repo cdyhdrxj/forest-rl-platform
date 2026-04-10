@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, String, Text, ForeignKey, TIMESTAMP, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from .base import Base, SQLITE_BIGINT_PK
 
 
 class MetricSeries(Base):
@@ -11,7 +11,7 @@ class MetricSeries(Base):
         UniqueConstraint('run_id', 'name', 'aggregation', name='uix_run_metric'),
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
     run_id = Column(BigInteger, ForeignKey('runs.id'), nullable=False)
     name = Column(String(150), nullable=False)
     unit = Column(String(50))

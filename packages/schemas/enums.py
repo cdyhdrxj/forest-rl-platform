@@ -6,6 +6,7 @@ class ProjectMode(str, Enum):
     patrol = "patrol"
     fast_grid = "fast_grid"
     reforestation = "reforestation"
+    coverage = "coverage"
 
 class RunStatus(str, Enum):
     created = "created"

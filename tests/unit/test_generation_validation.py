@@ -35,3 +35,19 @@ def test_merge_reports_keeps_all_issues_and_pass_flag():
 
     assert merged.passed is True
     assert merged.messages == scenario.validation_report.messages
+
+
+def test_validate_generation_request_accepts_continuous_coverage():
+    service = get_default_environment_generation_service()
+    request = GenerationRequest(
+        environment_kind=EnvironmentKind.CONTINUOUS_2D,
+        task_kind=TaskKind.COVERAGE,
+        seed=13,
+        terrain_params={"grid_size": 24},
+        forest_params={"gap_probability": 0.1},
+        task_params={"grid_size": 24, "row_count": 6},
+    )
+
+    report = validate_generation_request(service.registry, request)
+
+    assert report.passed is True

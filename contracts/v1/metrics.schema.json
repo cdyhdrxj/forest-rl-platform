@@ -33,6 +33,7 @@
       "type": "string",
       "enum": [
         "continuous/trail",
+        "continuous/coverage",
         "discrete/patrol",
         "discrete/reforestation",
         "threed/patrol",

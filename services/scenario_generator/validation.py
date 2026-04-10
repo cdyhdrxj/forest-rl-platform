@@ -61,6 +61,15 @@ def validate_generation_request(
     _validate_positive_int(
         report,
         stage=stage,
+        code="row_count_invalid",
+        message="Coverage row count must be at least 1",
+        value=_resolve_int(request.task_params, "row_count", request.terrain_params, default=1),
+        minimum=1,
+        enabled=request.task_kind is TaskKind.COVERAGE,
+    )
+    _validate_positive_int(
+        report,
+        stage=stage,
         code="preview_size_invalid",
         message="3D preview size must be at least 4",
         value=_resolve_int(request.terrain_params, "preview_size", request.task_params, default=0),
@@ -114,6 +123,16 @@ def validate_generation_request(
             stage=stage,
             code="reforestation_environment_invalid",
             message="Reforestation is currently supported only for grid environments",
+        )
+
+    if (
+        request.task_kind is TaskKind.COVERAGE
+        and request.environment_kind is not EnvironmentKind.CONTINUOUS_2D
+    ):
+        report.add(
+            stage=stage,
+            code="coverage_environment_invalid",
+            message="Coverage is currently supported only for continuous_2d environments",
         )
 
     return report

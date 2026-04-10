@@ -1,0 +1,63 @@
+{
+  "suite_code": "agrocare-smoke-suite",
+  "title": "Agrocare Coverage Smoke Suite",
+  "route_key": "continuous/coverage",
+  "task_kind": "coverage",
+  "environment_kind": "continuous_2d",
+  "report_dir": "data/scientific/suites",
+  "seed": 20260401,
+  "scenarios": [
+    {
+      "family": "S1",
+      "split": "test",
+      "count": 1,
+      "generation_params": {
+        "grid_size": 28,
+        "row_count": 7,
+        "curvature_level": "low",
+        "gap_probability": 0.0,
+        "obstacle_count": 1,
+        "max_steps": 10
+      },
+      "evaluation_params": {
+        "max_steps": 10,
+        "tick_sleep": 0.001
+      }
+    }
+  ],
+  "methods": [
+    {
+      "code": "greedy_nearest",
+      "algorithm": "greedy_nearest",
+      "enabled": true,
+      "repeats": 1,
+      "start_params": {
+        "max_steps": 10,
+        "tick_sleep": 0.001
+      },
+      "role": "baseline"
+    },
+    {
+      "code": "greedy_two_step",
+      "algorithm": "greedy_two_step",
+      "enabled": true,
+      "repeats": 1,
+      "start_params": {
+        "max_steps": 10,
+        "tick_sleep": 0.001
+      },
+      "role": "baseline"
+    }
+  ],
+  "report": {
+    "formats": [
+      "json",
+      "csv",
+      "html"
+    ],
+    "representative_runs_per_method": 1,
+    "save_trajectory_plots": true,
+    "save_distribution_plots": true
+  }
+}
+
