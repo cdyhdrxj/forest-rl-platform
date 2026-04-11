@@ -1,0 +1,73 @@
+{
+    "agent_config": {
+        "type": "default",
+        "pos": [0, 0],
+        "is_random_spawned": true,
+        "m_block": 10.0,
+        "m_out": 1.0,
+        "m_stay": 0.0
+    },
+    "intruder_config": [
+        {
+            "type": "poacher",
+            "pos": [5, 5],
+            "is_random_spawned": false,
+            "catch_reward": 1.0,
+            "m_plan": 1000.0,
+            "m_defence": 1.5,
+            "incoming": true,
+            "incoming_step": -1,
+            "incoming_patience": 15,
+            "felling_intensity": 100.0
+        },
+        {
+            "type": "poacher",
+            "pos": [5, 5],
+            "is_random_spawned": false,
+            "catch_reward": 1.0,
+            "m_plan": 1000.0,
+            "m_defence": 1.5,
+            "incoming": true,
+            "incoming_step": -1,
+            "incoming_patience": 15,
+            "felling_intensity": 100.0
+        },
+        {
+            "type": "poacher",
+            "pos": [5, 5],
+            "is_random_spawned": false,
+            "catch_reward": 1.0,
+            "m_plan": 1000.0,
+            "m_defence": 1.5,
+            "incoming": true,
+            "incoming_step": -1,
+            "incoming_patience": 15,
+            "felling_intensity": 100.0
+        },
+        {
+            "type": "poacher",
+            "pos": [5, 5],
+            "is_random_spawned": false,
+            "catch_reward": 1.0,
+            "m_plan": 1000.0,
+            "m_defence": 1.5,
+            "incoming": true,
+            "incoming_step": -1,
+            "incoming_patience": 15,
+            "felling_intensity": 100.0
+        }
+    ],
+    "obs_config": {
+        "type": "box",
+        "size": 7,
+        "layers_count": 4
+    },
+    "max_steps": 250,
+    "grid_size": 8,
+    "map_seed": 19216800,
+    "passability_low": 0.1,
+    "passability_high": 1.0,
+    "impassable_prob": 0.15,
+    "max_value": 1000.0,
+    "value_density": 0.7
+}

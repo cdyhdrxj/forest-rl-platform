@@ -7,7 +7,7 @@ from apps.api.dispatcher import ExperimentDispatcher
 
 
 async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, route_key: str) -> None:
-    """Manage a route-scoped WebSocket session backed by the experiment dispatcher."""
+    """Управление экспериментами через WebSocket."""
 
     await websocket.accept()
     active_run_id: int | None = None
@@ -62,6 +62,8 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
                 state["error"] = str(exc)
                 await websocket.send_text(orjson.dumps(state).decode())
     except WebSocketDisconnect:
-        pass
+        if active_run_id is not None:
+            dispatcher.stop_run(active_run_id)
+            dispatcher.dispose_run(active_run_id)
     finally:
         task.cancel()

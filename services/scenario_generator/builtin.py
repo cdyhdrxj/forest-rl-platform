@@ -4,9 +4,6 @@ from typing import Any
 
 import numpy as np
 
-from services.agrocare_coverage.families import resolve_coverage_family_params
-from services.agrocare_coverage.generator import apply_coverage_layout_to_scenario
-from services.agrocare_coverage.models import CoverageEnvConfig
 from services.scenario_generator.models import (
     EnvironmentKind,
     GeneratedLayer,
@@ -49,7 +46,6 @@ def _sample_unique_positions(
         occupied.add((x, y))
         sampled.append([x, y])
     return sampled
-
 
 class GridFamilyGenerator:
     environment_kind = EnvironmentKind.GRID
@@ -95,22 +91,8 @@ class GridFamilyGenerator:
 
 
 class Continuous2DFamilyGenerator:
-    environment_kind = EnvironmentKind.CONTINUOUS_2D
 
-    _WRAPPER_KEYS = (
-        "action_scale",
-        "goal_reward",
-        "collision_penalty",
-        "grid_size",
-        "max_steps",
-        "frameskip",
-        "max_speed",
-        "accel",
-        "damping",
-        "dt",
-        "terrain_penalty",
-        "step_penalty",
-    )
+    environment_kind = EnvironmentKind.CONTINUOUS_2D
 
     def generate(self, request: GenerationRequest, seed: int) -> GeneratedScenario:
         grid_size = _get_int(request.task_params, "grid_size", 10)
@@ -119,39 +101,34 @@ class Continuous2DFamilyGenerator:
             "obstacle_density",
             _get_number(request.task_params, "obstacle_density", 0.2),
         )
-        terrain_hilliness = _get_number(request.forest_params, "terrain_hilliness", 0.35)
 
-        rng = np.random.default_rng(seed)
-        terrain = rng.random((grid_size, grid_size), dtype=np.float32)
-        terrain = np.clip(terrain * max(terrain_hilliness, 0.05), 0.0, 1.0).astype(np.float32)
-        obstacles = (rng.random((grid_size, grid_size)) < obstacle_density).astype(np.float32)
-
-        wrapper_kwargs = {key: request.task_params[key] for key in self._WRAPPER_KEYS if key in request.task_params}
-        wrapper_kwargs.update(
-            {
-                "seed": seed,
-                "grid_size": grid_size,
-                "obstacle_density": obstacle_density,
-            }
-        )
+        wrapper_kwargs = {
+            "seed": seed,
+            "grid_size": grid_size,
+            "obstacle_density": obstacle_density,
+            "goal_reward": _get_number(request.task_params, "goal_reward", 1.0),
+            "collision_penalty": _get_number(request.task_params, "collision_penalty", 0.3),
+            "step_penalty": _get_number(request.task_params, "step_penalty", 0.0),
+            "max_steps": _get_int(request.task_params, "max_steps", 100),
+            "max_speed": _get_number(request.task_params, "max_speed", 50.0),
+            "accel": _get_number(request.task_params, "accel", 40.0),
+            "damping": _get_number(request.task_params, "damping", 0.6),
+            "dt": _get_number(request.task_params, "dt", 0.03),
+            "frameskip": _get_int(request.task_params, "frameskip", 1),
+        }
 
         scenario = GeneratedScenario(
             environment_kind=request.environment_kind,
             task_kind=request.task_kind,
             seed=seed,
             generator_name="continuous_2d_family_generator",
-            generator_version="v1",
-            effective_params={
-                "grid_size": grid_size,
-                "obstacle_density": obstacle_density,
-                "terrain_hilliness": terrain_hilliness,
-                **wrapper_kwargs,
-            },
+            generator_version="v4",
+            effective_params=wrapper_kwargs.copy(),
             preview_payload={
-                "terrain_map": terrain.tolist(),
+                "terrain_map": [],
                 "agent_pos": [],
                 "goal_pos": [],
-                "landmark_pos": [[int(x), int(y)] for x, y in np.argwhere(obstacles == 1)[:128]],
+                "landmark_pos": [],
             },
             runtime_context={
                 "continuous_2d": {
@@ -159,10 +136,53 @@ class Continuous2DFamilyGenerator:
                 },
             },
         )
-        scenario.add_layer(GeneratedLayer("terrain", "terrain", terrain, description="Continuous terrain preview"))
-        scenario.add_layer(GeneratedLayer("obstacles", "obstacles", obstacles, description="Continuous obstacle preview"))
         return scenario
 
+
+# def _generate_camar_preview(seed: int, grid_size: int, obstacle_density: float) -> dict:
+#     """Генерирует превью карты CAMAR по seed."""
+#     key = jax.random.PRNGKey(seed)
+
+#     env = camar_v0(
+#         map_generator="random_grid",
+#         map_kwargs={
+#             "num_agents": 1,
+#             "num_rows": grid_size,
+#             "num_cols": grid_size,
+#             "obstacle_density": obstacle_density,
+#             "goal_rad_range": (0.3, 0.3),
+#         },
+#         dynamic_kwargs={
+#             "max_speed": 50.0,
+#             "accel": 40.0,
+#             "damping": 0.6,
+#             "dt": 0.03,
+#         },
+#         frameskip=1,
+#         max_steps=100,
+#     )
+
+#     _, landmark_pos, agent_pos, goal_pos, _ = env.map_reset(key)
+
+#     landmark_pos_np = np.array(landmark_pos)
+#     agent_pos_np = np.array(agent_pos)
+#     goal_pos_np = np.array(goal_pos)
+
+
+#     terrain_map = np.zeros((grid_size, grid_size), dtype=np.float32)
+    
+#     for pos in landmark_pos_np:
+#         x = int((pos[0] + 1) / 2 * grid_size)
+#         y = int((pos[1] + 1) / 2 * grid_size)
+#         if 0 <= x < grid_size and 0 <= y < grid_size:
+#             terrain_map[x, y] = 1.0  
+
+#     return {
+#         "terrain_map": terrain_map.tolist(), 
+#         "agent_pos": agent_pos_np.tolist(),
+#         "goal_pos": goal_pos_np.tolist(),
+#         "landmark_pos": landmark_pos_np.tolist(),
+#     }
 
 class Simulator3DFamilyGenerator:
     environment_kind = EnvironmentKind.SIMULATOR_3D
@@ -410,6 +430,17 @@ class TrailTaskOverlay:
     supported_environments = {EnvironmentKind.CONTINUOUS_2D, EnvironmentKind.SIMULATOR_3D}
 
     def apply(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
+        if scenario.environment_kind == EnvironmentKind.CONTINUOUS_2D:
+            # Для continuous_2d используем уже сгенерированные CAMAR-позиции
+            preview = scenario.preview_payload
+            agent_pos = (preview.get("agent_pos") or [[0.0, 0.0]])[0]
+            goal_pos = (preview.get("goal_pos") or [[0.0, 0.0]])[0]
+            scenario.runtime_context["trail"] = {
+                "agent_pos": agent_pos,
+                "goal_pos": goal_pos,
+            }
+            return
+
         terrain_layer = scenario.get_layer_data("terrain")
         if terrain_layer is None:
             terrain_layer = scenario.get_layer_data("terrain_preview")

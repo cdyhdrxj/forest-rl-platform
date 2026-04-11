@@ -38,13 +38,55 @@ class PoacherConfig(IntruderConfig):
     type: Literal["poacher"] = "poacher"
     
     m_plan: float = Field(
-        default= 100.0,
-        description= "Размер ущерба, \
-            который браконьер должен причинить вырубкой"
+        default=100.0,
+        description="Размер ущерба, который браконьер должен причинить вырубкой"
+    )
+    m_defence: float = Field(
+        default=1.5,
+        description="Множитель награды за предотвращённый ущерб"
+    )
+    felling_intensity: float = Field(
+        default=100.0,
+        description="Интенсивность вырубки"
     )
 
+    incoming_moment: int = Field(
+        default=10,
+        description="Шаг появления. -1 — выбирается случайно из "
+                    "[incoming_patience, max_steps - incoming_patience]"
+    )
+
+    
+class PoacherSimpleConfig(IntruderConfig):
+    """Конфигурация нарушителя-браконьера GridWorld"""
+    type: Literal["poacher_simple"] = "poacher_simple"
+
+    m_plan: float = Field(
+        default=100.0,
+        description="Размер ущерба, который браконьер должен причинить вырубкой"
+    )
+    m_defence: float = Field(
+        default=1.5,
+        description="Множитель награды за предотвращённый ущерб"
+    )
+    m_tool_power: float = Field(
+        default=100.0,
+        description="Мощность инструмента браконьера"
+    )
+    search_patience: int = Field(
+        default=50,
+        description="Терпение при поиске цели"
+    )
+    
+    incoming_moment: int = Field(
+        default=10,
+        description="Шаг появления. -1 — выбирается случайно из "
+                    "[incoming_patience, max_steps - incoming_patience]"
+    )
+    
+
 IntruderConfigType = Annotated[
-    ControllableConfig | WandererConfig | PoacherConfig,
+    ControllableConfig | WandererConfig | PoacherConfig | PoacherSimpleConfig,
     Field(discriminator="type")
 ]
 
