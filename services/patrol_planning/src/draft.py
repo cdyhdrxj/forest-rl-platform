@@ -15,6 +15,21 @@
 # from services.patrol_planning.assets.intruders.models import PoacherConfig, ControllableConfig, WandererConfig
 # from services.patrol_planning.service.models import GridWorldTrainState
 
+import sys
+import os, json
+
+# Абсолютный путь до корня проекта (где лежит environment, observations и т.д.)
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..")
+)
+
+# Добавляем в sys.path, если ещё нет
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from services.patrol_planning.assets.intruders.models import PoacherSimpleConfig
+from services.patrol_planning.assets.observations.models import ObsBoxConfig
+from services.patrol_planning.assets.envs.models import GridWorldConfig, GridForestConfig
 
 # ##Настроенные модели сред
 
@@ -41,3 +56,20 @@
 # GW_DEFAULT.max_steps = 150
 
 # GW_STATE_DEFAULT = GridWorldTrainState()
+
+## ССтандартная модель для лесного массива
+config = GridForestConfig()
+p_config = PoacherSimpleConfig()
+o_config = ObsBoxConfig()
+o_config.size = 4
+o_config.layers_count = 6
+p_config.pos = [5,5]
+config.intruder_config = [p_config]
+config.obs_config = o_config
+config.grid_size = 8
+with open(
+    "services/patrol_planning/learning/configs/FOREST_EXAMPLE.json",
+    "w",
+    encoding="utf-8"
+) as f:
+    f.write(config.model_dump_json(indent=2))
