@@ -71,5 +71,25 @@ services:
       - "5173:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
 
+  unity:
+    build:
+      context: apps/simulator
+      dockerfile: Dockerfile
+
+    container_name: unity
+
+    restart: unless-stopped
+
+    # gpus: all
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all,graphics,utility,compute
+
+    shm_size: "2gb"
+
+    ports:
+      - "10000:10000"
+
 volumes:
   postgres_data:

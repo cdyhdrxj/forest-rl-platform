@@ -17,7 +17,7 @@ COPY src/ src/
 
 # Собираем пакет
 RUN bash -c "source /opt/ros/humble/setup.bash && \
-    colcon build --packages-select ros_tcp_endpoint"
+    colcon build --packages-select ros_tcp_endpoint forest_msgs"
 
 # Копируем скрипт запуска
 COPY entrypoint.ros2.sh /
