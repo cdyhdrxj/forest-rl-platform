@@ -4,7 +4,8 @@ export function LiveState({ state, executionPhase, scenarioReady, endpoint, acti
   return (
     <div style={{ ...card, padding: 16 }}>
       <div style={secLabel}>Состояние</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: Theme.textSecond }}>
+      <div style={{ display: "grid",gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 8, fontSize: 12, color: Theme.textSecond, wordBreak: "break-word",
+    overflowWrap: "anywhere"}}>
         <div>Run ID: <strong style={{ color: Theme.textPrimary }}>{state?.run_id ?? "—"}</strong></div>
         <div>Версия: <strong style={{ color: Theme.textPrimary }}>{state?.scenario_version_id ?? "—"}</strong></div>
         <div>Фаза: <strong style={{ color: Theme.textPrimary }}>{executionPhase}</strong></div>

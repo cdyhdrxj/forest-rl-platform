@@ -37,7 +37,7 @@ export const METRICS_CONFIG = {
     ],
   },
 
-  "Трёхмерная": {
+  "3D симулятор": {
     "Патруль": [
       BASE_METRICS.episode,
       BASE_METRICS.step,
