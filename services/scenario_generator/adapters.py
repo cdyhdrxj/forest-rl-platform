@@ -5,39 +5,51 @@ from typing import Any
 import numpy as np
 
 from services.agrocare_coverage.generator import build_runtime_config
-from services.patrol_planning.assets.envs.models import GridWorldConfig
+from services.patrol_planning.assets.envs.models import GridForestConfig
 from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.reforestation_planting.models import PlantingEnvConfig
 from services.scenario_generator.models import EnvironmentKind, GeneratedScenario, GenerationRequest, TaskKind
 
 
-def build_patrol_grid_request(config: GridWorldConfig) -> GenerationRequest:
+def build_patrol_grid_request(config: GridForestConfig) -> GenerationRequest:
     return GenerationRequest(
         environment_kind=EnvironmentKind.GRID,
         task_kind=TaskKind.PATROL,
-        seed=config.seed,
+        seed=config.map_seed, 
         terrain_params={
             "grid_size": config.grid_size,
         },
         forest_params={
-            "terrain_hilliness": config.terrain_hilliness,
+            "map_seed": config.map_seed,
+            "passability_low": config.passability_low,
+            "passability_high": config.passability_high,
+            "impassable_prob": config.impassable_prob,
+            "max_value": config.max_value,
+            "value_density": config.value_density,
         },
         task_params={
             "grid_size": config.grid_size,
+            "max_steps": config.max_steps,
             "intruder_count": len(config.intruder_config),
             "agent_pos": list(config.agent_config.pos),
             "agent_random_spawn": config.agent_config.is_random_spawned,
             "intruder_positions": [list(item.pos) for item in config.intruder_config],
             "intruder_random_spawn": [item.is_random_spawned for item in config.intruder_config],
             "intruder_types": [item.type for item in config.intruder_config],
+            "intruder_detection_reward": config.intruder_detection_reward,
+            "intruder_interception_reward": config.intruder_interception_reward,
+            "random_spawn_position": config.random_spawn_position,
+            "random_spawn_time": config.random_spawn_time,
+            "tau_min": config.tau_min,
+            "tau_max": config.tau_max,
         },
     )
 
 
 def apply_patrol_generation(
-    config: GridWorldConfig,
+    config: GridForestConfig,
     scenario: GeneratedScenario,
-) -> tuple[GridWorldConfig, dict[str, np.ndarray]]:
+) -> tuple[GridForestConfig, dict[str, np.ndarray]]:
     updated = config.model_copy(deep=True)
     patrol_ctx = scenario.runtime_context["patrol"]
     agent_pos = patrol_ctx["agent_pos"]
@@ -100,7 +112,6 @@ def build_continuous_trail_request(params: dict[str, Any]) -> GenerationRequest:
         },
         forest_params={
             "obstacle_density": params.get("obstacle_density", 0.2),
-            "terrain_hilliness": params.get("terrain_hilliness", 0.35),
         },
         task_params=dict(params),
     )
@@ -158,7 +169,6 @@ def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -
         },
         forest_params={
             "tree_density": params.get("tree_density", 0.25),
-            "terrain_hilliness": params.get("terrain_hilliness", 0.45),
         },
         task_params=dict(params),
     )

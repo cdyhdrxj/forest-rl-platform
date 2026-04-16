@@ -26,6 +26,12 @@ export function useCanvasRender(activeEnv, state, activeGridSize) {
 
   useEffect(() => {
     if (!canvasRef.current) return
+    
+    let terrain = null
+    if (state?.world_layers) {
+      terrain = state.world_layers.terrain || state.world_layers.terrain_map
+    }
+    
     const id = requestAnimationFrame(() =>
       drawCanvas(
         activeEnv,
@@ -33,7 +39,7 @@ export function useCanvasRender(activeEnv, state, activeGridSize) {
         state,
         activeGridSize,
         gridCacheRef.current,
-        state?.terrain_map ?? null,
+        terrain
       )
     )
     return () => cancelAnimationFrame(id)

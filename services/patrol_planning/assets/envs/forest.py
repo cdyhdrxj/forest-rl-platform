@@ -333,7 +333,6 @@ class GridForest(GridWorld):
             raise ValueError(
                 f"Ожидался GridForestConfig, получено: {type(config)}"
             )
-
         # Агент
         agent = GridWorldAgent.load(config.agent_config)
 
