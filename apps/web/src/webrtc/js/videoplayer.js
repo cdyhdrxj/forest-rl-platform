@@ -6,16 +6,18 @@ export class VideoPlayer {
     this.playerElement = null;
     this.lockMouseCheck = null;
     this.videoElement = null;
-    this.fullScreenButtonElement = null;
+
+    // this.fullScreenButtonElement = null;
+
     this.inputRemoting = null;
     this.sender = null;
     this.inputSenderChannel = null;
   }
 
   /**
- * @param {Element} playerElement parent element for create video player
- * @param {HTMLInputElement} lockMouseCheck use checked propety for lock mouse 
- */
+   * @param {Element} playerElement parent element for create video player
+   * @param {HTMLInputElement} lockMouseCheck use checked propety for lock mouse 
+   */
   createPlayer(playerElement, lockMouseCheck) {
     this.playerElement = playerElement;
     this.lockMouseCheck = lockMouseCheck;
@@ -28,16 +30,39 @@ export class VideoPlayer {
     this.videoElement.addEventListener('loadedmetadata', this._onLoadedVideo.bind(this), true);
     this.playerElement.appendChild(this.videoElement);
 
-    // add fullscreen button
+    // =========================
+    // FULLSCREEN BUTTON (DISABLED)
+    // =========================
+    /*
     this.fullScreenButtonElement = document.createElement('img');
     this.fullScreenButtonElement.id = 'fullscreenButton';
     this.fullScreenButtonElement.src = '../images/FullScreen.png';
-    this.fullScreenButtonElement.addEventListener("click", this._onClickFullscreenButton.bind(this));
+    this.fullScreenButtonElement.addEventListener(
+      "click",
+      this._onClickFullscreenButton.bind(this)
+    );
     this.playerElement.appendChild(this.fullScreenButtonElement);
+    */
 
-    document.addEventListener('webkitfullscreenchange', this._onFullscreenChange.bind(this));
-    document.addEventListener('fullscreenchange', this._onFullscreenChange.bind(this));
-    this.videoElement.addEventListener("click", this._mouseClick.bind(this), false);
+    // =========================
+    // FULLSCREEN EVENTS (DISABLED)
+    // =========================
+    /*
+    document.addEventListener(
+      'webkitfullscreenchange',
+      this._onFullscreenChange.bind(this)
+    );
+    document.addEventListener(
+      'fullscreenchange',
+      this._onFullscreenChange.bind(this)
+    );
+    */
+
+    this.videoElement.addEventListener(
+      "click",
+      this._mouseClick.bind(this),
+      false
+    );
   }
 
   _onLoadedVideo() {
@@ -45,6 +70,7 @@ export class VideoPlayer {
     this.resizeVideo();
   }
 
+  /*
   _onClickFullscreenButton() {
     if (!document.fullscreenElement || !document.webkitFullscreenElement) {
       if (document.documentElement.requestFullscreen) {
@@ -76,12 +102,10 @@ export class VideoPlayer {
           document.mozFullScreenElement.requestPointerLock();
         }
 
-        // Subscribe to events
         document.addEventListener('mousemove', this._mouseMove.bind(this), false);
         document.addEventListener('click', this._mouseClickFullScreen.bind(this), false);
       }
-    }
-    else {
+    } else {
       this.playerElement.style.position = "relative";
       this.fullScreenButtonElement.style.display = 'block';
 
@@ -90,10 +114,23 @@ export class VideoPlayer {
     }
   }
 
+  _mouseClickFullScreen() {
+    if (this.lockMouseCheck.checked) {
+      if (document.webkitFullscreenElement.requestPointerLock) {
+        document.webkitFullscreenElement.requestPointerLock();
+      } else if (document.fullscreenElement.requestPointerLock) {
+        document.fullscreenElement.requestPointerLock();
+      } else if (document.mozFullScreenElement.requestPointerLock) {
+        document.mozFullScreenElement.requestPointerLock();
+      }
+    }
+  }
+  */
+
   _mouseMove(event) {
-    // Forward mouseMove event of fullscreen player directly to sender
-    // This is required, as the regular mousemove event doesn't fire when in fullscreen mode
-    this.sender._onMouseEvent(event);
+      // Forward mouseMove event of fullscreen player directly to sender
+      // This is required, as the regular mousemove event doesn't fire when in fullscreen mode
+      this.sender._onMouseEvent(event);
   }
 
   _mouseClick() {
@@ -105,31 +142,15 @@ export class VideoPlayer {
     }
   }
 
-  _mouseClickFullScreen() {
-    // Restores pointer lock when we unfocus the fullscreen player and click on it again
-    if (this.lockMouseCheck.checked) {
-      if (document.webkitFullscreenElement.requestPointerLock) {
-        document.webkitFullscreenElement.requestPointerLock();
-      } else if (document.fullscreenElement.requestPointerLock) {
-        document.fullscreenElement.requestPointerLock();
-      } else if (document.mozFullScreenElement.requestPointerLock) {
-        document.mozFullScreenElement.requestPointerLock();
-      }
-    }
-  }
-
   /**
    * @param {MediaStreamTrack} track 
    */
   addTrack(track) {
-    if (!this.videoElement.srcObject) {
-      return;
-    }
-
+    if (!this.videoElement.srcObject) return;
     this.videoElement.srcObject.addTrack(track);
   }
 
-  resizeVideo() {
+   resizeVideo() {
     if (!this.videoElement) {
       return;
     }
@@ -188,7 +209,7 @@ export class VideoPlayer {
   }
 
   /**
-   * setup datachannel for player input (muouse/keyboard/touch/gamepad)
+   * setup datachannel for player input (mouse/keyboard/touch/gamepad)
    * @param {RTCDataChannel} channel 
    */
   setupInput(channel) {

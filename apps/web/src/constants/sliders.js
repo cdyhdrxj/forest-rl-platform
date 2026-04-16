@@ -76,26 +76,26 @@ export const SLIDER_CONFIG = {
     ],
   },
 
-  "Трёхмерная": {
-    "Алгоритм": [
-      { param: "learning_rate",     label: "Скор. обучения",  min: 0.00001, max: 0.01,  step: 0.00001 },
-      { param: "gamma",             label: "Гамма (γ)",       min: 0.9,     max: 0.999, step: 0.001   },
-      { param: "max_steps",         label: "Макс. шагов",     min: 50,      max: 1000,  step: 10      },
-      { param: "tau",               label: "Тау",             min: 0.001,   max: 0.1,   step: 0.001,  algoOnly: ["SAC", "TD3"] },
-      { param: "goal_reward",       label: "Награда за цель", min: 10,      max: 100,   step: 5       },
-      { param: "collision_penalty", label: "Штраф столкн.",   min: 0,       max: 5,     step: 0.1     },
-      { param: "step_penalty",      label: "Штраф за шаг",    min: 0,       max: 1,     step: 0.01    },
-    ],
-    "Карта": [
-      { param: "grid_size",        label: "Размер сетки", min: 5, max: 20,  step: 1    },
-      { param: "obstacle_density", label: "Препятствия",  min: 0, max: 0.4, step: 0.01 },
-    ],
-    "Робот": [
-      { param: "action_scale", label: "Масштаб действий", min: 0.1,   max: 5,    step: 0.1   },
-      { param: "max_speed",    label: "Макс. скорость",   min: 1,     max: 200,  step: 1     },
-      { param: "accel",        label: "Разгон",           min: 1,     max: 100,  step: 1     },
-      { param: "damping",      label: "Торможение",       min: 0.01,  max: 0.99, step: 0.01  },
-      { param: "dt",           label: "Шаг физики",       min: 0.001, max: 0.05, step: 0.001 },
-    ],
+  "3D симулятор": {
+    // "Алгоритм": [
+    //   { param: "learning_rate",     label: "Скор. обучения",  min: 0.00001, max: 0.01,  step: 0.00001 },
+    //   { param: "gamma",             label: "Гамма (γ)",       min: 0.9,     max: 0.999, step: 0.001   },
+    //   { param: "max_steps",         label: "Макс. шагов",     min: 50,      max: 1000,  step: 10      },
+    //   { param: "tau",               label: "Тау",             min: 0.001,   max: 0.1,   step: 0.001,  algoOnly: ["SAC", "TD3"] },
+    //   { param: "goal_reward",       label: "Награда за цель", min: 10,      max: 100,   step: 5       },
+    //   { param: "collision_penalty", label: "Штраф столкн.",   min: 0,       max: 5,     step: 0.1     },
+    //   { param: "step_penalty",      label: "Штраф за шаг",    min: 0,       max: 1,     step: 0.01    },
+    // ],
+    // "Карта": [
+    //   { param: "grid_size",        label: "Размер сетки", min: 5, max: 20,  step: 1    },
+    //   { param: "obstacle_density", label: "Препятствия",  min: 0, max: 0.4, step: 0.01 },
+    // ],
+    // "Робот": [
+    //   { param: "action_scale", label: "Масштаб действий", min: 0.1,   max: 5,    step: 0.1   },
+    //   { param: "max_speed",    label: "Макс. скорость",   min: 1,     max: 200,  step: 1     },
+    //   { param: "accel",        label: "Разгон",           min: 1,     max: 100,  step: 1     },
+    //   { param: "damping",      label: "Торможение",       min: 0.01,  max: 0.99, step: 0.01  },
+    //   { param: "dt",           label: "Шаг физики",       min: 0.001, max: 0.05, step: 0.001 },
+    // ],
   },
 }

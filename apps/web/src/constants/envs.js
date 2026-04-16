@@ -18,7 +18,7 @@ export const API_ADDRESS =
 export const TASKS_BY_ENV = {
   "Непрерывная 2D": ["Тропы"],
   "Дискретная":     ["Патруль", "Посадка"],
-  "Трёхмерная":     ["Патруль", "Тропы"],
+  "3D симулятор":   ["Тропы"],
 }
 
 export const HTTP_MAP = {
@@ -30,16 +30,15 @@ export const WS_MAP = {
   "Непрерывная 2D/Тропы":  `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/continuous/trail`,
   "Дискретная/Патруль":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/discrete/patrol`,
   "Дискретная/Посадка":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/discrete/reforestation`,
-  "Трёхмерная/Патруль":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/patrol`,
-  "Трёхмерная/Тропы":      `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/trail`,
+  "3D симулятор/Патруль":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/patrol`,
+  "3D симулятор/Тропы":      `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/trail`,
 
   "WebrtcWs":      `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/ws`,
 }
 
 // Алгоритмы по среде
-
 export const ALGOS_BY_ENV = {
   "Непрерывная 2D": ["PPO", "SAC", "A2C"],
   "Дискретная":     ["PPO", "A2C"],
-  "Трёхмерная":     ["PPO", "SAC", "A2C"],
+  "3D симулятор":   ["PPO", "SAC", "A2C"],
 }
