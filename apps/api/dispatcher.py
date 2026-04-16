@@ -23,7 +23,7 @@ from packages.db.models.enums import AlgorithmFamily, ArtifactType, ProjectMode,
 from packages.db.session import db_session
 from services.agrocare_coverage.generator import build_runtime_config as build_coverage_runtime_config_model
 from services.agrocare_coverage.service import AgrocareCoverageService
-from services.patrol_planning.assets.envs.models import GridWorldConfig
+from services.patrol_planning.assets.envs.models import GridForestConfig, GridWorldConfig
 from services.patrol_planning.service.service import GridWorldService
 from services.reforestation_planting.models import PlantingEnvConfig
 from services.reforestation_planting.service import SeedlingPlantingService
@@ -89,7 +89,7 @@ class RunSession:
 
 def _build_patrol_request(params: dict[str, Any]) -> GenerationRequest:
     source = params.get("grid_world_config", params)
-    return build_patrol_grid_request(GridWorldConfig.model_validate(source))
+    return build_patrol_grid_request(GridForestConfig.model_validate(source)) 
 
 
 def _make_continuous_trail_service():
@@ -106,7 +106,7 @@ def _make_simulator_3d_service():
 
 def _build_patrol_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
     source = params.get("grid_world_config", params)
-    config = GridWorldConfig.model_validate(source)
+    config = GridForestConfig.model_validate(source)  
     config, _ = apply_patrol_generation(config, scenario)
     return config.model_dump(mode="json")
 

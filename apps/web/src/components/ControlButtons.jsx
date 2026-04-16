@@ -22,6 +22,7 @@ export function ControlButtons({
     ? !running && !!endpoint
     : !running && !!endpoint && scenarioReady
   const resetLabel  = isCamar ? "Новая карта" : "Сброс"
+  const resetColor = isCamar ? Theme.accent : Theme.textMuted
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -35,7 +36,13 @@ export function ControlButtons({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <Btn onClick={onStop}  disabled={!running} color={Theme.red}>Стоп</Btn>
-        <Btn onClick={onReset} disabled={running}  color={Theme.textMuted}>{resetLabel}</Btn>
+        <Btn
+          onClick={onReset}
+          disabled={running}
+          color={resetColor}
+        >
+          {resetLabel}
+        </Btn>
       </div>
     </div>
   )
