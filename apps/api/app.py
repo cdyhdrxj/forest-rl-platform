@@ -1,7 +1,16 @@
 from fastapi import FastAPI, WebSocket
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from apps.api.dispatcher import ExperimentDispatcher
 from apps.api.websocket_manager import handle_ws
+from webrtc_routes import setup_webrtc_routes, ServerConfig
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -48,3 +57,12 @@ async def ws_threed_patrol(websocket: WebSocket):
 @app.websocket("/threed/trail")
 async def ws_threed_trail(websocket: WebSocket):
     await handle_ws(websocket, _dispatcher, "threed/trail")
+
+# --- WEBRTC ---
+
+webrtc_config = ServerConfig(mode="public", logging_level="dev", socket_type="websocket")
+setup_webrtc_routes(app, webrtc_config)
+
+@app.get("/api/health")
+async def health_check():
+    return JSONResponse({"status": "ok", "message": "Server is running"})
