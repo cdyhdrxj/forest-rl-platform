@@ -4,6 +4,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Устанавливаем только нужное (БЕЗ xvfb, fluxbox, x11vnc)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    libc6 \
+    libc6-dev \
+    libstdc++6 \
+    xvfb \
+    xauth \
+    mesa-utils \
     # Графические библиотеки для Unity
     libgl1-mesa-glx \
     libgl1-mesa-dri \
