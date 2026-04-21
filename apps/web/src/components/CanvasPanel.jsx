@@ -39,11 +39,20 @@ const LEGEND_BY_ENV = {
   ],
 }
 
+const PATROL_LEGEND = [
+  [Theme.accent,          "Агент"],
+  ["#dc2626",             "Нарушитель"],
+  ["rgba(22,163,74,0.88)","Ценная зона"],
+  ["rgba(75,85,99,0.82)", "Препятствие"],
+]
+
 const IS_3D = (activeEnv) => activeEnv === "3D симулятор"
 
-export function CanvasPanel({ activeEnv, activeTask, state, canvasRef }) {
+export function CanvasPanel({ activeEnv, activeTask, state, canvasRef, showTrail, setShowTrail, showObs, setShowObs }) {
   const metrics = getMetrics(activeEnv, activeTask)
-  const legend = LEGEND_BY_ENV[activeEnv] ?? LEGEND_BY_ENV["Непрерывная 2D"]
+  const legend = (activeEnv === "Дискретная" && activeTask === "Патруль")
+    ? PATROL_LEGEND
+    : (LEGEND_BY_ENV[activeEnv] ?? LEGEND_BY_ENV["Непрерывная 2D"])
   const is3d = IS_3D(activeEnv)
 
   /* блок метрик */
@@ -141,26 +150,74 @@ export function CanvasPanel({ activeEnv, activeTask, state, canvasRef }) {
               color: Theme.textPrimary,
             }}
           >
-            {activeEnv} · {activeTask}
+            {activeEnv === "Дискретная" && activeTask === "Патруль" ? activeTask : `${activeEnv} · ${activeTask}`}
           </span>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              fontSize: 10,
-              color: Theme.textSecond,
-            }}
-          >
-            {legend.map(([c, l]) => (
-              <span
-                key={l}
-                style={{ display: "flex", alignItems: "center", gap: 3 }}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                fontSize: 10,
+                color: Theme.textSecond,
+              }}
+            >
+              {legend.map(([c, l]) => (
+                <span
+                  key={l}
+                  style={{ display: "flex", alignItems: "center", gap: 3 }}
+                >
+                  <Dot color={c} />
+                  {l}
+                </span>
+              ))}
+            </div>
+
+            {setShowTrail && (
+              <button
+                onClick={() => setShowTrail(v => !v)}
+                title={showTrail ? "Скрыть трейл" : "Показать трейл"}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 8px",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: showTrail ? Theme.accent : Theme.textMuted,
+                  background: showTrail ? `${Theme.accent}18` : "transparent",
+                  border: `1px solid ${showTrail ? Theme.accent : Theme.border}`,
+                  borderRadius: 5,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
               >
-                <Dot color={c} />
-                {l}
-              </span>
-            ))}
+                ≈ Трейл
+              </button>
+            )}
+
+            {setShowObs && (
+              <button
+                onClick={() => setShowObs(v => !v)}
+                title={showObs ? "Скрыть зону видимости" : "Показать зону видимости"}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 8px",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: showObs ? "#b45309" : Theme.textMuted,
+                  background: showObs ? "rgba(250,204,21,0.15)" : "transparent",
+                  border: `1px solid ${showObs ? "#d97706" : Theme.border}`,
+                  borderRadius: 5,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ◻ Обзор
+              </button>
+            )}
           </div>
         </div>
 

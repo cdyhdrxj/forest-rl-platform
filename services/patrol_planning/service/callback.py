@@ -19,7 +19,7 @@ class GridWorldCallback(BaseCallback):
             return False
 
         # Задержка скорости обучения
-        time.sleep(0.01)
+        time.sleep(0.50)
         
         #Всё пишется внутри среды в соответствующую модель.
 

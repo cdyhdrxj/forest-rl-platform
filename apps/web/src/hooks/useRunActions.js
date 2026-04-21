@@ -7,6 +7,7 @@ const modeForTask = t =>
 export function useRunActions({
   wsRef, endpoint, params, algo, activeTask, activeEnv,
   setRunning, setChartData, setState, setActiveGridSize,
+  jsonConfig, resetEpisode,
 }) {
   const send = (action, extra = {}) => {
     if (!endpoint) { console.error("No endpoint"); return }
@@ -23,22 +24,31 @@ export function useRunActions({
     send("generate", {
       params: { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) },
     })
+    resetEpisode?.()
     setChartData([])
     setRunning(false)
-  }, [params, algo, activeTask, send, setChartData, setRunning])
+  }, [params, algo, activeTask, send, resetEpisode, setChartData, setRunning])
 
   const start = useCallback(() => {
     const isPatrol = activeTask === "Патруль" && activeEnv === "Дискретная"
 
-    const payload = isPatrol
-      ? { params: buildPatrolPayload(params, algo) }      
-      : { params: { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) } }
+    let payload
+    if (isPatrol && jsonConfig) {
+      const { _fileName, ...cleanConfig } = jsonConfig
+      payload = { params: cleanConfig }
+    } else if (isPatrol) {
+      payload = { params: buildPatrolPayload(params, algo) }
+    } else {
+      payload = { params: { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) } }
+    }
 
     send("start", payload)
-    setActiveGridSize(params.grid_size)
+    const gridSize = (isPatrol && jsonConfig?.grid_size) ? jsonConfig.grid_size : params.grid_size
+    setActiveGridSize(gridSize)
+    resetEpisode?.()
     setChartData([])
     setRunning(true)
-  }, [params, algo, activeTask, activeEnv, send, setActiveGridSize, setChartData, setRunning])
+  }, [params, algo, activeTask, activeEnv, jsonConfig, send, resetEpisode, setActiveGridSize, setChartData, setRunning])
 
   const stop = useCallback(() => {
     send("stop")
@@ -53,10 +63,11 @@ export function useRunActions({
     } else {
       send("reset")
     }
+    resetEpisode?.()
     setRunning(false)
     setState(null)
     setChartData([])
-  }, [activeEnv, params, algo, activeTask, send, setRunning, setState, setChartData])
+  }, [activeEnv, params, algo, activeTask, send, resetEpisode, setRunning, setState, setChartData])
 
   return { generate, start, stop, reset }
 }
