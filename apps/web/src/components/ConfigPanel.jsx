@@ -12,8 +12,29 @@ export function ConfigPanel({
   params, setParams,
   tab, setTab,
   running,
+  jsonConfig, setJsonConfig,
 }) {
   const set = (k, v) => setParams(p => ({ ...p, [k]: v }))
+
+  const isPatrol = activeEnv === "Дискретная" && activeTask === "Патруль"
+
+  const handleJsonFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result)
+        setJsonConfig({ ...parsed, _fileName: file.name })
+      } catch {
+        alert("Ошибка разбора JSON файла")
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ""
+  }
+
+  const clearJsonConfig = () => setJsonConfig(null)
 
   const [fitTabs, setFitTabs] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -174,10 +195,78 @@ export function ConfigPanel({
         >
           {TASKS_BY_ENV[activeEnv].map(t => <option key={t}>{t}</option>)}
         </select>
+
+        {isPatrol && (
+          <div style={{ marginTop: 12 }}>
+            <Label>Конфиг (.json)</Label>
+            {jsonConfig ? (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 8px",
+                background: `${Theme.accent}12`,
+                border: `1px solid ${Theme.accent}`,
+                borderRadius: 6,
+              }}>
+                <span style={{
+                  flex: 1,
+                  fontSize: 10,
+                  color: Theme.accent,
+                  fontWeight: 600,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}>
+                  {jsonConfig._fileName ?? "config.json"}
+                </span>
+                <button
+                  onClick={clearJsonConfig}
+                  disabled={running}
+                  style={{
+                    padding: "1px 6px",
+                    fontSize: 10,
+                    color: Theme.textMuted,
+                    background: "transparent",
+                    border: `1px solid ${Theme.border}`,
+                    borderRadius: 4,
+                    cursor: running ? "not-allowed" : "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <label style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                padding: "7px 0",
+                fontSize: 11,
+                color: Theme.textSecond,
+                border: `1px dashed ${Theme.border}`,
+                borderRadius: 6,
+                cursor: running ? "not-allowed" : "pointer",
+                background: "transparent",
+              }}>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleJsonFile}
+                  disabled={running}
+                  style={{ display: "none" }}
+                />
+                + Загрузить файл
+              </label>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Параметры */}
-      <div style={{ ...card, overflow: "hidden" }}>
+      {/* Параметры (скрыты если загружен json-конфиг) */}
+      <div style={{ ...card, overflow: "hidden", display: isPatrol && jsonConfig ? "none" : undefined }}>
         <div style={{ position: "relative" }}>
           <div
             ref={tabsRef}

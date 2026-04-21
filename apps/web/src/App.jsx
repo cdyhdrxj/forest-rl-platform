@@ -21,20 +21,25 @@ export default function App() {
   const [tab,            setTab]            = useState("Алгоритм")
   const [params,         setParams]         = useState(DEFAULT_PARAMS)
   const [activeGridSize, setActiveGridSize] = useState(DEFAULT_PARAMS.grid_size)
+  const [jsonConfig,     setJsonConfig]     = useState(null)
+  const [showTrail,      setShowTrail]      = useState(true)
+  const [showObs,        setShowObs]        = useState(true)
 
   const endpoint = WS_MAP[`${activeEnv}/${activeTask}`]
 
   const {
     state, chartData, running, scenarioReady,
-    setRunning, setChartData, setState, wsRef,
+    setRunning, setChartData, setState, wsRef, resetEpisode,
   } = useWebSocket(endpoint)
 
   const { generate, start, stop, reset } = useRunActions({
     wsRef, endpoint, params, algo, activeTask, activeEnv,
     setRunning, setChartData, setState, setActiveGridSize,
+    jsonConfig, resetEpisode,
   })
 
-  const { canvasRef } = useCanvasRender(activeEnv, state, activeGridSize)
+  const obsSize = jsonConfig?.obs_config?.size ?? params.obs_size ?? 3
+  const { canvasRef } = useCanvasRender(activeEnv, state, activeGridSize, showTrail, showObs, obsSize)
 
   const executionPhase = state?.execution_phase ?? (running ? "running" : scenarioReady ? "preview" : "idle")
   const is3d = IS_3D(activeEnv)
@@ -68,6 +73,7 @@ export default function App() {
             params={params}         setParams={setParams}
             tab={tab}               setTab={setTab}
             running={running}
+            jsonConfig={jsonConfig} setJsonConfig={setJsonConfig}
           />
 
           {/* центральная колонка */}
@@ -77,6 +83,10 @@ export default function App() {
               activeTask={activeTask}
               state={state}
               canvasRef={canvasRef}
+              showTrail={showTrail}
+              setShowTrail={setShowTrail}
+              showObs={showObs}
+              setShowObs={setShowObs}
             />
 
             {/* кнопки управления */}

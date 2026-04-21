@@ -9,7 +9,7 @@
     },
     "intruder_config": [
         {
-            "type": "poacher",
+            "type": "poacher_simple",
             "pos": [5, 5],
             "is_random_spawned": false,
             "catch_reward": 1.0,
@@ -21,7 +21,7 @@
             "felling_intensity": 100.0
         },
         {
-            "type": "poacher",
+            "type": "poacher_simple",
             "pos": [5, 5],
             "is_random_spawned": false,
             "catch_reward": 1.0,
@@ -33,7 +33,7 @@
             "felling_intensity": 100.0
         },
         {
-            "type": "poacher",
+            "type": "poacher_simple",
             "pos": [5, 5],
             "is_random_spawned": false,
             "catch_reward": 1.0,
@@ -45,7 +45,7 @@
             "felling_intensity": 100.0
         },
         {
-            "type": "poacher",
+            "type": "poacher_simple",
             "pos": [5, 5],
             "is_random_spawned": false,
             "catch_reward": 1.0,

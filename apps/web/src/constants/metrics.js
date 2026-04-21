@@ -23,8 +23,8 @@ export const METRICS_CONFIG = {
       BASE_METRICS.episode,
       BASE_METRICS.step,
       BASE_METRICS.reward,
-      ["Целей", s => s?.goal_count ?? 0, Theme.green],
-      BASE_METRICS.collision,
+      ["Нарушители", s => s?.i_count ?? 0, Theme.red],
+      // BASE_METRICS.collision,
     ],
     "Посадка": [
       BASE_METRICS.episode,
