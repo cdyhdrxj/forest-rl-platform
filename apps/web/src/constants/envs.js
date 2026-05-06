@@ -14,11 +14,23 @@ export const API_ADDRESS =
   import.meta.env.VITE_API_ADDRESS ||
   "127.0.0.1";
 
+export const ENV = {
+  CONTINUOUS: "Непрерывная 2D",
+  DISCRETE:   "Дискретная",
+  SIM_3D:     "3D симулятор",
+}
+
+export const TASK = {
+  TRAIL:        "Тропы",
+  PATROL:       "Патруль",
+  REFORESTATION: "Посадка",
+}
+
 // Среды и задачи 
 export const TASKS_BY_ENV = {
-  "Непрерывная 2D": ["Тропы"],
-  "Дискретная":     ["Патруль", "Посадка"],
-  "3D симулятор":   ["Тропы"],
+  [ENV.CONTINUOUS]: [TASK.TRAIL],
+  [ENV.DISCRETE]:   [TASK.PATROL, TASK.REFORESTATION],
+  [ENV.SIM_3D]:     [TASK.TRAIL],
 }
 
 export const HTTP_MAP = {
@@ -27,18 +39,18 @@ export const HTTP_MAP = {
 }
 
 export const WS_MAP = {
-  "Непрерывная 2D/Тропы":  `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/continuous/trail`,
-  "Дискретная/Патруль":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/discrete/patrol`,
-  "Дискретная/Посадка":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/discrete/reforestation`,
-  "3D симулятор/Патруль":    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/patrol`,
-  "3D симулятор/Тропы":      `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/trail`,
+  [`${ENV.CONTINUOUS}/${TASK.TRAIL}`]:   `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/continuous/trail`,
+  [`${ENV.DISCRETE}/${TASK.PATROL}`]:    `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/discrete/patrol`,
+  [`${ENV.DISCRETE}/${TASK.REFORESTATION}`]: `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/discrete/reforestation`,
+  [`${ENV.SIM_3D}/${TASK.PATROL}`]:      `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/patrol`,
+  [`${ENV.SIM_3D}/${TASK.TRAIL}`]:       `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/trail`,
 
   "WebrtcWs":      `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/ws`,
 }
 
 // Алгоритмы по среде
 export const ALGOS_BY_ENV = {
-  "Непрерывная 2D": ["PPO", "SAC", "A2C"],
-  "Дискретная":     ["PPO", "A2C"],
-  "3D симулятор":   ["PPO", "SAC", "A2C"],
+  [ENV.CONTINUOUS]: ["PPO", "SAC", "A2C"],
+  [ENV.DISCRETE]:   ["PPO", "A2C"],
+  [ENV.SIM_3D]:     ["PPO", "SAC", "A2C"],
 }

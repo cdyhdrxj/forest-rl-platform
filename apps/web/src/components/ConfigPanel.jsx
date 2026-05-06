@@ -1,9 +1,65 @@
 import { useEffect, useRef, useState } from "react"
 import { Theme, card, secLabel, selStyle } from "../constants/colors"
 import { TASKS_BY_ENV, ALGOS_BY_ENV, SLIDER_CONFIG, DEFAULT_PARAMS } from "../constants/config"
+import { ENV, TASK } from "../constants/envs"
 
 const Label = ({ children }) =>
   <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{children}</div>
+
+const Slider = ({ label, param, min, max, step, type, value, onChange, disabled }) => {
+  if (type === "bool") {
+    const handleChange = (e) => {
+      onChange(param, e.target.checked)
+    }
+
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            type="checkbox"
+            checked={value}
+            onChange={handleChange}
+            disabled={disabled}
+            style={{
+              accentColor: Theme.accent,
+              cursor: disabled ? "not-allowed" : "pointer",
+            }}
+          />
+          <span style={{ fontSize: 11, color: Theme.textSecond }}>{label}</span>
+        </div>
+      </div>
+    )
+  }
+
+  const handleChange = (e) => {
+    onChange(param, +e.target.value)
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+        <span style={{ color: Theme.textSecond }}>{label}</span>
+        <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>
+          {value}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={handleChange}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          accentColor: Theme.accent,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+      />
+    </div>
+  )
+}
 
 export function ConfigPanel({
   activeEnv, setActiveEnv,
@@ -16,7 +72,7 @@ export function ConfigPanel({
 }) {
   const set = (k, v) => setParams(p => ({ ...p, [k]: v }))
 
-  const isPatrol = activeEnv === "Дискретная" && activeTask === "Патруль"
+  const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
 
   const handleJsonFile = (e) => {
     const file = e.target.files?.[0]
@@ -46,9 +102,6 @@ export function ConfigPanel({
     console.log("PARAMS UPDATED:", params)
   }, [params])
 
-  useEffect(() => {
-    console.trace("PARAMS SET")
-  }, [params])
   const checkTabs = () => {
     const el = tabsRef.current
     if (!el) return
@@ -87,15 +140,14 @@ export function ConfigPanel({
 
   const shouldShowSlider = (slider) => {
     if (slider.algoOnly && !slider.algoOnly.includes(algo)) return false
-    if (slider.taskOnly && !slider.taskOnly.includes(activeTask)) return false
     return true
   }
 
   const availableTabs = ["Алгоритм", "Карта", "Агент", "Наблюдение", "Нарушитель", "Робот"]
-    .filter(t => {
-      const sliders = SLIDER_CONFIG[activeEnv]?.[t] ?? []
-      return sliders.some(sl => shouldShowSlider(sl))
-    })
+  .filter(t => {
+    const sliders = SLIDER_CONFIG[activeEnv]?.[activeTask]?.[t] ?? []
+    return sliders.some(sl => shouldShowSlider(sl))
+  })
 
   useEffect(() => {
     checkTabs()
@@ -112,57 +164,8 @@ export function ConfigPanel({
     if (!available.includes(algo)) setAlgo(available[0])
   }, [activeEnv, algo, setAlgo])
 
-  const sliders = SLIDER_CONFIG[activeEnv]?.[tab] ?? []
+  const sliders = SLIDER_CONFIG[activeEnv]?.[activeTask]?.[tab] ?? []
   const algos = ALGOS_BY_ENV[activeEnv] ?? ["PPO"]
-
-  const Slider = ({ label, param, min, max, step, type }) => {
-    if (type === "bool") {
-      return (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="checkbox"
-              checked={params[param] ?? false}
-              onChange={e => set(param, e.target.checked)}
-              disabled={running}
-              style={{
-                accentColor: Theme.accent,
-                cursor: running ? "not-allowed" : "pointer",
-              }}
-            />
-            <span style={{ fontSize: 11, color: Theme.textSecond }}>{label}</span>
-          </div>
-        </div>
-      )
-    }
-
-    const value = params[param] ?? DEFAULT_PARAMS[param] ?? min
-
-    return (
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-          <span style={{ color: Theme.textSecond }}>{label}</span>
-          <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>
-            {value}
-          </span>
-        </div>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={e => set(param, +e.target.value)}
-          disabled={running}
-          style={{
-            width: "100%",
-            accentColor: Theme.accent,
-            cursor: running ? "not-allowed" : "pointer",
-          }}
-        />
-      </div>
-    )
-  }
 
   return (
     <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -340,7 +343,21 @@ export function ConfigPanel({
 
           {sliders.filter(s => shouldShowSlider(s)).length === 0
             ? <div style={{ fontSize: 11, color: Theme.textMuted }}>Нет параметров</div>
-            : sliders.map(s => shouldShowSlider(s) && <Slider key={s.param} {...s} />)
+            : sliders.map(s => {
+                const value = s.type === "bool" 
+                  ? (params[s.param] ?? false)
+                  : (params[s.param] ?? DEFAULT_PARAMS[s.param] ?? s.min)
+                
+                return (
+                  <Slider 
+                    key={s.param}
+                    {...s}
+                    value={value}
+                    onChange={(param, val) => set(param, val)}
+                    disabled={running}
+                  />
+                )
+              })
           }
         </div>
       </div>
