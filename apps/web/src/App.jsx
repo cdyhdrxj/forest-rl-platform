@@ -1,5 +1,4 @@
-// web/src/App.jsx
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Theme } from "./constants/colors"
 import { WS_MAP, DEFAULT_PARAMS } from "./constants/config"
 import { useWebSocket } from "./hooks/useWebSocket"
@@ -12,11 +11,13 @@ import { ControlButtons } from "./components/ControlButtons"
 import { RewardChart } from "./components/RewardChart"
 import { LiveState } from "./components/LiveState"
 
-const IS_3D = (env) => env === "3D симулятор"
+import { ENV, TASK } from "./constants/envs"
+
+const IS_3D = (env) => env === ENV.SIM_3D
 
 export default function App() {
-  const [activeEnv,      setActiveEnv]      = useState("Непрерывная 2D")
-  const [activeTask,     setActiveTask]     = useState("Тропы")
+  const [activeEnv,      setActiveEnv]      = useState(ENV.CONTINUOUS)
+  const [activeTask,     setActiveTask]     = useState(TASK.TRAIL)
   const [algo,           setAlgo]           = useState("PPO")
   const [tab,            setTab]            = useState("Алгоритм")
   const [params,         setParams]         = useState(DEFAULT_PARAMS)
@@ -39,7 +40,15 @@ export default function App() {
   })
 
   const obsSize = jsonConfig?.obs_config?.size ?? params.obs_size ?? 3
-  const { canvasRef } = useCanvasRender(activeEnv, state, activeGridSize, showTrail, showObs, obsSize)
+  
+  const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
+
+  const { canvasRef } = useCanvasRender(
+    activeEnv, state, activeGridSize,
+    isPatrol ? showTrail : true,   
+    isPatrol ? showObs   : false,  
+    obsSize
+  )
 
   const executionPhase = state?.execution_phase ?? (running ? "running" : scenarioReady ? "preview" : "idle")
   const is3d = IS_3D(activeEnv)

@@ -15,6 +15,7 @@ _EXPORT_MAP = {
     "extract_coverage_runtime_layout": ("services.scenario_generator.adapters", "extract_coverage_runtime_layout"),
     "extract_continuous_runtime_kwargs": ("services.scenario_generator.adapters", "extract_continuous_runtime_kwargs"),
     "extract_reforestation_runtime_layout": ("services.scenario_generator.adapters", "extract_reforestation_runtime_layout"),
+    "extract_patrol_runtime_context": ("services.scenario_generator.adapters", "extract_patrol_runtime_context"),
     "extract_simulator_3d_runtime_config": ("services.scenario_generator.adapters", "extract_simulator_3d_runtime_config"),
     "get_default_environment_generation_service": (
         "services.scenario_generator.defaults",
