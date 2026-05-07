@@ -1,57 +1,30 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:99
+ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV MESA_GL_VERSION_OVERRIDE=4.5
+ENV MESA_GLSL_VERSION_OVERRIDE=450
 
-# Устанавливаем только нужное (БЕЗ xvfb, fluxbox, x11vnc)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libc6 \
-    libc6-dev \
-    libstdc++6 \
+RUN apt-get update && apt-get install -y \
     xvfb \
-    xauth \
-    mesa-utils \
-    # Графические библиотеки для Unity
-    libgl1-mesa-glx \
-    libgl1-mesa-dri \
     libglu1-mesa \
-    libxcursor1 \
-    libxrandr2 \
-    libxcomposite1 \
-    libxi6 \
-    libxinerama1 \
-    libxext6 \
-    libxfixes3 \
-    libxrender1 \
-    libxxf86vm1 \
-    # X11 клиент
-    libx11-6 \
-    x11-utils \
+    libgl1-mesa-dri \
+    mesa-vulkan-drivers \
+    libxcursor1 libxinerama1 libxi6 libxrandr2 \
+    libglib2.0-0 libgtk-3-0 \
+    libasound2 \
+    ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаем пользователя
-RUN groupadd --gid 2000 unity && \
-    useradd --gid 2000 --uid 2000 --create-home --shell /bin/bash unity
+# Копируем уже собранный Unity билд (Linux Server Build)
+COPY linux_build /linux_build/
+RUN chmod +x /linux_build/simulator.x86_64
 
-WORKDIR /linux_build
-
-# Копируем скрипт запуска
+# Стартовый скрипт
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Копируем билд Unity
-COPY linux_build /linux_build/
+EXPOSE 80 443
 
-# Проверка
-RUN ls -la /linux_build/ && \
-    if [ ! -f /linux_build/simulator.x86_64 ]; then \
-        echo "simulator.x86_64 not found!"; \
-        exit 1; \
-    fi
-
-RUN chown -R unity:unity /linux_build /entrypoint.sh
-
-USER unity
-
-EXPOSE 10000
-
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/entrypoint.sh"]

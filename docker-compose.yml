@@ -77,18 +77,31 @@ services:
       dockerfile: Dockerfile
 
     container_name: unity
-
     restart: unless-stopped
 
-    # gpus: all
-
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all,graphics,utility,compute
+      - DISPLAY=:99
+      - LIBGL_ALWAYS_SOFTWARE=1
 
-    shm_size: "2gb"
+    # shm_size: "2gb"
 
     ports:
+      - "10001:10000"
+
+    depends_on:
+      - server
+      - ros2
+
+  ros2:
+    build:
+      context: ros2_ws
+      dockerfile: Dockerfile
+
+    container_name: ros2
+    restart: unless-stopped
+
+    ports:
+      - "9090:9090"
       - "10000:10000"
 
 volumes:
