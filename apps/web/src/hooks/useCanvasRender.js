@@ -3,7 +3,7 @@ import { drawCanvas } from "../scripts/drawCanvas"
 
 const CANVAS_SIZE = 360
 
-export function useCanvasRender(activeEnv, state, activeGridSize) {
+export function useCanvasRender(activeEnv, state, activeGridSize, showTrail = true, showObs = true, obsSize = 3) {
   const canvasRef    = useRef(null)
   const gridCacheRef = useRef(null)
 
@@ -26,12 +26,12 @@ export function useCanvasRender(activeEnv, state, activeGridSize) {
 
   useEffect(() => {
     if (!canvasRef.current) return
-    
+
     let terrain = null
     if (state?.world_layers) {
       terrain = state.world_layers.terrain || state.world_layers.terrain_map
     }
-    
+
     const id = requestAnimationFrame(() =>
       drawCanvas(
         activeEnv,
@@ -39,11 +39,14 @@ export function useCanvasRender(activeEnv, state, activeGridSize) {
         state,
         activeGridSize,
         gridCacheRef.current,
-        terrain
+        terrain,
+        showTrail,
+        showObs,
+        obsSize,
       )
     )
     return () => cancelAnimationFrame(id)
-  }, [state, activeGridSize, activeEnv])
+  }, [state, activeGridSize, activeEnv, showTrail, showObs, obsSize])
 
   return { canvasRef }
 }

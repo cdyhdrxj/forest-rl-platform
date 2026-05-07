@@ -77,6 +77,12 @@ class GridFamilyGenerator:
                 "grid": {
                     "grid_size": grid_size,
                 },
+                "patrol": {
+                    "agent_random_spawn": True,
+                    "intruder_random_spawn": [True],
+                    "intruder_positions": [],
+                    "intruder_types": [],
+                },
             },
         )
         scenario.add_layer(
@@ -239,71 +245,73 @@ class PatrolTaskOverlay:
     supported_environments = {EnvironmentKind.GRID, EnvironmentKind.SIMULATOR_3D}
 
     def apply(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
-        grid_size = int(scenario.runtime_context.get("grid", {}).get("grid_size") or 0)
-        if grid_size <= 0:
-            terrain = scenario.get_layer_data("terrain_preview")
-            if terrain is None:
-                terrain = scenario.get_layer_data("terrain")
-            if terrain is None:
-                raise ValueError("Patrol overlay requires either a grid size or a terrain layer")
-            grid_size = int(terrain.shape[0])
-        rng = np.random.default_rng(scenario.seed + 101)
-        occupied: set[tuple[int, int]] = set()
+        grid_size = int(
+            scenario.runtime_context.get("grid", {}).get("grid_size")
+            or scenario.get_layer_data("terrain").shape[0]
+        )
 
-        agent_pos = request.task_params.get("agent_pos")
-        agent_random_spawn = bool(request.task_params.get("agent_random_spawn", True))
-        if agent_pos is None or agent_random_spawn:
+        patrol = scenario.runtime_context.get("patrol")
+        if patrol is None:
+            raise ValueError("Missing patrol runtime_context")
+
+        seed = scenario.seed
+        rng = np.random.default_rng(seed + 1001)
+
+        occupied = set()
+
+        if patrol.get("agent_random_spawn", True):
             agent_pos = _sample_unique_positions(rng, grid_size, 1, occupied)[0]
         else:
-            agent_pos = [int(agent_pos[0]), int(agent_pos[1])]
-        occupied.add((int(agent_pos[0]), int(agent_pos[1])))
+            agent_pos = patrol["agent_pos"]
 
-        requested_intruder_positions = request.task_params.get("intruder_positions", [])
-        requested_intruder_random = request.task_params.get("intruder_random_spawn", [])
-        requested_intruder_types = request.task_params.get("intruder_types", [])
-        intruder_count = _get_int(request.task_params, "intruder_count", len(requested_intruder_positions) or 1)
+        occupied.add(tuple(agent_pos))
 
-        intruder_positions: list[list[int]] = []
-        for index in range(intruder_count):
-            use_requested = (
-                index < len(requested_intruder_positions)
-                and index < len(requested_intruder_random)
-                and not bool(requested_intruder_random[index])
+        intruder_positions = patrol.get("intruder_positions", [])
+        intruder_random = patrol.get("intruder_random_spawn", [])
+        intruder_types = patrol.get("intruder_types", [])
+
+        resolved_intruders = []
+
+        for i in range(len(intruder_positions)):
+            use_random = (
+                i < len(intruder_random) and intruder_random[i]
             )
-            if use_requested:
-                position = [int(requested_intruder_positions[index][0]), int(requested_intruder_positions[index][1])]
-                if tuple(position) in occupied:
-                    position = _sample_unique_positions(rng, grid_size, 1, occupied)[0]
+
+            if use_random:
+                pos = _sample_unique_positions(rng, grid_size, 1, occupied)[0]
             else:
-                position = _sample_unique_positions(rng, grid_size, 1, occupied)[0]
-            occupied.add((position[0], position[1]))
-            intruder_positions.append(position)
+                pos = intruder_positions[i]
+
+            occupied.add(tuple(pos))
+            resolved_intruders.append(pos)
 
         intruder_layer = np.zeros((grid_size, grid_size), dtype=np.float32)
-        for x, y in intruder_positions:
+
+        for x, y in resolved_intruders:
             intruder_layer[x, y] = 1.0
 
         scenario.runtime_context["patrol"] = {
             "agent_pos": agent_pos,
-            "intruder_positions": intruder_positions,
+            "intruder_positions": resolved_intruders,
+            "intruder_types": intruder_types,
         }
-        scenario.runtime_context["request_intruder_types"] = list(requested_intruder_types)
-        if scenario.environment_kind is EnvironmentKind.SIMULATOR_3D:
-            descriptor = dict(scenario.runtime_context.get("simulator_3d", {}).get("world_descriptor") or {})
-            descriptor["intruder_positions"] = intruder_positions
-            descriptor["agent_start"] = agent_pos
-            scenario.runtime_context.setdefault("simulator_3d", {})["world_descriptor"] = descriptor
-        scenario.preview_payload["agent_pos"] = [[float(agent_pos[0]), float(agent_pos[1])]]
-        scenario.preview_payload["goal_pos"] = [[float(x), float(y)] for x, y in intruder_positions]
+
+        scenario.preview_payload["agent_pos"] = [
+            [float(agent_pos[0]), float(agent_pos[1])]
+        ]
+
+        scenario.preview_payload["goal_pos"] = [
+            [float(x), float(y)] for x, y in resolved_intruders
+        ]
+
         scenario.add_layer(
             GeneratedLayer(
                 name="intruders_initial",
                 layer_type="intruders_initial",
                 data=intruder_layer,
-                description="Initial intruder positions for grid patrol",
+                description="Deterministic intruder spawn (seeded random)",
             )
         )
-
 
 class ReforestationTaskOverlay:
     task_kind = TaskKind.REFORESTATION

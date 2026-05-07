@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react"
-import { buildPatrolPayload } from "../constants/config"  
 
 export function useWebSocket(endpoint) {
-  const [state,         setState]         = useState(null)
-  const [chartData,     setChartData]     = useState([])
-  const [running,       setRunning]       = useState(false)
+  const [state, setState] = useState(null)
+  const [chartData, setChartData] = useState([])
+  const [running, setRunning] = useState(false)
   const [scenarioReady, setScenarioReady] = useState(false)
   const wsRef = useRef(null)
 
@@ -41,17 +40,14 @@ export function useWebSocket(endpoint) {
     return () => ws.close()
   }, [endpoint])
 
-  const send = (action, params, algo, isPatrol = false) => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
-    let payload
-    if (action === "start" && isPatrol) {
-      payload = { action, ...buildPatrolPayload(params, algo) }
-    } else if (action === "start") {
-      payload = { action, ...params, algorithm: algo?.toLowerCase() }
-    } else {
-      payload = { action }
+  const send = (action, extra = {}) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not open")
+      return
     }
-    wsRef.current.send(JSON.stringify(payload))
+    const message = JSON.stringify({ action, ...extra })
+    console.log(`[WS] Sending ${action}:`, message)
+    wsRef.current.send(message)
   }
 
   return { state, chartData, running, scenarioReady, setRunning, setChartData, setState, wsRef, send }
