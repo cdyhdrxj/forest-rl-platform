@@ -77,8 +77,6 @@ export function useRunActions({
   const reset = useCallback(() => {
     if (activeEnv === ENV.CONTINUOUS) {
       send("generate", { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) })
-    } else if (isPatrol) {
-      send("generate", { ...buildPatrolPayload(params, algo), mode: modeForTask(activeTask) })
     } else {
       send("reset")
     }
