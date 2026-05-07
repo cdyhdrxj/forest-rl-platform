@@ -36,12 +36,6 @@ def build_patrol_grid_request(config: GridForestConfig) -> GenerationRequest:
             "intruder_positions": [list(item.pos) for item in config.intruder_config],
             "intruder_random_spawn": [item.is_random_spawned for item in config.intruder_config],
             "intruder_types": [item.type for item in config.intruder_config],
-            "intruder_detection_reward": config.intruder_detection_reward,
-            "intruder_interception_reward": config.intruder_interception_reward,
-            "random_spawn_position": config.random_spawn_position,
-            "random_spawn_time": config.random_spawn_time,
-            "tau_min": config.tau_min,
-            "tau_max": config.tau_max,
         },
     )
 
@@ -51,29 +45,63 @@ def apply_patrol_generation(
     scenario: GeneratedScenario,
 ) -> tuple[GridForestConfig, dict[str, np.ndarray]]:
     updated = config.model_copy(deep=True)
-    patrol_ctx = scenario.runtime_context["patrol"]
-    agent_pos = patrol_ctx["agent_pos"]
-    intruder_positions = patrol_ctx["intruder_positions"]
-
-    updated.agent_config.pos = list(agent_pos)
-    updated.agent_config.is_random_spawned = False
-
-    configs = list(updated.intruder_config)
-    while len(configs) < len(intruder_positions):
-        configs.append(WandererConfig())
-
-    new_configs = []
-    for index, position in enumerate(intruder_positions):
-        current = configs[index]
-        current.pos = list(position)
-        current.is_random_spawned = False
-        new_configs.append(current)
-    updated.intruder_config = new_configs
-
-    static_layers: dict[str, np.ndarray] = {}
+    patrol_ctx = scenario.runtime_context.get("patrol", {})
+    
+    scenario_seed = scenario.seed
+    if scenario.runtime_context.get("seed") is not None:
+        scenario_seed = scenario.runtime_context["seed"]
+    
+    updated.map_seed = scenario_seed
+    
+    agent_pos = patrol_ctx.get("agent_pos")
+    
+    agent_random_spawn = updated.agent_config.is_random_spawned
+    
+    if agent_pos is not None and not agent_random_spawn:
+        updated.agent_config.pos = list(agent_pos)
+        updated.agent_config.is_random_spawned = False
+    else:
+        updated.agent_config.is_random_spawned = agent_random_spawn
+    
+    intruder_positions = patrol_ctx.get("intruder_positions", [])
+    intruder_random_spawn = patrol_ctx.get("intruder_random_spawn", [])
+    
+    if intruder_positions:
+        intruder_types = patrol_ctx.get("intruder_types", [])
+        
+        new_intruders = []
+        
+        for i in range(len(intruder_positions)):
+            if i < len(updated.intruder_config):
+                new_intruder = updated.intruder_config[i].model_copy(deep=True)
+                config_random_spawn = new_intruder.is_random_spawned
+            else:
+                new_intruder = WandererConfig()
+                config_random_spawn = True
+            
+            if i < len(intruder_random_spawn):
+                use_random = intruder_random_spawn[i]
+            else:
+                use_random = config_random_spawn
+            
+            if not use_random and i < len(intruder_positions):
+                new_intruder.pos = list(intruder_positions[i])
+                new_intruder.is_random_spawned = False
+            else:
+                new_intruder.is_random_spawned = True
+            
+            if i < len(intruder_types):
+                new_intruder.type = intruder_types[i]
+            
+            new_intruders.append(new_intruder)
+        
+        updated.intruder_config = new_intruders
+    
+    static_layers = {}
     terrain = scenario.get_layer_data("terrain")
     if terrain is not None:
         static_layers["terrain"] = terrain
+    
     return updated, static_layers
 
 
@@ -101,6 +129,8 @@ def build_reforestation_request(config: PlantingEnvConfig) -> GenerationRequest:
 def extract_reforestation_runtime_layout(scenario: GeneratedScenario) -> dict[str, Any]:
     return dict(scenario.runtime_context["reforestation"])
 
+def extract_patrol_runtime_context(scenario: GeneratedScenario) -> dict[str, Any]:
+    return dict(scenario.runtime_context.get("patrol", {}))
 
 def build_continuous_trail_request(params: dict[str, Any]) -> GenerationRequest:
     return GenerationRequest(

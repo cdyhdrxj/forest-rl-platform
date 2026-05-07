@@ -1,3 +1,4 @@
+import { ENV } from "../constants/envs"
 import { Theme } from "../constants/colors"
 
 const Btn = ({ onClick, disabled, color, children }) => (
@@ -16,12 +17,12 @@ export function ControlButtons({
   activeEnv, running, scenarioReady, endpoint,
   onGenerate, onStart, onStop, onReset,
 }) {
-  const isCamar     = activeEnv === "Непрерывная 2D"
+  const isCamar = activeEnv === ENV.CONTINUOUS 
   const canGenerate = !isCamar
   const canStart    = isCamar
     ? !running && !!endpoint
     : !running && !!endpoint && scenarioReady
-  const resetLabel  = isCamar ? "Новая карта" : "Сброс"
+  const resetLabel  = isCamar ? "Сброс карты" : "Сброс"
   const resetColor = isCamar ? Theme.accent : Theme.textMuted
 
   return (

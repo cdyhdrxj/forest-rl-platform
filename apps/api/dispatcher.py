@@ -88,7 +88,7 @@ class RunSession:
 
 
 def _build_patrol_request(params: dict[str, Any]) -> GenerationRequest:
-    source = params.get("grid_world_config", params)
+    source = dict(params.get("grid_world_config", params))
     return build_patrol_grid_request(GridForestConfig.model_validate(source)) 
 
 
