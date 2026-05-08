@@ -3,19 +3,16 @@
 # Активируем ROS 2
 source /opt/ros/humble/setup.bash
 
-# Активируем наше рабочее пространство
 if [ -f /ros2_ws/install/setup.bash ]; then
     source /ros2_ws/install/setup.bash
 fi
 
-# Функция для остановки всех процессов
 cleanup() {
     echo "Останавливаем сервисы..."
     kill $ENDPOINT_PID 2>/dev/null
     exit 0
 }
 
-# Перехватываем Ctrl+C
 trap cleanup INT TERM
 
 # Запускаем ROS TCP Endpoint для Unity в фоне
