@@ -88,5 +88,9 @@ export function useRunActions({
     setChartData([])
   }, [activeEnv, params, algo, activeTask, send, resetEpisode, setRunning, setState, setChartData])
 
-  return { generate, start, stop, reset }
+  const finish = useCallback(() => {
+    send("finish")
+  }, [send])
+
+  return { generate, start, stop, reset, finish }
 }
