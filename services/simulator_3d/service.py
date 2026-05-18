@@ -6,6 +6,7 @@ from typing import Any
 
 from packages.schemas.enums import EventType
 from services.scenario_generator.models import GeneratedScenario
+from services.ros_2.ros_api_connection import ros
 
 
 class Simulator3DService:
@@ -58,6 +59,7 @@ class Simulator3DService:
         self._state = self._make_state()
         self._state["mode"] = scenario.task_kind.value
         self._apply_preview_state(scenario)
+        response = ros.call_service('/env/generate', 'std_srvs/Trigger', {})
 
     def validate_scenario(self, scenario: GeneratedScenario, runtime_config: dict[str, Any] | None = None) -> list[str]:
         messages: list[str] = []

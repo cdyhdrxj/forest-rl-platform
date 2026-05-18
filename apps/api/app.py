@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apps.api.dispatcher import ExperimentDispatcher
 from apps.api.websocket_manager import handle_ws
 from webrtc_routes import setup_webrtc_routes, ServerConfig
+from services.ros_2.ros_api_connection import ros
 import logging
 
 logging.basicConfig(
@@ -11,6 +12,11 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+if ros.connected:
+    logger.info("ROS 2 connected")
+else:
+    logger.warning("ROS 2 not connected")
 
 app = FastAPI()
 
