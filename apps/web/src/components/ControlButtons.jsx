@@ -16,8 +16,27 @@ const Btn = ({ onClick, disabled, color, children }) => (
 export function ControlButtons({
   activeEnv, running, scenarioReady, endpoint,
   onGenerate, onStart, onStop, onReset,
+  isInference = false,
+  onStartEval,          
+  evalReady = false,    
 }) {
-  const isCamar = activeEnv === ENV.CONTINUOUS 
+  const isCamar = activeEnv === ENV.CONTINUOUS
+
+  if (isInference) {
+    const canStartEval = !running && evalReady
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <Btn onClick={onStartEval} disabled={!canStartEval} color={Theme.green}>
+              Старт
+          </Btn>
+          <Btn onClick={onStop} disabled={!running} color={Theme.red}>Стоп</Btn>
+        </div>
+        <Btn onClick={onReset} disabled={running} color={Theme.textMuted}>Сброс</Btn>
+      </div>
+    )
+  }
+
   const canGenerate = !isCamar
   const canStart    = isCamar
     ? !running && !!endpoint
@@ -37,13 +56,7 @@ export function ControlButtons({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <Btn onClick={onStop}  disabled={!running} color={Theme.red}>Стоп</Btn>
-        <Btn
-          onClick={onReset}
-          disabled={running}
-          color={resetColor}
-        >
-          {resetLabel}
-        </Btn>
+        <Btn onClick={onReset} disabled={running}  color={resetColor}>{resetLabel}</Btn>
       </div>
     </div>
   )
