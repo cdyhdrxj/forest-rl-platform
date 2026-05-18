@@ -1,0 +1,14 @@
+float32 uniform_scale
+float32 mesh_height_multiplayer
+float32 noise_scale
+int32 seed
+int32 octaves
+float32 persistance
+float32 lacunarity
+float32 offset_x
+float32 offset_y
+int32 max_view_dst
+int32 noise_normalize_mode
+---
+bool success
+string message

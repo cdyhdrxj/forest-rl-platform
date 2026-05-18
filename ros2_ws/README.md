@@ -2,7 +2,7 @@
 
 ## Сборка
 
-docker build -t ros2-endpoint .
+docker build --no-cache -t ros2-endpoint .
 
 ## Сеть
 
@@ -20,3 +20,6 @@ docker run --rm -it \
 ## Активация ROS 2
 
 source /opt/ros/humble/setup.bash
+source /ros2_ws/install/setup.bash
+
+ros2 service call /env/generate forest_msgs/srv/SetTerrainParams "{uniform_scale: 0.1, mesh_height_multiplayer: 10.0, noise_scale: 60.0, seed: 15, octaves: 4, persistance: 0.5, lacunarity: 2.0, offset_x: 0.0, offset_y: 0.0, max_view_dst: 500,  noise_normalize_mode: 0}"
