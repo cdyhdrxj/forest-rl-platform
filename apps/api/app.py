@@ -78,6 +78,7 @@ def _run_to_dict(run: Run) -> dict:
         "id": run.id,
         "title": run.title,
         "status": run.status.value if hasattr(run.status, "value") else str(run.status),
+        "mode": run.mode.value if hasattr(run.mode, 'value') else str(run.mode),
         "route_key": (run.config_json or {}).get("route_key"),
         "scenario_version_id": run.scenario_version_id,
         "created_at": run.created_at.isoformat() if run.created_at else None,

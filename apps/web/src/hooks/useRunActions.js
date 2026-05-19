@@ -8,7 +8,7 @@ const modeForTask = t =>
 export function useRunActions({
   wsRef, endpoint, params, algo, activeTask, activeEnv,
   setRunning, setChartData, setState, setActiveGridSize,
-  jsonConfig, resetEpisode,
+  jsonConfig, resetEpisode, mode, sourceRunTitle,
 }) {
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
 
@@ -20,7 +20,6 @@ export function useRunActions({
       return
     }
     const message = JSON.stringify({ action, params: extra }) 
-    console.log(`[RunActions] Sending ${action}:`, message)
     wsRef.current.send(message)
   }
 
@@ -42,11 +41,16 @@ export function useRunActions({
       generateParams = { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
 
+    if (mode === "inference") {
+      generateParams.mode = "inference"
+      if (sourceRunTitle) generateParams.source_run_title = sourceRunTitle
+    }
+
     send("generate", generateParams)
     resetEpisode?.()
     setChartData([])
     setRunning(false)
-  }, [params, algo, activeTask, jsonConfig, isPatrol, send, resetEpisode, setChartData, setRunning])
+  }, [params, algo, activeTask, jsonConfig, isPatrol, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
 
   const start = useCallback(() => {
     let payloadParams
@@ -77,8 +81,6 @@ export function useRunActions({
   const reset = useCallback(() => {
     if (activeEnv === ENV.CONTINUOUS) {
       send("generate", { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) })
-    } else if (isPatrol) {
-      send("generate", { ...buildPatrolPayload(params, algo), mode: modeForTask(activeTask) })
     } else {
       send("reset")
     }
@@ -89,8 +91,8 @@ export function useRunActions({
   }, [activeEnv, params, algo, activeTask, send, resetEpisode, setRunning, setState, setChartData])
 
   const finish = useCallback(() => {
-    send("finish")
-  }, [send])
+    send("finish", mode ? { mode } : {})
+  }, [send, mode])
 
   return { generate, start, stop, reset, finish }
 }

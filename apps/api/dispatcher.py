@@ -161,6 +161,16 @@ def _task_display_name(task_kind: TaskKind) -> str:
     return task_kind.value.capitalize()
 
 
+def _build_run_title(params: dict, auto_title: str) -> str:
+    """Вернуть title из params или авто-сгенерированный, с пометкой об источнике."""
+    title = params.get("title") or auto_title
+    if params.get("mode") == "inference":
+        source_title = params.get("source_run_title")
+        if source_title:
+            title = f"{title}  (на основе {source_title})"
+    return title
+
+
 DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
     "continuous/trail": RuntimeRoute(
         route_key="continuous/trail",
@@ -301,7 +311,7 @@ class ExperimentDispatcher:
                 created_by_user_id=user.id,
                 mode=route.project_mode,
                 status=RunStatus.created,
-                title=params.get("title") or f"{_task_display_name(route.task_kind)} run #{version.version_no}",
+                title=_build_run_title(params, f"{_task_display_name(route.task_kind)} run #{version.version_no}"),
                 description=params.get("description"),
                 seed=scenario.seed,
                 config_json={
@@ -447,7 +457,7 @@ class ExperimentDispatcher:
                 created_by_user_id=user.id,
                 mode=route.project_mode,
                 status=RunStatus.created,
-                title=params.get("title") or f"{_task_display_name(route.task_kind)} run from scenario {scenario_version_id}",
+                title=_build_run_title(params, f"{_task_display_name(route.task_kind)} run from scenario {scenario_version_id}"),
                 description=params.get("description"),
                 seed=version.seed,
                 config_json={
@@ -547,16 +557,19 @@ class ExperimentDispatcher:
             payload_json={"route_key": session.route.route_key},
         )
 
-    def finish_run(self, run_id: int) -> None:
+    def finish_run(self, run_id: int, is_inference: bool = False) -> None:
         """Завершить эксперимент с финальным статусом finished."""
         session = self.load_run(run_id)
         if session.service.get_state().get("running"):
             session.service.stop()
- 
-        checkpoint_path = _get_service_checkpoint_path(session.service)
-        if checkpoint_path:
-            _save_model_artifact(run_id, checkpoint_path)
- 
+    
+        if not is_inference:
+            checkpoint_path = _get_service_checkpoint_path(session.service)
+            if checkpoint_path:
+                _save_model_artifact(run_id, checkpoint_path)
+        else:
+            checkpoint_path = None
+    
         if session.observer is not None:
             session.observer.stop(
                 final_status=RunStatus.finished,
@@ -569,7 +582,7 @@ class ExperimentDispatcher:
                 status=RunStatus.finished,
                 finished_at=datetime.utcnow(),
             )
- 
+    
         write_service_log(
             run_id=run_id,
             service_name="experiment_dispatcher",
@@ -578,9 +591,10 @@ class ExperimentDispatcher:
             payload_json={
                 "route_key": session.route.route_key,
                 "checkpoint": checkpoint_path,
+                "is_inference": is_inference,
             },
         )
- 
+    
 
     def get_model_checkpoint_path(self, run_id: int) -> str | None:
         """Путь к сохранённому чекпоинту модели для run_id (из таблицы Artifact)."""
