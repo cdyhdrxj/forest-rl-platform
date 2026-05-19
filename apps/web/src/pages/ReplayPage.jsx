@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Theme, card } from "../constants/colors"
+import { PageHeader } from "../components/Header"
 import { useCanvasRender } from "../hooks/useCanvasRender"
 import { ConfigPanel, extractParamsFromRun } from "../components/ConfigPanel"
 import { CanvasPanel } from "../components/CanvasPanel"
@@ -123,44 +124,20 @@ export function ReplayPage({ nav, ctx = {} }) {
     return () => clearInterval(intervalRef.current)
   }, [playing, speed, frames.length, stopPlayback])
 
+  const headerRight = (
+    <span style={{ fontSize: 11, color: Theme.textMuted }}>
+      {loading ? "загрузка..." : error ? "ошибка" : `${frames.length} кадров`}
+    </span>
+  )
+
   return (
     <div style={{ minHeight: "100vh", background: Theme.bg }}>
-
-      {/* Header */}
-      <div style={{
-        background: Theme.surface,
-        borderBottom: `1px solid ${Theme.border}`,
-        padding: "0 20px",
-        height: 46,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        boxShadow: Theme.shadowSm,
-      }}>
-        <button
-          onClick={() => nav("home")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: Theme.textSecond,
-            fontSize: 13,
-            padding: "4px 8px",
-            borderRadius: Theme.radiusSm,
-          }}
-        >
-          ← Эксперименты
-        </button>
-        <span style={{ fontSize: 13, fontWeight: 600, color: Theme.textPrimary }}>
-          Реплей: {runTitle || `Run #${runId}`}
-        </span>
-        <span style={{ fontSize: 11, color: Theme.textMuted, minWidth: 80, textAlign: "right" }}>
-          {loading ? "загрузка..." : error ? "ошибка" : `${frames.length} кадров`}
-        </span>
-      </div>
+      <PageHeader
+        title={`Реплей: ${runTitle || `Run #${runId}`}`}
+        onTitleSave={undefined}
+        onBack={() => nav("home")}
+        right={headerRight}
+      />
 
       <div style={{ padding: "24px 32px" }}>
         <div style={{
@@ -188,7 +165,7 @@ export function ReplayPage({ nav, ctx = {} }) {
             setJsonConfig={() => {}}
           />
 
-          <div style={{ flexShrink: 0 }}>
+          <div style={{ flexShrink: 0, width: 570 }}>
             <CanvasPanel
               activeEnv={activeEnv}
               activeTask={activeTask}
@@ -208,10 +185,15 @@ export function ReplayPage({ nav, ctx = {} }) {
               display: "flex",
               alignItems: "center",
               gap: 8,
-              flexWrap: "nowrap",  
+              width: "100%",
+              boxSizing: "border-box",
+              flexWrap: "nowrap",
             }}>
-              <div style={{ fontSize: 11, color: Theme.textMuted, whiteSpace: "nowrap", minWidth: 45 }}>
-                Кадры {cursor + 1}/{frames.length}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                <span style={{ fontSize: 9, color: Theme.textMuted }}>Кадры</span>
+                <span style={{ fontSize: 11, color: Theme.textPrimary, fontWeight: 500 }}>
+                  {cursor + 1}/{frames.length}
+                </span>
               </div>
               
               <input
@@ -253,8 +235,8 @@ export function ReplayPage({ nav, ctx = {} }) {
               >↺</Btn>
 
               {/* Скорость */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-                <span style={{ fontSize: 10, color: Theme.textMuted }}>Скорость ×{speed}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 10, color: Theme.textMuted }}>×{speed}</span>
                 <input
                   type="range"
                   min={0.5}
@@ -262,7 +244,7 @@ export function ReplayPage({ nav, ctx = {} }) {
                   step={0.5}
                   value={speed}
                   onChange={e => setSpeed(+e.target.value)}
-                  style={{ width: 80, accentColor: Theme.accent }}
+                  style={{ width: 120, accentColor: Theme.accent }}
                 />
               </div>
             </div>

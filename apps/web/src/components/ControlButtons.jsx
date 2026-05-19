@@ -21,36 +21,29 @@ export function ControlButtons({
   evalReady = false,    
 }) {
   const isCamar = activeEnv === ENV.CONTINUOUS
-
-  if (isInference) {
-    const canStartEval = !running && evalReady
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <Btn onClick={onStartEval} disabled={!canStartEval} color={Theme.green}>
-              Старт
-          </Btn>
-          <Btn onClick={onStop} disabled={!running} color={Theme.red}>Стоп</Btn>
-        </div>
-        <Btn onClick={onReset} disabled={running} color={Theme.textMuted}>Сброс</Btn>
-      </div>
-    )
+  const canGenerate = !running && !!endpoint && !isCamar
+  
+  let canStart
+  if (isCamar) {
+    canStart = !running && !!endpoint
+  } else if (isInference) {
+    canStart = !running && evalReady && scenarioReady
+  } else {
+    canStart = !running && !!endpoint && scenarioReady
   }
-
-  const canGenerate = !isCamar
-  const canStart    = isCamar
-    ? !running && !!endpoint
-    : !running && !!endpoint && scenarioReady
-  const resetLabel  = isCamar ? "Сброс карты" : "Сброс"
+  
+  const startAction = isInference ? onStartEval : onStart
+  const resetLabel = isCamar ? "Сброс карты" : "Сброс"
   const resetColor = isCamar ? Theme.accent : Theme.textMuted
+  const generateDisabled = running || !endpoint || !canGenerate
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <Btn onClick={onGenerate} disabled={running || !endpoint || !canGenerate} color={Theme.accent}>
+        <Btn onClick={onGenerate} disabled={generateDisabled} color={Theme.accent}>
           Генерировать
         </Btn>
-        <Btn onClick={onStart} disabled={!canStart} color={Theme.green}>
+        <Btn onClick={startAction} disabled={!canStart} color={Theme.green}>
           Старт
         </Btn>
       </div>
