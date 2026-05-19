@@ -98,7 +98,7 @@ export function HomeHeader({ onLogoClick }) {
   return (
     <div style={S.bar}>
       <button style={S.logo} onClick={onLogoClick}>
-        Forest<span style={{ fontWeight: 400, color: Theme.textSecond }}>RobotTwin</span>
+        ForestRobotTwin
       </button>
     </div>
   )
@@ -133,14 +133,14 @@ export function PageHeader({ title, onTitleSave, onBack, right }) {
   return (
     <div style={S.bar}>
       <button style={S.logo} onClick={onBack}>
-        Forest <span style={{ fontWeight: 400, color: Theme.textSecond }}>RL</span>
+        ForestRobotTwin
       </button>
 
       <div style={S.divider} />
 
       <div style={{ display: "flex", alignItems: "center", minWidth: 0 }}>
         <button style={S.breadLink} onClick={onBack}>
-         ← Эксперименты
+          ← Эксперименты
         </button>
         <span style={S.breadSep}>/</span>
 
