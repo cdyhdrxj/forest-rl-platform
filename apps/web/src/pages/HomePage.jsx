@@ -72,7 +72,7 @@ function RunRow({ run, onRename, onOpen }) {
     ? new Date(run.created_at).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })
     : "—"
 
-  const hasModel = run.has_checkpoint === true
+  const hasModel = run.has_checkpoint === true && run.mode !== "inference"
 
   return (
     <div style={{

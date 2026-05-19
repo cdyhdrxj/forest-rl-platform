@@ -178,11 +178,21 @@ export function ExperimentPage({ nav, ctx = {} }) {
     }
   }, [state?.run_id, runId, startPollingTitle, fetchRunTitle, runTitle])
 
-  const { generate, start, stop, reset, finish } = useRunActions({
+  const { generate: _generate, start, stop, reset, finish } = useRunActions({
     wsRef, endpoint, params, algo, activeTask, activeEnv,
     setRunning, setChartData, setState, setActiveGridSize,
     jsonConfig, runTitle: null,
+    mode: isInference ? "inference" : undefined,
+    sourceRunTitle: sourceRunTitle || null,
   })
+
+  const generate = useCallback(() => {
+    if (isInference) {
+      evalStartedRef.current = false
+      setState(null)
+    }
+    _generate()
+  }, [_generate, isInference, setState])
 
   useEffect(() => {
     if (!runId || loadSentRef.current) return
@@ -201,47 +211,64 @@ export function ExperimentPage({ nav, ctx = {} }) {
   const evalStartedRef = useRef(false)
 
   const handleStartEval = () => {
-    if (!wsRef.current) return
-    if (wsRef.current.readyState !== WebSocket.OPEN) return
-
-    if (evalStartedRef.current && state?.run_id) {
-      wsRef.current.send(JSON.stringify({
-        action: "start",
-        params: {
-          ...params,
-          algorithm: algo.toLowerCase(),
-          deterministic: true,
-          eval_episodes: 999_999,
-        },
-      }))
-      setRunning(true)
-      return
+    if (!wsRef.current) {
+        console.error("[Inference Mode] WebSocket not available")
+        return
+    }
+    if (wsRef.current.readyState !== WebSocket.OPEN) {
+        console.error("[Inference Mode] WebSocket not open, state:", wsRef.current.readyState)
+        return
     }
 
-    if (!runData) return
+    if (evalStartedRef.current && state?.run_id) {
+        console.log("[Inference Mode] CASE: Resuming existing run")
+        wsRef.current.send(JSON.stringify({
+            action: "start_eval",
+            source_run_id: sourceRunId,
+            scenario_version_id: scenarioVersionId,
+            params: {
+                ...params,
+                title: runTitle,
+                algorithm: algo.toLowerCase(),
+                mode: "inference",
+                source_run_title: sourceRunTitle || null,
+                deterministic: true,
+                eval_episodes: 999_999,
+            },
+        }))
+        setRunning(true)
+        return
+    }
+
+    if (!runData) {
+        console.error("[Inference Mode] No runData available")
+        return
+    }
 
     const scenarioVersionId = runData.scenario_version_id ?? runData.config_json?.scenario_version_id
     if (!scenarioVersionId) {
-      console.error("No scenario_version_id found", runData)
-      return
+        console.error("[Inference Mode] No scenario_version_id found", runData)
+        return
     }
 
     setEvalReady(false)
     evalStartedRef.current = true
     wsRef.current.send(JSON.stringify({
-      action: "start_eval",
-      source_run_id: sourceRunId,
-      scenario_version_id: scenarioVersionId,
-      params: {
+        action: "start_eval",
+        source_run_id: sourceRunId,
+        scenario_version_id: scenarioVersionId,
+        params: {
         ...params,
         algorithm: algo.toLowerCase(),
+        mode: "inference",
+        source_run_title: sourceRunTitle || null,
         deterministic: true,
         eval_episodes: 999_999,
-      },
+        },
     }))
-    setRunTitle("")
+    
     loadSentRef.current = true
-  }
+    }
 
   const executionPhase = state?.execution_phase ?? (running ? "running" : scenarioReady ? "preview" : "idle")
   const handleRepeat = handleStartEval
@@ -253,6 +280,15 @@ export function ExperimentPage({ nav, ctx = {} }) {
       setEvalReady(true)  
     }
   }, [running, isInference, executionPhase])
+
+  useEffect(() => {
+    if (!isInference) return
+    
+    if (!running && state?.run_id && (executionPhase === "finished" || executionPhase === "failed" || executionPhase === "stopped")) {
+        setEvalReady(true)
+        evalStartedRef.current = false
+    }
+  }, [running, isInference, executionPhase, state?.run_id])
 
   const openFinishDialog = () => {
     setFinishRenameValue(runTitle || "")

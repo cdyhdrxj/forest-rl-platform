@@ -21,10 +21,9 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
                 if active_run_id != _last_logged_run_id[0]:
                     _last_logged_run_id[0] = active_run_id
                 await websocket.send_text(orjson.dumps(state).decode())
-                await asyncio.sleep(0.1)
             except Exception as e:
-                print(f"Error: {e}")
-                break
+                print(f"Error in send_loop: {e}")
+            await asyncio.sleep(0.1)
 
     task = asyncio.create_task(send_loop())
 
@@ -65,50 +64,42 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
 
                 elif action == "start_eval":
                     source_run_id = data.get("source_run_id")
+                    
                     if not source_run_id:
                         raise ValueError("start_eval requires source_run_id")
-
+                    
                     checkpoint_path = dispatcher.get_model_checkpoint_path(int(source_run_id))
                     if not checkpoint_path:
                         raise FileNotFoundError(
                             f"Чекпоинт для run {source_run_id} не найден. "
                             "Убедитесь что эксперимент был завершён через кнопку «Завершить»."
                         )
-
+                    
                     if active_run_id is not None:
-                        dispatcher.dispose_run(active_run_id)
-
-                    scenario_version_id = data.get("scenario_version_id")
-                    if scenario_version_id is not None:
-                        session = dispatcher.load_scenario_version(
-                            route_key,
-                            int(scenario_version_id),
-                            params,
-                        )
+                        eval_params = {
+                            **params,
+                            "execution_role": "eval",
+                            "load_checkpoint_path": checkpoint_path,
+                            "deterministic": params.get("deterministic", True),
+                        }
+                        dispatcher.start_run(active_run_id, eval_params)
                     else:
-                        source_session = dispatcher.load_run(int(source_run_id))
-                        session = dispatcher.load_scenario_version(
-                            route_key,
-                            source_session.scenario_version_id,
-                            params,
-                        )
-                    active_run_id = session.run_id
-                    print(f"[start_eval] new active_run_id={active_run_id}")
-
-                    eval_params = {
-                        **params,
-                        "execution_role":       "eval",
-                        "load_checkpoint_path": checkpoint_path,
-                        "deterministic":        params.get("deterministic", True),
-                    }
-                    dispatcher.start_run(active_run_id, eval_params)
+                        session = dispatcher.generate_and_load(route_key, params)
+                        active_run_id = session.run_id
+                        eval_params = {
+                            **params,
+                            "execution_role": "eval",
+                            "load_checkpoint_path": checkpoint_path,
+                            "deterministic": params.get("deterministic", True),
+                        }
+                        dispatcher.start_run(active_run_id, eval_params)
 
                 elif action == "stop" and active_run_id is not None:
                     dispatcher.stop_run(active_run_id)
 
                 elif action == "finish" and active_run_id is not None:
-                    dispatcher.finish_run(active_run_id)
-                    dispatcher.dispose_run(active_run_id)
+                    is_inference = params.get("mode") == "inference" 
+                    dispatcher.finish_run(active_run_id, is_inference=is_inference)
                     active_run_id = None
 
                 elif action == "reset" and active_run_id is not None:
