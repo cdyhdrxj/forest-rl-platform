@@ -125,7 +125,7 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
         <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{label}</div>
         <input
           type="number"
-          value={value}
+          value={value ?? 0}
           onChange={e => onChange(param, parseFloat(e.target.value))}
           disabled={disabled}
           min={min}
