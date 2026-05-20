@@ -103,7 +103,7 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
       </div>
     )
   }
-  
+
 // Чекбокс
   if (type === "bool") {
     return (
@@ -334,48 +334,55 @@ export function ConfigPanel({
   }
 
   const shouldShowSlider = (s) => {
+    if (s.param === "robot_position_y" || s.param === "robot_position_z" ||
+        s.param === "target_position_y" || s.param === "target_position_z") {
+      return false
+    }
+    
     if (s.algoOnly) {
       const normalizedAlgo = algo.toUpperCase()
       const normalizedAlgoOnly = s.algoOnly.map(a => a.toUpperCase())
-      const show = normalizedAlgoOnly.includes(normalizedAlgo)
-
-      return show
+      return normalizedAlgoOnly.includes(normalizedAlgo)
     }
     return true
   }
 
 
-  const renderSliderOrCoordinates = (s) => {
-    // Проверка на координаты робота
-    if (s.type === "coordinates" && s.param === "robot_position") {
-      return (
-        <CoordinatesGroup
-          key="robot_coords"
-          label="Позиция робота"
-          prefix="robot"
-          valueX={params.robot_position_x ?? 0}
-          valueY={params.robot_position_y ?? 0}
-          valueZ={params.robot_position_z ?? 0}
-          onChange={set}
-          disabled={isControlDisabled}
-        />
-      )
+    const renderSliderOrCoordinates = (s) => {
+    if (s.type === "coordinates" && s.group === "robot") {
+      if (s.param === "robot_position_x") {
+        return (
+          <CoordinatesGroup
+            key="robot_coords"
+            label="Позиция робота"
+            prefix="robot"
+            valueX={params.robot_position_x ?? s.default ?? 0}
+            valueY={params.robot_position_y ?? 0}
+            valueZ={params.robot_position_z ?? 0}
+            onChange={set}
+            disabled={isControlDisabled}
+          />
+        )
+      }
+      return null 
     }
     
-    // Проверка на координаты цели
-    if (s.type === "coordinates" && s.param === "target_position") {
-      return (
-        <CoordinatesGroup
-          key="target_coords"
-          label="Позиция цели"
-          prefix="target"
-          valueX={params.target_position_x ?? 0}
-          valueY={params.target_position_y ?? 0}
-          valueZ={params.target_position_z ?? 0}
-          onChange={set}
-          disabled={isControlDisabled}
-        />
-      )
+    if (s.type === "coordinates" && s.group === "target") {
+      if (s.param === "target_position_x") {
+        return (
+          <CoordinatesGroup
+            key="target_coords"
+            label="Позиция цели"
+            prefix="target"
+            valueX={params.target_position_x ?? s.default ?? 5}
+            valueY={params.target_position_y ?? 0}
+            valueZ={params.target_position_z ?? 5}
+            onChange={set}
+            disabled={isControlDisabled}
+          />
+        )
+      }
+      return null
     }
 
     const value = s.type === "bool"
