@@ -22,9 +22,9 @@ COPY linux_build /linux_build/
 RUN chmod +x /linux_build/simulator.x86_64
 
 # Стартовый скрипт
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.unity.sh /entrypoint.unity.sh
+RUN chmod +x /entrypoint.unity.sh
 
 EXPOSE 80 443
 
-CMD ["/entrypoint.sh"]
+CMD ["/entrypoint.unity.sh"]

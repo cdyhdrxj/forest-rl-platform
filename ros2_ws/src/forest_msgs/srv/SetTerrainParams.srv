@@ -7,7 +7,7 @@ float32 persistance
 float32 lacunarity
 float32 offset_x
 float32 offset_y
-float32 dencity
+int32 dencity
 int32 max_view_dst
 int32 noise_normalize_mode
 ---
