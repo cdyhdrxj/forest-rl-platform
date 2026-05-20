@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Theme } from "../constants/colors"
-import { PageHeader, FinishButton } from "../components/Header"
-import { WS_MAP, DEFAULT_PARAMS } from "../constants/config"
+import { PageHeader } from "../components/Header"
+import { WS_MAP, SLIDER_CONFIG } from "../constants/config"
 import { useWebSocket } from "../hooks/useWebSocket"
 import { useRunActions } from "../hooks/useRunActions"
 import { useCanvasRender } from "../hooks/useCanvasRender"
@@ -93,7 +93,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
 
   // Загрузка параметров из run
   const loadParamsFromRun = useCallback((run) => {
-    const { algorithm, mergedParams, env, task } = extractParamsFromRun(run, DEFAULT_PARAMS)
+    const { algorithm, mergedParams, env, task } = extractParamsFromRun(run)
     
     setAlgo(algorithm)
     setParams(mergedParams)
@@ -150,10 +150,29 @@ export function ExperimentPage({ nav, ctx = {} }) {
     return TASK.TRAIL
   })
 
+  const [params, setParams] = useState({})
+
+	useEffect(() => {
+		if (Object.keys(params).length === 0) {
+			const initialParams = {}
+			const config = SLIDER_CONFIG[activeEnv]?.[activeTask]
+			if (config) {
+				for (const category of Object.values(config)) {
+					for (const slider of category) {
+						if (slider.default !== undefined) {
+							initialParams[slider.param] = slider.default
+						}
+					}
+				}
+			}
+			if (Object.keys(initialParams).length) {
+				setParams(initialParams)
+			}
+		}
+	}, [activeEnv, activeTask])
+
   const [algo, setAlgo] = useState("PPO")
   const [tab, setTab] = useState("Алгоритм")
-  const [params, setParams] = useState(DEFAULT_PARAMS)
-  const [activeGridSize, setActiveGridSize] = useState(DEFAULT_PARAMS.grid_size)
   const [jsonConfig, setJsonConfig] = useState(null)
   const [showTrail, setShowTrail] = useState(true)
   const [showObs, setShowObs] = useState(true)
@@ -164,7 +183,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
   const endpoint = WS_MAP[`${activeEnv}/${activeTask}`]
   const { state, chartData, running, scenarioReady, setRunning, setChartData, setState, wsRef } = useWebSocket(endpoint)
 
-  useEffect(() => {
+	useEffect(() => {
     const rid = state?.run_id
     if (!rid) return
     if (fetchedRunIds.current.has(rid)) return
@@ -180,7 +199,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
 
   const { generate: _generate, start, stop, reset, finish } = useRunActions({
     wsRef, endpoint, params, algo, activeTask, activeEnv,
-    setRunning, setChartData, setState, setActiveGridSize,
+    setRunning, setChartData, setState,
     jsonConfig, runTitle: null,
     mode: isInference ? "inference" : undefined,
     sourceRunTitle: sourceRunTitle || null,
@@ -212,66 +231,65 @@ export function ExperimentPage({ nav, ctx = {} }) {
 
   const handleStartEval = () => {
     if (!wsRef.current) {
-        console.error("[Inference Mode] WebSocket not available")
-        return
+      console.error("[Inference Mode] WebSocket not available")
+      return
     }
     if (wsRef.current.readyState !== WebSocket.OPEN) {
-        console.error("[Inference Mode] WebSocket not open, state:", wsRef.current.readyState)
-        return
+      console.error("[Inference Mode] WebSocket not open, state:", wsRef.current.readyState)
+      return
     }
 
     if (evalStartedRef.current && state?.run_id) {
-        console.log("[Inference Mode] CASE: Resuming existing run")
-        wsRef.current.send(JSON.stringify({
-            action: "start_eval",
-            source_run_id: sourceRunId,
-            scenario_version_id: scenarioVersionId,
-            params: {
-                ...params,
-                title: runTitle,
-                algorithm: algo.toLowerCase(),
-                mode: "inference",
-                source_run_title: sourceRunTitle || null,
-                deterministic: true,
-                eval_episodes: 999_999,
-            },
-        }))
-        setRunning(true)
-        return
+      console.log("[Inference Mode] CASE: Resuming existing run")
+      wsRef.current.send(JSON.stringify({
+        action: "start_eval",
+        source_run_id: sourceRunId,
+        scenario_version_id: scenarioVersionId,
+        params: {
+          ...params,
+          title: runTitle,
+          algorithm: algo.toLowerCase(),
+          mode: "inference",
+          source_run_title: sourceRunTitle || null,
+          deterministic: true,
+          eval_episodes: 999_999,
+        },
+      }))
+      setRunning(true)
+      return
     }
 
     if (!runData) {
-        console.error("[Inference Mode] No runData available")
-        return
+      console.error("[Inference Mode] No runData available")
+      return
     }
 
     const scenarioVersionId = runData.scenario_version_id ?? runData.config_json?.scenario_version_id
     if (!scenarioVersionId) {
-        console.error("[Inference Mode] No scenario_version_id found", runData)
-        return
+      console.error("[Inference Mode] No scenario_version_id found", runData)
+      return
     }
 
     setEvalReady(false)
     evalStartedRef.current = true
     wsRef.current.send(JSON.stringify({
-        action: "start_eval",
-        source_run_id: sourceRunId,
-        scenario_version_id: scenarioVersionId,
-        params: {
+      action: "start_eval",
+      source_run_id: sourceRunId,
+      scenario_version_id: scenarioVersionId,
+      params: {
         ...params,
         algorithm: algo.toLowerCase(),
         mode: "inference",
         source_run_title: sourceRunTitle || null,
         deterministic: true,
         eval_episodes: 999_999,
-        },
+      },
     }))
     
     loadSentRef.current = true
-    }
+  }
 
   const executionPhase = state?.execution_phase ?? (running ? "running" : scenarioReady ? "preview" : "idle")
-  const handleRepeat = handleStartEval
 
   useEffect(() => {
     if (!isInference) return
@@ -285,8 +303,8 @@ export function ExperimentPage({ nav, ctx = {} }) {
     if (!isInference) return
     
     if (!running && state?.run_id && (executionPhase === "finished" || executionPhase === "failed" || executionPhase === "stopped")) {
-        setEvalReady(true)
-        evalStartedRef.current = false
+      setEvalReady(true)
+      evalStartedRef.current = false
     }
   }, [running, isInference, executionPhase, state?.run_id])
 
@@ -348,17 +366,12 @@ export function ExperimentPage({ nav, ctx = {} }) {
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
   const is3d = IS_3D(activeEnv)
   const { canvasRef } = useCanvasRender(
-    activeEnv, state, activeGridSize,
+    activeEnv, state, params.grid_size,
     isPatrol ? showTrail : true,
     isPatrol ? showObs : false,
     obsSize
   )
 
-  const headerRight = isViewingFinished ? (
-    <span style={{ fontSize: 11, color: Theme.textMuted, padding: "4px 8px" }}>завершён</span>
-  ) : (
-    <FinishButton onClick={openFinishDialog} />
-  )
 
   if (loadError) {
     return (
@@ -380,7 +393,6 @@ export function ExperimentPage({ nav, ctx = {} }) {
         title={runTitle || (pendingRunId ? "" : "Новый эксперимент")}
         onTitleSave={isViewingFinished ? undefined : handleSaveTitle}
         onBack={() => nav("home")}
-        right={headerRight}
       />
 
       {/* Диалог завершения */}
@@ -505,22 +517,21 @@ export function ExperimentPage({ nav, ctx = {} }) {
               </div>
             )}
             
-            {!is3d && (
-              <ControlButtons
-                activeEnv={activeEnv}
-                running={running}
-                scenarioReady={scenarioReady}
-                endpoint={endpoint}
-                onGenerate={generate}
-                onStart={start}
-                onStop={stop}
-                onReset={reset}
-                isInference={isInference}
-                onStartEval={handleStartEval}
-                evalReady={evalReady}
-              />
-            )}
-            
+            <ControlButtons
+              activeEnv={activeEnv}
+              running={running}
+              scenarioReady={scenarioReady}
+              endpoint={endpoint}
+              onGenerate={generate}
+              onStart={start}
+              onStop={stop}
+              onReset={reset}
+							onFinish={openFinishDialog} 
+              isInference={isInference}
+              onStartEval={handleStartEval}
+              evalReady={evalReady}
+            />
+
             {is3d && (
               <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
