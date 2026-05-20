@@ -16,7 +16,6 @@ export function useWebSocket(endpoint) {
     }
 
     setState(null)
-    setChartData([])
     setScenarioReady(false)
     setRunning(false)
 

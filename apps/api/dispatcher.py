@@ -161,6 +161,16 @@ def _task_display_name(task_kind: TaskKind) -> str:
     return task_kind.value.capitalize()
 
 
+def _build_run_title(params: dict, auto_title: str) -> str:
+    """Вернуть title из params или авто-сгенерированный, с пометкой об источнике."""
+    title = params.get("title") or auto_title
+    if params.get("mode") == "inference":
+        source_title = params.get("source_run_title")
+        if source_title:
+            title = f"{title}  (на основе {source_title})"
+    return title
+
+
 DEFAULT_ROUTES: dict[str, RuntimeRoute] = {
     "continuous/trail": RuntimeRoute(
         route_key="continuous/trail",
@@ -301,7 +311,7 @@ class ExperimentDispatcher:
                 created_by_user_id=user.id,
                 mode=route.project_mode,
                 status=RunStatus.created,
-                title=params.get("title") or f"{_task_display_name(route.task_kind)} run #{version.version_no}",
+                title=_build_run_title(params, f"{_task_display_name(route.task_kind)} run #{version.version_no}"),
                 description=params.get("description"),
                 seed=scenario.seed,
                 config_json={
@@ -341,6 +351,8 @@ class ExperimentDispatcher:
             scenario_version_id = int(version.id)
 
         runtime_service.load_scenario(stored.scenario, stored.runtime_config)
+        if hasattr(runtime_service, "_run_id"):
+            runtime_service._run_id = run_id
         session = RunSession(
             run_id=run_id,
             scenario_version_id=scenario_version_id,
@@ -391,6 +403,8 @@ class ExperimentDispatcher:
         if not combined_report.passed:
             raise ValueError(self._format_validation_error(combined_report))
         service.load_scenario(stored.scenario, stored.runtime_config)
+        if hasattr(service, "_run_id"):
+            service._run_id = int(run_id)
         session = RunSession(
             run_id=int(run_id),
             scenario_version_id=int(run.scenario_version_id),
@@ -443,7 +457,7 @@ class ExperimentDispatcher:
                 created_by_user_id=user.id,
                 mode=route.project_mode,
                 status=RunStatus.created,
-                title=params.get("title") or f"{_task_display_name(route.task_kind)} run from scenario {scenario_version_id}",
+                title=_build_run_title(params, f"{_task_display_name(route.task_kind)} run from scenario {scenario_version_id}"),
                 description=params.get("description"),
                 seed=version.seed,
                 config_json={
@@ -459,6 +473,8 @@ class ExperimentDispatcher:
             run_id = int(run.id)
 
         service.load_scenario(stored.scenario, stored.runtime_config)
+        if hasattr(service, "_run_id"):
+            service._run_id = run_id
         session = RunSession(
             run_id=run_id,
             scenario_version_id=int(scenario_version_id),
@@ -486,18 +502,18 @@ class ExperimentDispatcher:
         if "algorithm" not in start_params:
             start_params["algorithm"] = session.route.default_algorithm
 
-        if session.observer is not None:
-            session.observer.stop()
         session.training_params = start_params
         session.service.start(start_params)
-        session.observer = RunObserver(
-            run_id=run_id,
-            route_key=session.route.route_key,
-            task_kind=session.route.task_kind,
-            service=session.service,
-            poll_interval=self.observer_poll_interval,
-        )
-        session.observer.start()
+        
+        if session.observer is None:
+            session.observer = RunObserver(
+                run_id=run_id,
+                route_key=session.route.route_key,
+                task_kind=session.route.task_kind,
+                service=session.service,
+                poll_interval=self.observer_poll_interval,
+            )
+            session.observer.start()
 
         self._update_run_status(
             run_id,
@@ -521,22 +537,78 @@ class ExperimentDispatcher:
             payload_json={"route_key": session.route.route_key, "training_params": start_params},
         )
         return session
-
+    
     def stop_run(self, run_id: int) -> None:
+        """Остановить выполнение эксперимента (приостановить)."""
         session = self.load_run(run_id)
         session.service.stop()
-        if session.observer is not None:
-            session.observer.stop(final_status=RunStatus.cancelled, message="Run stopped by dispatcher")
-            session.observer = None
-        else:
-            self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
+        
+        self._update_run_status(
+            run_id, 
+            status=RunStatus.cancelled, 
+            finished_at=datetime.utcnow()
+        )
+        
         write_service_log(
             run_id=run_id,
             service_name="experiment_dispatcher",
             level="info",
-            message="Run stopped",
+            message="Run stopped (paused)",
             payload_json={"route_key": session.route.route_key},
         )
+
+    def finish_run(self, run_id: int, is_inference: bool = False) -> None:
+        """Завершить эксперимент с финальным статусом finished."""
+        session = self.load_run(run_id)
+        if session.service.get_state().get("running"):
+            session.service.stop()
+    
+        if not is_inference:
+            checkpoint_path = _get_service_checkpoint_path(session.service)
+            if checkpoint_path:
+                _save_model_artifact(run_id, checkpoint_path)
+        else:
+            checkpoint_path = None
+    
+        if session.observer is not None:
+            session.observer.stop(
+                final_status=RunStatus.finished,
+                message="Run finished by user",
+            )
+            session.observer = None
+        else:
+            self._update_run_status(
+                run_id,
+                status=RunStatus.finished,
+                finished_at=datetime.utcnow(),
+            )
+    
+        write_service_log(
+            run_id=run_id,
+            service_name="experiment_dispatcher",
+            level="info",
+            message="Run finished",
+            payload_json={
+                "route_key": session.route.route_key,
+                "checkpoint": checkpoint_path,
+                "is_inference": is_inference,
+            },
+        )
+    
+
+    def get_model_checkpoint_path(self, run_id: int) -> str | None:
+        """Путь к сохранённому чекпоинту модели для run_id (из таблицы Artifact)."""
+        with db_session() as db:
+            artifact = (
+                db.query(Artifact)
+                .filter(
+                    Artifact.run_id == run_id,
+                    Artifact.artifact_type == ArtifactType.model_checkpoint,
+                )
+                .order_by(Artifact.id.desc())
+                .first()
+            )
+            return artifact.storage_uri if artifact else None
 
     def reset_run(self, run_id: int) -> RunSession:
         session = self.load_run(run_id)
@@ -817,3 +889,45 @@ class ExperimentDispatcher:
             if algorithm_key is not None and project_mode is not None:
                 algorithm = self._ensure_algorithm(db, algorithm_key, project_mode)
                 run.algorithm_id = algorithm.id
+
+def _get_service_checkpoint_path(service) -> str | None:
+    """Получить путь к чекпоинту из любого сервиса."""
+    from pathlib import Path
+ 
+    path = getattr(service, "_last_checkpoint_path", None)
+    if path:
+        p = Path(str(path))
+        if not p.suffix:
+            p = p.with_suffix(".zip")
+        if p.exists():
+            return str(p)
+    return None
+ 
+ 
+def _save_model_artifact(run_id: int, checkpoint_path: str) -> None:
+    """Записать артефакт model_checkpoint в БД."""
+    from pathlib import Path
+    p = Path(checkpoint_path)
+    size = p.stat().st_size if p.exists() else 0
+ 
+    with db_session() as db:
+        exists = (
+            db.query(Artifact)
+            .filter(
+                Artifact.run_id == run_id,
+                Artifact.artifact_type == ArtifactType.model_checkpoint,
+                Artifact.storage_uri == checkpoint_path,
+            )
+            .first()
+        )
+        if exists:
+            exists.size_bytes = size
+            return
+        db.add(Artifact(
+            run_id=run_id,
+            artifact_type=ArtifactType.model_checkpoint,
+            name=p.name,
+            storage_uri=checkpoint_path,
+            mime_type="application/zip",
+            size_bytes=size,
+        ))
