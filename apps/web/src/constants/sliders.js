@@ -118,13 +118,17 @@ export const SLIDER_CONFIG = {
         { param: "max_view_dst",            label: "Макс. дистанция обзора", default: 1, min: 1, max: 3, step: 1, type: "int" },
       ],
       "Робот": [
-        { param: "robot_type",          label: "Тип робота",      type: "select", options: ["Freight"], default: "Freight" },
-        { param: "robot_position",      label: "Позиция робота",  type: "coordinates" }, 
-        { param: "robot_rotation_y",    label: "Поворот (Y)",     default: 0, min: 0,   max: 360, step: 15, type: "int" },
+        { param: "robot_type", label: "Тип робота", type: "select", options: ["Freight"], default: "Freight" },
+        { param: "robot_position_x", label: "X", default: 0, type: "coordinates", group: "robot" },
+        { param: "robot_position_y", label: "Y", default: 0, type: "coordinates", group: "robot" },
+        { param: "robot_position_z", label: "Z", default: 0, type: "coordinates", group: "robot" },
+        { param: "robot_rotation_y", label: "Поворот (Y)", default: 0, min: 0, max: 360, step: 15, type: "int" },
       ],
       "Цель": [
-        { param: "target_position",     label: "Позиция цели",   type: "coordinates" },
-        { param: "radius",             label: "Радиус цели",    default: 1.0, min: 0.1, max: 1000.0, step: 0.1, type: "number" },
+        { param: "target_position_x", label: "X", default: 0, type: "coordinates", group: "target" },
+        { param: "target_position_y", label: "Y", default: 0, type: "coordinates", group: "target" },
+        { param: "target_position_z", label: "Z", default: 0, type: "coordinates", group: "target" },
+        { param: "radius", label: "Радиус цели", default: 1.0, min: 0.1, max: 1000.0, step: 0.1, type: "number" },
       ],
       "Алгоритм": [
         { param: "learning_rate",       label: "Скор. обучения",  default: 0.0003, min: 0.00001, max: 0.01,  step: 0.00001 },
