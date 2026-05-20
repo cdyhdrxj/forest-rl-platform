@@ -104,7 +104,6 @@ def apply_patrol_generation(
     
     return updated, static_layers
 
-
 def build_reforestation_request(config: PlantingEnvConfig) -> GenerationRequest:
     return GenerationRequest(
         environment_kind=EnvironmentKind.GRID,
@@ -190,6 +189,7 @@ def build_coverage_runtime_config(params: dict[str, Any], scenario: GeneratedSce
 
 
 def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -> GenerationRequest:
+    print(params)
     return GenerationRequest(
         environment_kind=EnvironmentKind.SIMULATOR_3D,
         task_kind=task_kind,

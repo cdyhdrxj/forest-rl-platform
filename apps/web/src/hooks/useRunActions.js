@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { buildPatrolPayload, SLIDER_CONFIG } from "../constants/config" 
+import { buildPatrolPayload, buildTerrainPayload, SLIDER_CONFIG } from "../constants/config" 
 import { ENV, TASK } from "../constants/envs"
 
 const modeForTask = t =>
@@ -26,6 +26,7 @@ export function useRunActions({
   resetEpisode, mode, sourceRunTitle,
 }) {
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
+  const is3DSim = activeEnv === ENV.SIM_3D && activeTask === TASK.TRAIL
 
   const send = (action, extra = {}) => {
     if (!endpoint) { console.error("No endpoint"); return }
@@ -54,6 +55,11 @@ export function useRunActions({
         ...buildPatrolPayload(paramsWithDefaults, algo),
         mode: modeForTask(activeTask),
       }
+    } else if (is3DSim) {
+      generateParams = {
+        ...buildTerrainPayload(paramsWithDefaults, algo),
+        mode: modeForTask(activeTask),
+      }
     } else {
       generateParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
@@ -79,6 +85,8 @@ export function useRunActions({
       payloadParams = { ...rest, algorithm: algo.toLowerCase() }
     } else if (isPatrol) {
       payloadParams = buildPatrolPayload(paramsWithDefaults, algo)
+    } else if (is3DSim) {
+      payloadParams = buildTerrainPayload(paramsWithDefaults, algo)
     } else {
       payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
