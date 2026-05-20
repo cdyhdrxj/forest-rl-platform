@@ -57,7 +57,7 @@ export function useRunActions({
       }
     } else if (is3DSim) {
       generateParams = {
-        ...buildTerrainPayload(paramsWithDefaults, algo),
+        ...buildTerrainPayload(paramsWithDefaults),
         mode: modeForTask(activeTask),
       }
     } else {
@@ -86,7 +86,7 @@ export function useRunActions({
     } else if (isPatrol) {
       payloadParams = buildPatrolPayload(paramsWithDefaults, algo)
     } else if (is3DSim) {
-      payloadParams = buildTerrainPayload(paramsWithDefaults, algo)
+      payloadParams = buildTerrainPayload(paramsWithDefaults)
     } else {
       payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
