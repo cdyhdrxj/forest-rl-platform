@@ -4,7 +4,6 @@ import {
   TASKS_BY_ENV, 
   ALGOS_BY_ROUTE, 
   SLIDER_CONFIG, 
-  DEFAULT_PARAMS,
   ALGO_SUPPORTED_PARAMS,
   filterParamsForAlgo,
   isParamLockedForInference
@@ -13,6 +12,80 @@ import { ENV, TASK, CLASSIC_ALGOS } from "../constants/envs"
 
 const Label = ({ children }) =>
   <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{children}</div>
+
+const CoordinatesGroup = ({ label, prefix, valueX, valueY, valueZ, onChange, disabled }) => {
+  const setCoord = (coord, val) => {
+    onChange(`${prefix}_position_${coord}`, parseFloat(val))
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 2 }}>X</div>
+          <input
+            type="number"
+            value={valueX}
+            onChange={e => setCoord("x", e.target.value)}
+            disabled={disabled}
+            step={0.5}
+            style={{
+              width: "100%",
+              padding: "4px 6px",
+              fontSize: 11,
+              background: disabled ? Theme.bgDisabled : Theme.bg,
+              border: `1px solid ${Theme.border}`,
+              borderRadius: Theme.radiusSm,
+              color: Theme.textPrimary,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 2 }}>Y</div>
+          <input
+            type="number"
+            value={valueY}
+            onChange={e => setCoord("y", e.target.value)}
+            disabled={disabled}
+            step={0.5}
+            style={{
+              width: "100%",
+              padding: "4px 6px",
+              fontSize: 11,
+              background: disabled ? Theme.bgDisabled : Theme.bg,
+              border: `1px solid ${Theme.border}`,
+              borderRadius: Theme.radiusSm,
+              color: Theme.textPrimary,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 2 }}>Z</div>
+          <input
+            type="number"
+            value={valueZ}
+            onChange={e => setCoord("z", e.target.value)}
+            disabled={disabled}
+            step={0.5}
+            style={{
+              width: "100%",
+              padding: "4px 6px",
+              fontSize: 11,
+              background: disabled ? Theme.bgDisabled : Theme.bg,
+              border: `1px solid ${Theme.border}`,
+              borderRadius: Theme.radiusSm,
+              color: Theme.textPrimary,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const Slider = ({ label, param, min, max, step, type, options, value, onChange, disabled }) => {
   if (type === "select") {
@@ -45,6 +118,34 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
     )
   }
   
+  // Числовой ввод
+  if (type === "number") {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{label}</div>
+        <input
+          type="number"
+          value={value}
+          onChange={e => onChange(param, parseFloat(e.target.value))}
+          disabled={disabled}
+          min={min}
+          max={max}
+          step={step}
+          style={{
+            width: "100%",
+            padding: "6px 8px",
+            fontSize: 11,
+            background: disabled ? Theme.bgDisabled : Theme.bg,
+            border: `1px solid ${Theme.border}`,
+            borderRadius: Theme.radiusSm,
+            color: Theme.textPrimary,
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+    )
+  }
+
   // Слайдер 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -53,7 +154,8 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
         <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>{value}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(param, +e.target.value)} disabled={disabled}
+        onChange={e => onChange(param, type === "int" ? parseInt(e.target.value) : parseFloat(e.target.value))} 
+        disabled={disabled}
         style={{ width: "100%", accentColor: Theme.accent, cursor: disabled ? "not-allowed" : "pointer" }} />
     </div>
   )
@@ -63,7 +165,7 @@ export function normalizeAlgorithm(algo) {
   return (algo || "PPO").toUpperCase()
 }
 
-export function extractParamsFromRun(run, defaultParams = DEFAULT_PARAMS) {
+export function extractParamsFromRun(run) {
   const config = run?.config_json || {}
   const trainingParams = config.training_params || {}
   const runtimeConfig = config.runtime_config || {}
@@ -72,7 +174,7 @@ export function extractParamsFromRun(run, defaultParams = DEFAULT_PARAMS) {
     trainingParams.algorithm || runtimeConfig.algorithm || config.algorithm
   )
   
-  const mergedParams = { ...defaultParams, ...trainingParams, ...runtimeConfig }
+  const mergedParams = { ...trainingParams, ...runtimeConfig }
   
   const routeKeyFromRun = run.route_key || config.route_key
   let env = ENV.CONTINUOUS
@@ -118,6 +220,7 @@ export function ConfigPanel({
   const isPatrol   = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
   const isCoverage = activeEnv === ENV.CONTINUOUS && activeTask === TASK.COVERAGE
   const isClassic  = CLASSIC_ALGOS.has(algo)
+  const is3D = activeEnv === ENV.SIM_3D
   
   const isControlDisabled = running || readOnly || paramsLocked
   const isEnvDisabled = running || envLocked || readOnly
@@ -241,7 +344,58 @@ export function ConfigPanel({
     return true
   }
 
-  const availableTabs = ["Алгоритм", "Карта", "Агент", "Наблюдение", "Нарушитель", "Робот"]
+  const renderSliderOrCoordinates = (s) => {
+    // Проверка на координаты робота
+    if (s.param === "robot_position_x") {
+      return (
+        <CoordinatesGroup
+          key="robot_coords"
+          label="Позиция робота"
+          prefix="robot"
+          valueX={params.robot_position_x ?? 0}
+          valueY={params.robot_position_y ?? 0}
+          valueZ={params.robot_position_z ?? 0}
+          onChange={set}
+          disabled={isControlDisabled}
+        />
+      )
+    }
+    
+    // Проверка на координаты цели
+    if (s.param === "target_position_x") {
+      return (
+        <CoordinatesGroup
+          key="target_coords"
+          label="Позиция цели"
+          prefix="target"
+          valueX={params.target_position_x ?? 0}
+          valueY={params.target_position_y ?? 0}
+          valueZ={params.target_position_z ?? 0}
+          onChange={set}
+          disabled={isControlDisabled}
+        />
+      )
+    }
+
+    // Обычный слайдер
+    const value = s.type === "bool"
+      ? (params[s.param] ?? s.default ?? false)
+      : (params[s.param] ?? s.default ?? s.min)
+    
+    const isLocked = isInference && isParamLockedForInference(s.param, activeEnv, true)
+    
+    return (
+      <Slider 
+        key={s.param} 
+        {...s} 
+        value={value} 
+        onChange={(k, v) => set(k, v)} 
+        disabled={isControlDisabled || isLocked}
+      />
+    )
+  }
+
+  const availableTabs = ["Алгоритм", "Ландшафт", "Робот", "Цель", "Карта", "Агент", "Наблюдение", "Нарушитель"]
     .filter(t => (SLIDER_CONFIG[activeEnv]?.[activeTask]?.[t] ?? []).some(sl => shouldShowSlider(sl)))
 
   useEffect(() => { 
@@ -414,7 +568,7 @@ export function ConfigPanel({
                   {[["rl", "RL"], ["classic", "Классический"]].map(([type, label]) => (
                     <button 
                       key={type} 
-                      disabled={isAlgoLocked}  // ← блокируем в inference
+                      disabled={isAlgoLocked}
                       onClick={() => handleAlgoType(type)}
                       style={{
                         flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 600,
@@ -447,23 +601,7 @@ export function ConfigPanel({
 
           {sliders.filter(s => shouldShowSlider(s)).length === 0
             ? <div style={{ fontSize: 11, color: Theme.textMuted }}>Нет параметров</div>
-            : sliders.map(s => {
-                const value = s.type === "bool"
-                  ? (params[s.param] ?? false)
-                  : (params[s.param] ?? DEFAULT_PARAMS[s.param] ?? s.min)
-                
-                const isLocked = isInference && isParamLockedForInference(s.param, activeEnv, true)
-                
-                return (
-                  <Slider 
-                    key={s.param} 
-                    {...s} 
-                    value={value} 
-                    onChange={(k, v) => set(k, v)} 
-                    disabled={isControlDisabled || isLocked}
-                  />
-                )
-              })
+            : sliders.filter(s => shouldShowSlider(s)).map(s => renderSliderOrCoordinates(s))
           }
         </div>
       </div>

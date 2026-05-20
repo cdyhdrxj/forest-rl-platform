@@ -1,14 +1,29 @@
 import { useCallback } from "react"
-import { buildPatrolPayload } from "../constants/config" 
+import { buildPatrolPayload, SLIDER_CONFIG } from "../constants/config" 
 import { ENV, TASK } from "../constants/envs"
 
 const modeForTask = t =>
   t === TASK.TRAIL ? "trail" : t === TASK.REFORESTATION ? "reforestation" : "patrol"
 
+// Функция для получения параметров из SLIDER_CONFIG
+const getParamsWithDefaults = (params, activeEnv, activeTask) => {
+  const sliders = SLIDER_CONFIG[activeEnv]?.[activeTask] ?? {}
+  const result = { ...params }
+  
+  for (const category of Object.values(sliders)) {
+    for (const slider of category) {
+      if (result[slider.param] === undefined && slider.default !== undefined) {
+        result[slider.param] = slider.default
+      }
+    }
+  }
+  return result
+}
+
 export function useRunActions({
   wsRef, endpoint, params, algo, activeTask, activeEnv,
-  setRunning, setChartData, setState, setActiveGridSize,
-  jsonConfig, resetEpisode, mode, sourceRunTitle,
+  setRunning, setChartData, setState, jsonConfig, 
+  resetEpisode, mode, sourceRunTitle,
 }) {
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
 
@@ -24,6 +39,8 @@ export function useRunActions({
   }
 
   const generate = useCallback(() => {
+    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
+    
     let generateParams
     if (isPatrol && jsonConfig) {
       const { _fileName, ...rest } = jsonConfig
@@ -34,11 +51,11 @@ export function useRunActions({
       }
     } else if (isPatrol) {
       generateParams = {
-        ...buildPatrolPayload(params, algo),
+        ...buildPatrolPayload(paramsWithDefaults, algo),
         mode: modeForTask(activeTask),
       }
     } else {
-      generateParams = { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
+      generateParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
 
     if (mode === "inference") {
@@ -50,28 +67,27 @@ export function useRunActions({
     resetEpisode?.()
     setChartData([])
     setRunning(false)
-  }, [params, algo, activeTask, jsonConfig, isPatrol, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
+  }, [params, algo, activeTask, activeEnv, jsonConfig, isPatrol, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
 
   const start = useCallback(() => {
+    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
+    
     let payloadParams
     
     if (isPatrol && jsonConfig) {
       const { _fileName, ...rest } = jsonConfig
       payloadParams = { ...rest, algorithm: algo.toLowerCase() }
     } else if (isPatrol) {
-      payloadParams = buildPatrolPayload(params, algo)
+      payloadParams = buildPatrolPayload(paramsWithDefaults, algo)
     } else {
-      payloadParams = { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
+      payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
-   
+  
     send("start", payloadParams)  
-    
-    const gridSize = (isPatrol && jsonConfig?.grid_size) ? jsonConfig.grid_size : params.grid_size
-    setActiveGridSize(gridSize)
     resetEpisode?.()
     setChartData([])
     setRunning(true)
-  }, [params, algo, activeTask, jsonConfig, send, resetEpisode, setActiveGridSize, setChartData, setRunning])
+  }, [params, algo, activeTask, activeEnv, jsonConfig, send, resetEpisode, setChartData, setRunning])
 
   const stop = useCallback(() => {
     send("stop")
@@ -79,8 +95,10 @@ export function useRunActions({
   }, [send, setRunning])
 
   const reset = useCallback(() => {
+    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
+    
     if (activeEnv === ENV.CONTINUOUS) {
-      send("generate", { ...params, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) })
+      send("generate", { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) })
     } else {
       send("reset")
     }
