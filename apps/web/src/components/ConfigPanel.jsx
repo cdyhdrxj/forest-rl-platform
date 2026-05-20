@@ -103,8 +103,8 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
       </div>
     )
   }
-
-  // Чекбокс
+  
+// Чекбокс
   if (type === "bool") {
     return (
       <div style={{ marginBottom: 12 }}>
@@ -117,7 +117,7 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
       </div>
     )
   }
-  
+
   // Числовой ввод
   if (type === "number") {
     return (
@@ -206,8 +206,8 @@ export function ConfigPanel({
   tab, setTab,
   running,
   jsonConfig, setJsonConfig,
-}) {
- 
+}) {  
+
   // Функция изменения параметров с учетом блокировки
   const set = (k, v) => {
     if (isInference && isParamLockedForInference(k, activeEnv, true)) {
@@ -217,9 +217,9 @@ export function ConfigPanel({
     setParams(p => ({ ...p, [k]: v }))
   }
 
-  const isPatrol   = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
+  const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
   const isCoverage = activeEnv === ENV.CONTINUOUS && activeTask === TASK.COVERAGE
-  const isClassic  = CLASSIC_ALGOS.has(algo)
+  const isClassic = CLASSIC_ALGOS.has(algo)
   const is3D = activeEnv === ENV.SIM_3D
   
   const isControlDisabled = running || readOnly || paramsLocked
@@ -229,7 +229,7 @@ export function ConfigPanel({
   const algos = ALGOS_BY_ROUTE?.[routeKey] ?? ["PPO"]
 
   const classicAlgos = algos.filter(a => CLASSIC_ALGOS.has(a))
-  const rlAlgos      = algos.filter(a => !CLASSIC_ALGOS.has(a))
+  const rlAlgos = algos.filter(a => !CLASSIC_ALGOS.has(a))
   const hasBothTypes = classicAlgos.length > 0 && rlAlgos.length > 0
 
   const [algoType, setAlgoType] = useState(() => CLASSIC_ALGOS.has(algo) ? "classic" : "rl")
@@ -241,7 +241,7 @@ export function ConfigPanel({
     }
   }, [algo])
 
-  // Обработчик смены алгоритма с фильтрацией параметров
+  // Обработчик смены алгоритма с фильтрацией параметров  
   const handleAlgoChange = (e) => {
     const newAlgo = e.target.value
     if (newAlgo === algo) return
@@ -333,20 +333,21 @@ export function ConfigPanel({
     dragState.current.moved = false 
   }
 
- const shouldShowSlider = (s) => {
+  const shouldShowSlider = (s) => {
     if (s.algoOnly) {
       const normalizedAlgo = algo.toUpperCase()
       const normalizedAlgoOnly = s.algoOnly.map(a => a.toUpperCase())
       const show = normalizedAlgoOnly.includes(normalizedAlgo)
-          
+
       return show
     }
     return true
   }
 
+
   const renderSliderOrCoordinates = (s) => {
     // Проверка на координаты робота
-    if (s.param === "robot_position_x") {
+    if (s.type === "coordinates" && s.param === "robot_position") {
       return (
         <CoordinatesGroup
           key="robot_coords"
@@ -362,7 +363,7 @@ export function ConfigPanel({
     }
     
     // Проверка на координаты цели
-    if (s.param === "target_position_x") {
+    if (s.type === "coordinates" && s.param === "target_position") {
       return (
         <CoordinatesGroup
           key="target_coords"
@@ -377,7 +378,6 @@ export function ConfigPanel({
       )
     }
 
-    // Обычный слайдер
     const value = s.type === "bool"
       ? (params[s.param] ?? s.default ?? false)
       : (params[s.param] ?? s.default ?? s.min)
@@ -506,7 +506,7 @@ export function ConfigPanel({
           )}
         </div>
       </div>
-
+        
       {/* Параметры */}
       <div style={{ ...card, overflow: "hidden", display: hideSliders ? "none" : undefined }}>
         <div style={{ position: "relative" }}>

@@ -119,15 +119,11 @@ export const SLIDER_CONFIG = {
       ],
       "Робот": [
         { param: "robot_type",          label: "Тип робота",      type: "select", options: ["wheeled", "tracked", "legged"], default: "wheeled" },
-        { param: "robot_position_x",    label: "Позиция X",       default: 0, min: -10, max: 10, step: 0.5 },
-        { param: "robot_position_y",    label: "Позиция Y",       default: 0, min: 0,   max: 5,  step: 0.5 },
-        { param: "robot_position_z",    label: "Позиция Z",       default: 0, min: -10, max: 10, step: 0.5 },
+        { param: "robot_position",      label: "Позиция робота",  type: "coordinates" }, 
         { param: "robot_rotation_y",    label: "Поворот (Y)",     default: 0, min: 0,   max: 360, step: 15, type: "int" },
       ],
       "Цель": [
-        { param: "target_position_x",   label: "Позиция X",       default: 5, min: -10, max: 10, step: 0.5 },
-        { param: "target_position_y",   label: "Позиция Y",       default: 0, min: 0,   max: 5,  step: 0.5 },
-        { param: "target_position_z",   label: "Позиция Z",       default: 5, min: -10, max: 10, step: 0.5 },
+        { param: "target_position",     label: "Позиция цели",    type: "coordinates" },
       ],
       "Алгоритм": [
         { param: "learning_rate",       label: "Скор. обучения",  default: 0.0003, min: 0.00001, max: 0.01,  step: 0.00001 },
