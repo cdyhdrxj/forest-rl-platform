@@ -15,7 +15,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetRobots.srv"
   "srv/SetTerrainParams.srv"
   "srv/SetGoal.srv"
-  
   DEPENDENCIES builtin_interfaces std_msgs
 )
 
