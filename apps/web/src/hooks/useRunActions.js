@@ -75,31 +75,32 @@ export function useRunActions({
     setRunning(false)
   }, [params, algo, activeTask, activeEnv, jsonConfig, isPatrol, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
 
-  const start = useCallback(() => {
+  const start = useCallback((options = {}) => {
     const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
+    const resume = options.resume || false
     
     let payloadParams
     
     if (isPatrol && jsonConfig) {
       const { _fileName, ...rest } = jsonConfig
-      payloadParams = { ...rest, algorithm: algo.toLowerCase() }
+      payloadParams = { ...rest, algorithm: algo.toLowerCase(), resume }
     } else if (isPatrol) {
-      payloadParams = buildPatrolPayload(paramsWithDefaults, algo)
+      payloadParams = { ...buildPatrolPayload(paramsWithDefaults, algo), resume }
     } else if (is3DSim) {
-      payloadParams = buildTerrainPayload(paramsWithDefaults)
+      payloadParams = { ...buildTerrainPayload(paramsWithDefaults), resume }
     } else {
-      payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
+      payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask), resume }
     }
-  
+
     send("start", payloadParams)  
     resetEpisode?.()
     setChartData([])
     setRunning(true)
-  }, [params, algo, activeTask, activeEnv, jsonConfig, send, resetEpisode, setChartData, setRunning])
+  }, [params, algo, activeTask, activeEnv, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setRunning])
 
   const stop = useCallback(() => {
-    send("stop")
-    setRunning(false)
+      send("stop", {}) 
+      setRunning(false)
   }, [send, setRunning])
 
   const reset = useCallback(() => {

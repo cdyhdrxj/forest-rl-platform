@@ -72,7 +72,7 @@ function RunRow({ run, onRename, onOpen }) {
     ? new Date(run.created_at).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })
     : "—"
 
-  const hasModel = run.has_checkpoint === true && run.mode !== "inference"
+  const hasModel = run.has_checkpoint === true
 
   return (
     <div style={{
@@ -104,17 +104,7 @@ function RunRow({ run, onRename, onOpen }) {
       </div>
 
       <div style={{ width: 260, flexShrink: 0, display: "flex", gap: SPACE[2], justifyContent: "flex-end" }}>
-        {isActive && (
-            <button
-            onClick={() => onOpen(run, "experiment")}
-            style={outlinedBtn}
-            onMouseEnter={e => { e.currentTarget.style.background = Theme.btnBgHover; e.currentTarget.style.borderColor = Theme.btnBorderHover }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = Theme.btnBorder }}
-            >
-            Открыть
-            </button>
-        )}
-        
+  
         {isDone && (
             <>
             <button
@@ -407,3 +397,5 @@ function declRun(n) {
   if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return "эксперимента"
   return "экспериментов"
 }
+
+export { RunRow }

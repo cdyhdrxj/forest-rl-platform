@@ -23,7 +23,7 @@ from services.scenario_generator.models import GeneratedScenario
 from services.scenario_generator import extract_patrol_runtime_context
 
 class GridWorldService(SB3Trainer):
-    """Training service for the grid patrol environment."""
+    """Сервис обучения для среды клеточного патрулирования."""
 
     def __init__(self):
         self.env: GridForest = None
@@ -34,8 +34,16 @@ class GridWorldService(SB3Trainer):
         self.loaded_static_layers: dict[str, np.ndarray] = {}
 
     def start(self, params: dict) -> None:
+        resume = params.get("resume", False)
+        
         self.training_state["mode"] = params.get("mode", "patrol")
-        super().start(params)
+        
+        if not resume:
+            self._reset_counters()
+        
+        self.env = self._build_env(params, resume=resume)
+        
+        super().start({**params, "resume": resume, "_env_already_created": True})
 
     def stop(self) -> None:
         super().stop()
@@ -100,9 +108,12 @@ class GridWorldService(SB3Trainer):
             base["trajectory"] = [list(map(float, p)) for p in s.trajectory]
         return base
 
-    def _build_env(self, params: dict):
+    def _build_env(self, params: dict, resume: bool = False):
         if self.loaded_config is None:
             raise RuntimeError("No scenario loaded")
+
+        if resume and self.env is not None:
+            return self.env
 
         config = self.loaded_config.model_copy(deep=True)
         
@@ -133,10 +144,11 @@ class GridWorldService(SB3Trainer):
             
             env.train_state = self.training_state
             
-            if use_random_spawn:
-                env.reset()  
-            else:
-                env.reset(seed=scenario_seed) 
+            if not resume:
+                if use_random_spawn:
+                    env.reset()
+                else:
+                    env.reset(seed=scenario_seed)
             
             return env
         
