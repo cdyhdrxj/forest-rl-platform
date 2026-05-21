@@ -67,15 +67,15 @@ def validate_generation_request(
         minimum=1,
         enabled=request.task_kind is TaskKind.COVERAGE,
     )
-    _validate_positive_int(
-        report,
-        stage=stage,
-        code="preview_size_invalid",
-        message="3D preview size must be at least 4",
-        value=_resolve_int(request.terrain_params, "preview_size", request.task_params, default=0),
-        minimum=4,
-        enabled=request.environment_kind is EnvironmentKind.SIMULATOR_3D,
-    )
+    # _validate_positive_int(
+    #     report,
+    #     stage=stage,
+    #     code="preview_size_invalid",
+    #     message="3D preview size must be at least 4",
+    #     value=_resolve_int(request.terrain_params, "preview_size", request.task_params, default=0),
+    #     minimum=4,
+    #     enabled=request.environment_kind is EnvironmentKind.SIMULATOR_3D,
+    # )
     _validate_range(
         report,
         stage=stage,

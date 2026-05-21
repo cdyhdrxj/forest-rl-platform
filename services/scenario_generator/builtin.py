@@ -194,21 +194,6 @@ class Simulator3DFamilyGenerator:
     environment_kind = EnvironmentKind.SIMULATOR_3D
 
     def generate(self, request: GenerationRequest, seed: int) -> GeneratedScenario:
-        preview_size = _get_int(request.terrain_params, "preview_size", 32)
-        tree_density = _get_number(request.forest_params, "tree_density", 0.25)
-        terrain_hilliness = _get_number(request.forest_params, "terrain_hilliness", 0.45)
-
-        rng = np.random.default_rng(seed)
-        terrain = rng.random((preview_size, preview_size), dtype=np.float32)
-        terrain = np.clip(terrain * max(terrain_hilliness, 0.05), 0.0, 1.0).astype(np.float32)
-
-        world_descriptor = {
-            "seed": seed,
-            "preview_size": preview_size,
-            "tree_density": tree_density,
-            "terrain_hilliness": terrain_hilliness,
-            "task_params": dict(request.task_params),
-        }
 
         scenario = GeneratedScenario(
             environment_kind=request.environment_kind,
@@ -216,27 +201,18 @@ class Simulator3DFamilyGenerator:
             seed=seed,
             generator_name="simulator_3d_family_generator",
             generator_version="v1",
-            effective_params=world_descriptor.copy(),
-            preview_payload={
-                "terrain_map": terrain.tolist(),
-                "agent_pos": [],
-                "goal_pos": [],
-                "landmark_pos": [],
-            },
             runtime_context={
                 "simulator_3d": {
-                    "world_descriptor": world_descriptor,
-                },
-            },
+                    "world_descriptor": {
+                        "seed": seed,
+                    },
+                    "map_config": request.terrain_params,
+                    "robot_config": request.task_params.get("robot", {}),
+                    "target_config": request.task_params.get("target", {}),
+                }
+            }
         )
-        scenario.add_layer(
-            GeneratedLayer(
-                name="terrain_preview",
-                layer_type="terrain_preview",
-                data=terrain,
-                description="Low-resolution 3D terrain preview",
-            )
-        )
+
         return scenario
 
 
@@ -500,10 +476,8 @@ class DefaultScenarioValidator:
 
         if scenario.environment_kind == EnvironmentKind.SIMULATOR_3D:
             sim_ctx = scenario.runtime_context.get("simulator_3d")
-            if sim_ctx is None or "world_descriptor" not in sim_ctx:
-                messages.append("3D scenario has no world descriptor")
-            if scenario.get_layer_data("terrain_preview") is None:
-                messages.append("3D scenario has no terrain preview layer")
+            if sim_ctx is None or "map_config" not in sim_ctx:
+                messages.append("3D scenario has no map_config")
 
         if scenario.task_kind == TaskKind.REFORESTATION:
             ctx = scenario.runtime_context.get("reforestation")

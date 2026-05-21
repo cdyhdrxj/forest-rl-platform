@@ -26,7 +26,7 @@ const CoordinatesGroup = ({ label, prefix, valueX, valueY, valueZ, onChange, dis
           <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 2 }}>X</div>
           <input
             type="number"
-            value={valueX}
+            value={valueX ?? 0}
             onChange={e => setCoord("x", e.target.value)}
             disabled={disabled}
             step={0.5}
@@ -46,7 +46,7 @@ const CoordinatesGroup = ({ label, prefix, valueX, valueY, valueZ, onChange, dis
           <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 2 }}>Y</div>
           <input
             type="number"
-            value={valueY}
+            value={valueY ?? 0}
             onChange={e => setCoord("y", e.target.value)}
             disabled={disabled}
             step={0.5}
@@ -66,7 +66,7 @@ const CoordinatesGroup = ({ label, prefix, valueX, valueY, valueZ, onChange, dis
           <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 2 }}>Z</div>
           <input
             type="number"
-            value={valueZ}
+            value={valueZ ?? 0}
             onChange={e => setCoord("z", e.target.value)}
             disabled={disabled}
             step={0.5}
@@ -125,7 +125,7 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
         <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{label}</div>
         <input
           type="number"
-          value={value ?? 0}
+          value={value}
           onChange={e => onChange(param, parseFloat(e.target.value))}
           disabled={disabled}
           min={min}

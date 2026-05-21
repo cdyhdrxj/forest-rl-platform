@@ -189,20 +189,44 @@ def build_coverage_runtime_config(params: dict[str, Any], scenario: GeneratedSce
 
 
 def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -> GenerationRequest:
-    print(params)
+    map_config = params.get("map_config", {})
+    robot_config = params.get("robot_config", {})
+    target_config = params.get("target_config", {})
+
+    seed = map_config.get("seed", 0)
+
     return GenerationRequest(
         environment_kind=EnvironmentKind.SIMULATOR_3D,
         task_kind=task_kind,
-        seed=params.get("seed"),
+        seed=seed,
+
         terrain_params={
-            "preview_size": params.get("preview_size", params.get("grid_size", 32)),
+            "uniform_scale": 0.1,
+            "mesh_height_multiplayer": map_config.get("mesh_height_multiplayer", 15),
+            "noise_scale": map_config.get("noise_scale", 50),
+            "octaves": map_config.get("octaves", 4),
+            "persistance": 0.5,
+            "lacunarity": map_config.get("lacunarity", 2.0),
+            "seed": seed,
+            "offset_x": 0,
+            "offset_y": 0,
+            "density": map_config.get("density", 10),
+            "max_view_dst": map_config.get("max_view_dst", 1) * 125,
+            "noise_normalize_mode": 1,
         },
-        forest_params={
-            "tree_density": params.get("tree_density", 0.25),
+
+        task_params={
+            "robot": robot_config,
+            "target": target_config,
         },
-        task_params=dict(params),
     )
 
 
 def extract_simulator_3d_runtime_config(scenario: GeneratedScenario) -> dict[str, Any]:
-    return dict(scenario.runtime_context.get("simulator_3d") or {})
+    ctx = scenario.runtime_context.get("simulator_3d") or {}
+
+    return {
+        "map_config": ctx.get("map_config", {}),
+        "robot_config": ctx.get("robot_config", {}),
+        "target_config": ctx.get("target_config", {}),
+    }

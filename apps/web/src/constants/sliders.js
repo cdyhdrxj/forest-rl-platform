@@ -115,10 +115,11 @@ export const SLIDER_CONFIG = {
         { param: "seed",                    label: "Seed ландшафта",  default: 42,  min: 0,   max: 999999, step: 1, type: "number" },
         { param: "octaves",                 label: "Детализация слоёв шума",           default: 4,   min: 1,   max: 8,   step: 1, type: "int" },
         { param: "lacunarity",              label: "Частотный множитель между слоями",     default: 2.0, min: 1.5, max: 3.5, step: 0.1 },
-        { param: "max_view_dst",            label: "Макс. дистанция обзора", default: 1, min: 1, max: 3, step: 1, type: "int" },
+        { param: "density",                 label: "Плотность появления объектов",           default: 10,   min: 0,   max: 100,   step: 1, type: "int" },
+        { param: "max_view_dst",            label: "Размер ландшафта", default: 1, min: 1, max: 3, step: 1, type: "int" },
       ],
       "Робот": [
-        { param: "robot_type", label: "Тип робота", type: "select", options: ["Freight"], default: "Freight" },
+        { param: "robot_type", label: "Тип робота", type: "select", options: [0, 1], default: 0 },
         { param: "robot_position_x", label: "X", default: 0, type: "coordinates", group: "robot" },
         { param: "robot_position_y", label: "Y", default: 0, type: "coordinates", group: "robot" },
         { param: "robot_position_z", label: "Z", default: 0, type: "coordinates", group: "robot" },
