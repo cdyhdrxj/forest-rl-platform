@@ -229,7 +229,8 @@ export function ExperimentPage({ nav, ctx = {} }) {
 
   const evalStartedRef = useRef(false)
 
-  const handleStartEval = () => {
+  const handleStartEval = (options = {}) => { 
+    const resume = options.resume || false 
     if (!wsRef.current) {
       console.error("[Inference Mode] WebSocket not available")
       return
@@ -253,6 +254,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
           source_run_title: sourceRunTitle || null,
           deterministic: true,
           eval_episodes: 999_999,
+          resume: resume, 
         },
       }))
       setRunning(true)
@@ -283,6 +285,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
         source_run_title: sourceRunTitle || null,
         deterministic: true,
         eval_episodes: 999_999,
+        resume: resume, 
       },
     }))
     

@@ -19,8 +19,13 @@ class SeedlingPlantingService(SB3Trainer):
         self.loaded_layout: dict | None = None
 
     def start(self, params: dict) -> None:
+        resume = params.get("resume", False)
         self.training_state["mode"] = params.get("mode", "reforestation")
-        super().start(params)
+        
+        if not resume:
+            self._reset_counters()
+        
+        super().start({**params, "resume": resume})
 
     def stop(self) -> None:
         super().stop()

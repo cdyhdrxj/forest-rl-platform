@@ -1,3 +1,4 @@
+import { useState } from "react" 
 import { ENV } from "../constants/envs"
 import { Theme } from "../constants/colors"
 
@@ -37,6 +38,8 @@ export function ControlButtons({
   onStartEval,          
   evalReady = false,    
 }) {
+  const [wasStopped, setWasStopped] = useState(false)  
+  
   const isCamar = activeEnv === ENV.CONTINUOUS
   const canGenerate = !running && !!endpoint && !isCamar
   
@@ -49,9 +52,22 @@ export function ControlButtons({
     canStart = !running && !!endpoint && scenarioReady
   }
   
-  const startAction = isInference ? onStartEval : onStart
   const resetLabel = isCamar ? "Сброс карты" : "Сброс"
   const generateDisabled = running || !endpoint || !canGenerate
+
+  const handleStop = () => {
+      onStop()  
+      setWasStopped(true)
+  }
+
+  const handleStart = () => {
+    if (isInference) {
+      onStartEval({ resume: wasStopped }) 
+    } else {
+      onStart({ resume: wasStopped })
+    }
+    setWasStopped(false)
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -59,12 +75,12 @@ export function ControlButtons({
         <BtnSolid onClick={onGenerate} disabled={generateDisabled} color={Theme.accent}>
           Генерировать
         </BtnSolid>
-        <BtnSolid onClick={startAction} disabled={!canStart} color={Theme.green}>
+        <BtnSolid onClick={handleStart} disabled={!canStart} color={Theme.green}>
           Старт
         </BtnSolid>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-        <BtnSolid onClick={onStop} disabled={!running} color={Theme.red}>Стоп</BtnSolid>
+        <BtnSolid onClick={handleStop} disabled={!running} color={Theme.red}>Стоп</BtnSolid>
         <BtnOutline onClick={onReset} disabled={running} color={Theme.textSecond}>{resetLabel}</BtnOutline>
         <BtnOutline onClick={onFinish} disabled={false} color={Theme.red}>Завершить</BtnOutline>
       </div>

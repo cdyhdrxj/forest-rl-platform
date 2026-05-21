@@ -22,6 +22,8 @@ from packages.db.models.enums import ArtifactType, EventType, RunStatus
 from packages.db.session import db_session
 from services.scenario_generator.models import TaskKind
 
+_SKIP_FINALIZE = object()
+
 
 def get_runtime_storage_root() -> Path:
     repo_root = Path(__file__).resolve().parents[2]
@@ -65,6 +67,7 @@ class RunObserver:
         task_kind: TaskKind,
         service: Any,
         poll_interval: float = 0.25,
+        replay_path: str | None = None,
     ) -> None:
         self.run_id = int(run_id)
         self.route_key = route_key
@@ -89,10 +92,13 @@ class RunObserver:
         self._episode_boundary_goal_count = 0
         self._episode_boundary_collision_count = 0
 
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S%f")
         run_dir = get_runtime_storage_root() / f"run_{self.run_id}"
         run_dir.mkdir(parents=True, exist_ok=True)
-        self._replay_path = run_dir / f"replay_{timestamp}.jsonl"
+        if replay_path is not None:
+            self._replay_path = Path(replay_path)
+        else:
+            timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S%f")
+            self._replay_path = run_dir / f"replay_{timestamp}.jsonl"
         self._replay_path.touch(exist_ok=True)
 
     def start(self) -> None:
@@ -117,7 +123,7 @@ class RunObserver:
         self._thread.start()
 
     def stop(self, *, final_status: RunStatus | None = None, message: str | None = None) -> None:
-        self._requested_status = final_status
+        self._requested_status = _SKIP_FINALIZE if final_status is None else final_status
         self._requested_message = message
         self._stop_event.set()
         if self._thread is not None:
@@ -449,6 +455,10 @@ class RunObserver:
 
     def _finalize(self, state: dict[str, Any]) -> None:
         if self._finalized:
+            return
+
+        if self._requested_status is _SKIP_FINALIZE:
+            self._finalized = True
             return
 
         status = self._requested_status

@@ -19,8 +19,13 @@ class CamarService(SB3Trainer):
         self.loaded_wrapper_kwargs: dict[str, Any] | None = None
 
     def start(self, params: dict) -> None:
+        resume = params.get("resume", False)
         self.training_state["mode"] = params.get("mode", "trail")
-        super().start(params)
+        
+        if not resume:
+            self._reset_counters()
+        
+        super().start({**params, "resume": resume})
 
     def stop(self) -> None:
         super().stop()

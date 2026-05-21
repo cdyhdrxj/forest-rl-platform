@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from threading import RLock
+from pathlib import Path
 import time
 from typing import Any, Callable
 import shutil
@@ -85,6 +86,8 @@ class RunSession:
     observer: RunObserver | None = None
     validation_report: dict[str, Any] | None = None
     last_error: str | None = None
+    finished: bool = False
+    replay_path: str | None = None
 
 
 def _build_patrol_request(params: dict[str, Any]) -> GenerationRequest:
@@ -494,13 +497,19 @@ class ExperimentDispatcher:
         )
         return session
 
-    def start_run(self, run_id: int, params: dict[str, Any] | None = None) -> RunSession:
+    def start_run(self, run_id: int, params: dict | None = None, resume: bool = False) -> RunSession:
         session = self.load_run(run_id)
         start_params = dict(session.training_params)
         start_params.update(dict(params or {}))
         start_params["mode"] = session.route.training_mode
         if "algorithm" not in start_params:
             start_params["algorithm"] = session.route.default_algorithm
+
+        if resume:
+            checkpoint = self.get_model_checkpoint_path(run_id)
+            if checkpoint and Path(checkpoint).exists():
+                start_params["load_checkpoint_path"] = checkpoint
+                start_params["resume"] = True
 
         session.training_params = start_params
         session.service.start(start_params)
@@ -512,8 +521,10 @@ class ExperimentDispatcher:
                 task_kind=session.route.task_kind,
                 service=session.service,
                 poll_interval=self.observer_poll_interval,
+                replay_path=session.replay_path if resume else None,
             )
             session.observer.start()
+            session.replay_path = str(session.observer._replay_path)
 
         self._update_run_status(
             run_id,
@@ -539,30 +550,38 @@ class ExperimentDispatcher:
         return session
     
     def stop_run(self, run_id: int) -> None:
-        """Остановить выполнение эксперимента (приостановить)."""
+        """Остановить выполнение эксперимента (приостановить). """
         session = self.load_run(run_id)
-        session.service.stop()
         
-        self._update_run_status(
-            run_id, 
-            status=RunStatus.cancelled, 
-            finished_at=datetime.utcnow()
-        )
-        
+        is_inference = session.training_params.get("execution_role") == "eval"
+
+        if session.observer is not None:
+            session.observer.stop(final_status=None, message="Run paused by user")
+            session.observer = None
+
+        session.service.stop()  
+
+        if not is_inference:
+            checkpoint_path = _get_service_checkpoint_path(session.service)  
+            if checkpoint_path:
+                _save_model_artifact(run_id, checkpoint_path)
+
         write_service_log(
             run_id=run_id,
             service_name="experiment_dispatcher",
             level="info",
-            message="Run stopped (paused)",
+            message="Run paused (resumable)",
             payload_json={"route_key": session.route.route_key},
         )
 
-    def finish_run(self, run_id: int, is_inference: bool = False) -> None:
+    def finish_run(self, run_id: int) -> None:
         """Завершить эксперимент с финальным статусом finished."""
         session = self.load_run(run_id)
         if session.service.get_state().get("running"):
             session.service.stop()
-    
+
+        is_inference = session.training_params.get("execution_role") == "eval"
+
         if not is_inference:
             checkpoint_path = _get_service_checkpoint_path(session.service)
             if checkpoint_path:
@@ -576,12 +595,12 @@ class ExperimentDispatcher:
                 message="Run finished by user",
             )
             session.observer = None
-        else:
-            self._update_run_status(
-                run_id,
-                status=RunStatus.finished,
-                finished_at=datetime.utcnow(),
-            )
+        self._update_run_status(
+            run_id,
+            status=RunStatus.finished,
+            finished_at=datetime.utcnow(),
+        )
+        session.finished = True
     
         write_service_log(
             run_id=run_id,
@@ -634,13 +653,13 @@ class ExperimentDispatcher:
             return
         if session.observer is not None:
             session.observer.stop(
-                final_status=RunStatus.cancelled if session.service.get_state().get("running") else None,
+                final_status=RunStatus.cancelled,
                 message="Run disposed by dispatcher",
             )
             session.observer = None
         if session.service.get_state().get("running"):
             session.service.stop()
-            self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
+        self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
         write_service_log(
             run_id=run_id,
             service_name="experiment_dispatcher",
@@ -670,6 +689,8 @@ class ExperimentDispatcher:
         execution_phase = "running" if state.get("running") else "preview"
         if session.last_error:
             execution_phase = "failed"
+        elif session.finished:
+            execution_phase = "finished"
         elif session.observer is not None and session.observer.final_status is not None:
             execution_phase = session.observer.final_status.value
         elif session.observer is not None and session.training_params and not state.get("running") and not session.observer.is_alive():

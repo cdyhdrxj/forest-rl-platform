@@ -55,16 +55,18 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
                         active_run_id = session.run_id
 
                 elif action == "start":
+                    resume = params.get("resume", False) 
                     if active_run_id is not None:
-                        dispatcher.start_run(active_run_id, params)
+                        dispatcher.start_run(active_run_id, params, resume=resume)
                     else:
                         session = dispatcher.generate_and_load(route_key, params)
                         active_run_id = session.run_id
-                        dispatcher.start_run(active_run_id, params)
+                        dispatcher.start_run(active_run_id, params, resume=False)
 
                 elif action == "start_eval":
                     source_run_id = data.get("source_run_id")
-                    
+                    resume = params.get("resume", False) 
+
                     if not source_run_id:
                         raise ValueError("start_eval requires source_run_id")
                     
@@ -75,14 +77,15 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
                             "Убедитесь что эксперимент был завершён через кнопку «Завершить»."
                         )
                     
-                    if active_run_id is not None:
+                    if active_run_id is not None and resume:
                         eval_params = {
                             **params,
                             "execution_role": "eval",
                             "load_checkpoint_path": checkpoint_path,
                             "deterministic": params.get("deterministic", True),
+                            "resume": True,
                         }
-                        dispatcher.start_run(active_run_id, eval_params)
+                        dispatcher.start_run(active_run_id, eval_params, resume=True)
                     else:
                         session = dispatcher.generate_and_load(route_key, params)
                         active_run_id = session.run_id
@@ -91,15 +94,15 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
                             "execution_role": "eval",
                             "load_checkpoint_path": checkpoint_path,
                             "deterministic": params.get("deterministic", True),
+                            "resume": False,
                         }
-                        dispatcher.start_run(active_run_id, eval_params)
+                        dispatcher.start_run(active_run_id, eval_params, resume=False)
 
                 elif action == "stop" and active_run_id is not None:
                     dispatcher.stop_run(active_run_id)
 
                 elif action == "finish" and active_run_id is not None:
-                    is_inference = params.get("mode") == "inference" 
-                    dispatcher.finish_run(active_run_id, is_inference=is_inference)
+                    dispatcher.finish_run(active_run_id)
                     active_run_id = None
 
                 elif action == "reset" and active_run_id is not None:
@@ -120,7 +123,6 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
     except WebSocketDisconnect:
         print(f"WebSocket disconnected for {route_key}")
         if active_run_id is not None:
-            dispatcher.stop_run(active_run_id)
             dispatcher.dispose_run(active_run_id)
     finally:
         task.cancel()

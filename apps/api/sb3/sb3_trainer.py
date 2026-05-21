@@ -48,7 +48,11 @@ class SB3Trainer:
         if self.training_state["running"]:
             return
 
-        self._reset_counters()
+        resume = params.get("resume", False)
+        
+        if not resume:
+            self._reset_counters()
+        
         self.env = self._build_env(params)
 
         algo_key     = params.get("algorithm", "ppo").lower()
@@ -104,7 +108,12 @@ class SB3Trainer:
                 daemon=True,
             ).start()
         else:
-            threading.Thread(target=self._training_loop, daemon=True).start()
+            threading.Thread(
+                target=self._training_loop,
+                args=(resume,), 
+                daemon=True
+            ).start()
+            
 
     def stop(self) -> None:
         self.training_state["running"] = False
@@ -117,13 +126,14 @@ class SB3Trainer:
             self._last_checkpoint_path = str(p)
 
     # Обучение 
-
-    def _training_loop(self) -> None:
+    def _training_loop(self, resume: bool = False) -> None: 
         try:
+            reset_num_timesteps = not resume  
+
             self.model.learn(
                 total_timesteps=10_000_000,
                 callback=self._make_callback(),
-                reset_num_timesteps=True,
+                reset_num_timesteps=reset_num_timesteps,  
             )
         except Exception as exc:
             self.last_error = str(exc)
@@ -132,7 +142,6 @@ class SB3Trainer:
             self.training_state["running"] = False
 
     # Исполнение модели 
-
     def _eval_loop(self, deterministic: bool, eval_episodes: int) -> None:
         """
         Запускает обученную модель без обучения.
@@ -153,7 +162,7 @@ class SB3Trainer:
             else:
                 observation, _ = self.env.reset()
 
-            completed    = 0
+            completed    = int(self.training_state.get("episode") or 0)
             episode_reward = 0.0
 
             while self.training_state["running"]:

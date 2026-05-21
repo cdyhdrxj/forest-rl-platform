@@ -11,7 +11,6 @@ from apps.api.websocket_manager import handle_ws
 
 
 class MockWebSocket:
-    """Минимальная заглушка WebSocket."""
     def __init__(self, messages: list):
         self._incoming = iter(messages)
         self.sent = []
@@ -29,31 +28,29 @@ class MockWebSocket:
 
 
 @pytest.mark.asyncio
-async def test_error_field_set_on_generate_failure():
-    """При ошибке generate поле error должно быть заполнено."""
+async def test_error_on_generate_fail():
+    """Ошибка generate попадает в поле error."""
     dispatcher = MagicMock()
     dispatcher.get_state.return_value = {
         "running": False,
         "execution_phase": "idle",
         "error": None,
     }
-    dispatcher.generate_and_load.side_effect = ValueError(
-        "grid_size must be positive"
-    )
+    dispatcher.generate_and_load.side_effect = ValueError("grid_size must be positive")
 
     ws = MockWebSocket([{"action": "generate", "params": {"grid_size": -1}}])
 
-    with pytest.raises(Exception):  
+    with pytest.raises(Exception):
         await handle_ws(ws, dispatcher, "discrete/reforestation")
 
     error_frames = [m for m in ws.sent if m.get("error")]
-    assert error_frames, "Ожидался хотя бы один снимок с полем error"
+    assert error_frames
     assert "grid_size" in error_frames[0]["error"]
 
 
 @pytest.mark.asyncio
-async def test_error_field_set_on_load_missing_run():
-    """При загрузке несуществующего run_id поле error заполняется."""
+async def test_error_on_load_missing_run():
+    """Ошибка загрузки несуществующего run."""
     dispatcher = MagicMock()
     dispatcher.get_state.return_value = {
         "running": False,
@@ -73,15 +70,15 @@ async def test_error_field_set_on_load_missing_run():
 
 
 @pytest.mark.asyncio
-async def test_normal_state_has_no_error():
-    """В нормальном состоянии поле error равно null."""
+async def test_normal_state_no_error():
+    """В нормальном состоянии error = null."""
     dispatcher = MagicMock()
     dispatcher.get_state.return_value = {
         "running": False,
         "execution_phase": "idle",
         "error": None,
     }
-    ws = MockWebSocket([])  
+    ws = MockWebSocket([])
 
     with pytest.raises(Exception):
         await handle_ws(ws, dispatcher, "discrete/reforestation")
