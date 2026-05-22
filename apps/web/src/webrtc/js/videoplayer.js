@@ -1,234 +1,96 @@
-import { Observer, Sender } from "../module/sender.js";
-import { InputRemoting } from "../module/inputremoting.js";
+import { Sender, Observer } from "../module/sender.js"
+import { InputRemoting } from "../module/inputremoting.js"
 
 export class VideoPlayer {
   constructor() {
-    this.playerElement = null;
-    this.lockMouseCheck = null;
-    this.videoElement = null;
+    this.playerElement = null
+    this.videoElement = null
 
-    // this.fullScreenButtonElement = null;
+    this.sender = null
+    this.inputRemoting = null
+    this.inputChannel = null
 
-    this.inputRemoting = null;
-    this.sender = null;
-    this.inputSenderChannel = null;
+    this.pointerLocked = false
+    this.lastPointerLockTime = 0
   }
 
-  /**
-   * @param {Element} playerElement parent element for create video player
-   * @param {HTMLInputElement} lockMouseCheck use checked propety for lock mouse 
-   */
-  createPlayer(playerElement, lockMouseCheck) {
-    this.playerElement = playerElement;
-    this.lockMouseCheck = lockMouseCheck;
+  createPlayer(playerElement) {
+    this.playerElement = playerElement
 
-    this.videoElement = document.createElement('video');
-    this.videoElement.id = 'Video';
-    this.videoElement.style.touchAction = 'none';
-    this.videoElement.playsInline = true;
-    this.videoElement.srcObject = new MediaStream();
-    this.videoElement.addEventListener('loadedmetadata', this._onLoadedVideo.bind(this), true);
-    this.playerElement.appendChild(this.videoElement);
+    this.videoElement = document.createElement("video")
+    this.videoElement.playsInline = true
+    this.videoElement.autoplay = true
 
-    // =========================
-    // FULLSCREEN BUTTON (DISABLED)
-    // =========================
-    /*
-    this.fullScreenButtonElement = document.createElement('img');
-    this.fullScreenButtonElement.id = 'fullscreenButton';
-    this.fullScreenButtonElement.src = '../images/FullScreen.png';
-    this.fullScreenButtonElement.addEventListener(
-      "click",
-      this._onClickFullscreenButton.bind(this)
-    );
-    this.playerElement.appendChild(this.fullScreenButtonElement);
-    */
+    this.videoElement.srcObject = new MediaStream()
 
-    // =========================
-    // FULLSCREEN EVENTS (DISABLED)
-    // =========================
-    /*
-    document.addEventListener(
-      'webkitfullscreenchange',
-      this._onFullscreenChange.bind(this)
-    );
-    document.addEventListener(
-      'fullscreenchange',
-      this._onFullscreenChange.bind(this)
-    );
-    */
+    this.playerElement.appendChild(this.videoElement)
 
-    this.videoElement.addEventListener(
-      "click",
-      this._mouseClick.bind(this),
-      false
-    );
   }
 
-  _onLoadedVideo() {
-    this.videoElement.play();
-    this.resizeVideo();
-  }
+  tryLockPointer() {
+    const now = Date.now()
 
-  /*
-  _onClickFullscreenButton() {
-    if (!document.fullscreenElement || !document.webkitFullscreenElement) {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-      }
-      else if (document.documentElement.webkitRequestFullscreen) {
-        document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-      } else {
-        if (this.playerElement.style.position == "absolute") {
-          this.playerElement.style.position = "relative";
-        } else {
-          this.playerElement.style.position = "absolute";
-        }
-      }
+    // ❌ защита от SecurityError
+    if (now - this.lastPointerLockTime < 1000) {
+      return
     }
+
+    if (document.pointerLockElement === this.videoElement) return
+
+    this.lastPointerLockTime = now
+
+    this.videoElement.requestPointerLock?.()
   }
 
-  _onFullscreenChange() {
-    if (document.webkitFullscreenElement || document.fullscreenElement) {
-      this.playerElement.style.position = "absolute";
-      this.fullScreenButtonElement.style.display = 'none';
+  setupInput(channel) {
+    this.inputChannel = channel
 
-      if (this.lockMouseCheck.checked) {
-        if (document.webkitFullscreenElement.requestPointerLock) {
-          document.webkitFullscreenElement.requestPointerLock();
-        } else if (document.fullscreenElement.requestPointerLock) {
-          document.fullscreenElement.requestPointerLock();
-        } else if (document.mozFullScreenElement.requestPointerLock) {
-          document.mozFullScreenElement.requestPointerLock();
-        }
+    this.sender = new Sender(this.videoElement)
 
-        document.addEventListener('mousemove', this._mouseMove.bind(this), false);
-        document.addEventListener('click', this._mouseClickFullScreen.bind(this), false);
-      }
-    } else {
-      this.playerElement.style.position = "relative";
-      this.fullScreenButtonElement.style.display = 'block';
+    this.sender.addMouse()
+    this.sender.addKeyboard()
+    this.sender.addGamepad()
 
-      document.removeEventListener('mousemove', this._mouseMove.bind(this), false);
-      document.removeEventListener('click', this._mouseClickFullScreen.bind(this), false);
+    if ("ontouchstart" in window) {
+      this.sender.addTouchscreen()
     }
-  }
 
-  _mouseClickFullScreen() {
-    if (this.lockMouseCheck.checked) {
-      if (document.webkitFullscreenElement.requestPointerLock) {
-        document.webkitFullscreenElement.requestPointerLock();
-      } else if (document.fullscreenElement.requestPointerLock) {
-        document.fullscreenElement.requestPointerLock();
-      } else if (document.mozFullScreenElement.requestPointerLock) {
-        document.mozFullScreenElement.requestPointerLock();
-      }
+    this.inputRemoting = new InputRemoting(this.sender)
+
+    channel.onopen = () => {
+      setTimeout(() => {
+        this.inputRemoting.startSending()
+      }, 100)
     }
-  }
-  */
 
-  _mouseMove(event) {
-      // Forward mouseMove event of fullscreen player directly to sender
-      // This is required, as the regular mousemove event doesn't fire when in fullscreen mode
-      this.sender._onMouseEvent(event);
+    this.inputRemoting.subscribe(new Observer(channel))
   }
 
-  _mouseClick() {
-    // Restores pointer lock when we unfocus the player and click on it again
-    if (this.lockMouseCheck.checked) {
-      if (this.videoElement.requestPointerLock) {
-        this.videoElement.requestPointerLock().catch(function () { });
-      }
-    }
-  }
-
-  /**
-   * @param {MediaStreamTrack} track 
-   */
   addTrack(track) {
-    if (!this.videoElement.srcObject) return;
-    this.videoElement.srcObject.addTrack(track);
+    this.videoElement?.srcObject?.addTrack(track)
   }
 
-   resizeVideo() {
-    if (!this.videoElement) {
-      return;
-    }
-
-    const clientRect = this.videoElement.getBoundingClientRect();
-    const videoRatio = this.videoWidth / this.videoHeight;
-    const clientRatio = clientRect.width / clientRect.height;
-
-    this._videoScale = videoRatio > clientRatio ? clientRect.width / this.videoWidth : clientRect.height / this.videoHeight;
-    const videoOffsetX = videoRatio > clientRatio ? 0 : (clientRect.width - this.videoWidth * this._videoScale) * 0.5;
-    const videoOffsetY = videoRatio > clientRatio ? (clientRect.height - this.videoHeight * this._videoScale) * 0.5 : 0;
-    this._videoOriginX = clientRect.left + videoOffsetX;
-    this._videoOriginY = clientRect.top + videoOffsetY;
-  }
-
-  get videoWidth() {
-    return this.videoElement.videoWidth;
-  }
-
-  get videoHeight() {
-    return this.videoElement.videoHeight;
-  }
-
-  get videoOriginX() {
-    return this._videoOriginX;
-  }
-
-  get videoOriginY() {
-    return this._videoOriginY;
-  }
-
-  get videoScale() {
-    return this._videoScale;
+  resizeVideo() {
+    // если используешь — оставь свой код
   }
 
   deletePlayer() {
-    if (this.inputRemoting) {
-      this.inputRemoting.stopSending();
-    }
-    this.inputRemoting = null;
-    this.sender = null;
-    this.inputSenderChannel = null;
+    this.inputRemoting?.stopSending?.()
+    this.inputRemoting = null
+    this.sender = null
+    this.inputChannel = null
 
-    while (this.playerElement.firstChild) {
-      this.playerElement.removeChild(this.playerElement.firstChild);
+    if (this.playerElement) {
+      this.playerElement.innerHTML = ""
     }
-
-    this.playerElement = null;
-    this.lockMouseCheck = null;
   }
 
-  _isTouchDevice() {
-    return (('ontouchstart' in window) ||
-      (navigator.maxTouchPoints > 0) ||
-      (navigator.msMaxTouchPoints > 0));
-  }
+  // 🔥 ВАЖНО: именно это нужно registerMouseEvents
+  sendMsg(msg) {
+    if (!this.inputChannel) return false
+    if (this.inputChannel.readyState !== "open") return false
 
-  /**
-   * setup datachannel for player input (mouse/keyboard/touch/gamepad)
-   * @param {RTCDataChannel} channel 
-   */
-  setupInput(channel) {
-    this.sender = new Sender(this.videoElement);
-    this.sender.addMouse();
-    this.sender.addKeyboard();
-    if (this._isTouchDevice()) {
-      this.sender.addTouchscreen();
-    }
-    this.sender.addGamepad();
-    this.inputRemoting = new InputRemoting(this.sender);
-
-    this.inputSenderChannel = channel;
-    this.inputSenderChannel.onopen = this._onOpenInputSenderChannel.bind(this);
-    this.inputRemoting.subscribe(new Observer(this.inputSenderChannel));
-  }
-
-  async _onOpenInputSenderChannel() {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    this.inputRemoting.startSending();
+    this.inputChannel.send(msg)
+    return true
   }
 }

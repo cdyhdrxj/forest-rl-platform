@@ -146,7 +146,16 @@ export class RenderStreaming {
    * @returns {Promise<RTCStatsReport> | null}
    */
   async getStats() {
-    return await this._peer.getStats(this._connectionId);
+    if (!this._peer) return null
+
+    const pc =
+      this._peer.pc ||
+      this._peer.peerConnection ||
+      this._peer.connection
+
+    if (!pc || !pc.getStats) return null
+
+    return await pc.getStats()
   }
 
   /**

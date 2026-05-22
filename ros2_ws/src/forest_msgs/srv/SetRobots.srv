@@ -1,0 +1,10 @@
+# Request
+float32[] positions_x
+float32[] positions_y  
+float32[] positions_z
+float32[] rotations_y
+int32[] type
+---
+# Response
+bool success
+string message

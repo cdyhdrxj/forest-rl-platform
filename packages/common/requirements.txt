@@ -11,3 +11,4 @@ camar
 alembic
 sqlalchemy
 psycopg2-binary
+roslibpy

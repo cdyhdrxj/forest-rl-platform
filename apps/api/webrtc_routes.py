@@ -1,4 +1,3 @@
-# webrtc_routes.py
 import os
 import json
 from pathlib import Path
@@ -26,7 +25,7 @@ def setup_webrtc_routes(app: FastAPI, config: ServerConfig = None):
     @app.middleware("http")
     async def log_webrtc_requests(request: Request, call_next):
         if request.url.path in ["/ws", "/signaling", "/webrtc/config"] or request.url.path.startswith(("/client/", "/multiplay/")):
-            logger.info(f"🌐 WebRTC {request.method} {request.url.path} from {request.client.host}")
+            logger.info(f"WebRTC {request.method} {request.url.path} from {request.client.host}")
         response = await call_next(request)
         return response
     

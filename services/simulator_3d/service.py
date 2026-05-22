@@ -6,6 +6,7 @@ from typing import Any
 
 from packages.schemas.enums import EventType
 from services.scenario_generator.models import GeneratedScenario
+from services.ros_2.ros_api_connection import ros
 
 
 class Simulator3DService:
@@ -39,6 +40,8 @@ class Simulator3DService:
         self._thread = threading.Thread(target=self._loop, args=(dict(params),), daemon=True)
         self._thread.start()
 
+        ros.call_service("/env/reset", "std_srvs/srv/Trigger", {})
+
     def stop(self) -> None:
         self._stop_event.set()
         self._state["running"] = False
@@ -59,6 +62,48 @@ class Simulator3DService:
         self._state["mode"] = scenario.task_kind.value
         self._apply_preview_state(scenario)
 
+        map_config = self.loaded_runtime_config.get("map_config", {})
+
+        robot_config = self.loaded_runtime_config.get("robot_config", {})
+
+        robots_ros_request = {
+            "positions_x": [float(robot_config.get("position_x", 0.0))],
+            "positions_y": [float(robot_config.get("position_y", 0.0))],
+            "positions_z": [float(robot_config.get("position_z", 0.0))],
+            "rotations_y": [float(robot_config.get("rotation_y", 0.0))],
+            "type": [int(robot_config.get("robot_type", 0))],
+        }
+
+        target_config = self.loaded_runtime_config.get("target_config", {})
+
+        threading.Thread(
+            target=self._call_ros_init,
+            args=(map_config, "/env/generate", "forest_msgs/srv/SetTerrainParams", ),
+            daemon=True
+        ).start()
+
+        threading.Thread(
+            target=self._call_ros_init,
+            args=(robots_ros_request, "/env/set_robots", "forest_msgs/srv/SetRobots", ),
+            daemon=True
+        ).start()
+
+        threading.Thread(
+            target=self._call_ros_init,
+            args=(target_config, "/env/set_goal", "forest_msgs/srv/SetGoal", ),
+            daemon=True
+        ).start()
+
+    def _call_ros_init(self, config: dict[str, Any] | None, service, service_type) -> None:
+        try:
+            if not config:
+                return
+
+            response = ros.call_service_dict(service, service_type, config)
+
+        except Exception as e:
+            self.last_error = f"ROS init failed: {e}"
+
     def validate_scenario(self, scenario: GeneratedScenario, runtime_config: dict[str, Any] | None = None) -> list[str]:
         messages: list[str] = []
         if scenario.environment_kind.value != "simulator_3d":
@@ -68,9 +113,6 @@ class Simulator3DService:
             messages.append("3D runtime requires simulator_3d runtime context")
         elif "world_descriptor" not in sim_ctx:
             messages.append("3D runtime requires a world descriptor")
-
-        if scenario.get_layer_data("terrain_preview") is None:
-            messages.append("3D runtime requires a terrain preview layer")
 
         if scenario.task_kind.value == "patrol":
             patrol = scenario.runtime_context.get("patrol")

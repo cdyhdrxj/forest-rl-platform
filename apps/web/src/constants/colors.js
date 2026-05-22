@@ -12,8 +12,12 @@ export const Theme = {
   shadowSm: "0 1px 2px rgba(0,0,0,0.07)",
 
   // Скругления
-  radius:   4,
-  radiusSm: 3,
+  radius:   8,
+  radiusSm: 6,
+  radiusXs: 4,
+
+  // Хедер
+  headerHeight: 48,
 
   // Акцентные цвета
   accent: "#007bff",
@@ -47,6 +51,7 @@ export const secLabel = {
 
 export const selStyle = {
   width:        "100%",
+  boxSizing:    "border-box",
   padding:      "6px 8px",
   border:       `1px solid ${Theme.border}`,
   borderRadius: Theme.radiusSm,
@@ -55,4 +60,16 @@ export const selStyle = {
   background:   Theme.surface,
   boxShadow:    Theme.shadowSm,
   outline:      "none",
+}
+
+export const outlinedBtn = {
+  background: "transparent",
+  border: `1px solid ${Theme.border}`,
+  borderRadius: Theme.radiusXs,
+  color: Theme.textPrimary,
+  fontSize: 11,
+  fontWeight: 400,
+  padding: "3px 10px",
+  cursor: "pointer",
+  transition: "all 0.1s",
 }

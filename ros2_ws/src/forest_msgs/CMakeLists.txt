@@ -12,6 +12,9 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Event.msg"
+  "srv/SetRobots.srv"
+  "srv/SetTerrainParams.srv"
+  "srv/SetGoal.srv"
   DEPENDENCIES builtin_interfaces std_msgs
 )
 
