@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libglvnd0 libglx0 libegl1 libgles2 \
     libglu1-mesa \
     libgl1-mesa-dri \
+    libvulkan1 vulkan-tools \
     mesa-vulkan-drivers \
     libminizip1 libgomp1 \
     libxcursor1 libxinerama1 libxi6 libxrandr2 \

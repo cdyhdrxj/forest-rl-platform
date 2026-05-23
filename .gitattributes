@@ -1,5 +1,10 @@
+.gitattributes text eol=lf
 *.sh text eol=lf
 Dockerfile text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 *.md text eol=lf
+*.msg text eol=lf
+*.srv text eol=lf
+CMakeLists.txt text eol=lf
+package.xml text eol=lf

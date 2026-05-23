@@ -40,6 +40,7 @@ docker compose up server
 Активные маршруты определены в `apps/api/app.py`:
 
 - `/continuous/trail`
+- `/continuous/coverage`
 - `/discrete/patrol`
 - `/discrete/reforestation`
 - `/threed/patrol`
@@ -63,7 +64,9 @@ docker compose up server
 - `generate` — сгенерировать сценарий и загрузить его в сессию;
 - `load` — загрузить существующий `run_id` или `scenario_version_id`;
 - `start` — запустить загруженную сессию;
+- `start_eval` — запустить evaluation из checkpoint другого run;
 - `stop` — остановить выполнение;
+- `finish` — финализировать run со статусом `finished`;
 - `reset` — сбросить состояние и повторно загрузить сценарий;
 - `dispose` — освободить текущую сессию.
 

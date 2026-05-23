@@ -35,6 +35,7 @@ docker compose up client
 Сейчас интерфейс умеет подключаться к маршрутам:
 
 - `ws://127.0.0.1:8000/continuous/trail`
+- `ws://127.0.0.1:8000/continuous/coverage`
 - `ws://127.0.0.1:8000/discrete/patrol`
 - `ws://127.0.0.1:8000/discrete/reforestation`
 - `ws://127.0.0.1:8000/threed/patrol`

@@ -1,109 +1,152 @@
 # Архитектура платформы
 
-Этот файл описывает текущее состояние архитектуры проекта, а не только целевое видение.
-Для исторического контекста в репозитории также оставлены:
+Этот документ описывает текущее состояние архитектуры проекта. Исторические материалы оставлены рядом:
 
-- `ENVIRONMENT_GENERATION_ARCHITECTURE.md`
-- `docs/architecture/forest_robot_twin_architecture.drawio`
-- `docs/architecture/forest_robot_twin_architecture.jpg`
+- `ENVIRONMENT_GENERATION_ARCHITECTURE.md`;
+- `docs/architecture/forest_robot_twin_architecture.drawio`;
+- `docs/architecture/forest_robot_twin_architecture.jpg`.
 
-Целевое ТЗ на отдельный scientific mode для пакетных экспериментов и отчетности вынесено в:
+Целевое ТЗ scientific mode находится в `docs/experiments/scientific_mode_tz.md`, но развитие scientific mode сейчас заморожено.
 
-- `docs/experiments/scientific_mode_tz.md`
+## Архитектурная схема
 
-Открытые архитектурные вопросы и решения, которые требуют подтверждения, вынесены в:
+```text
+apps/web
+  -> apps/api WebSocket/HTTP
+  -> ExperimentDispatcher
+      -> services/scenario_generator
+      -> RuntimeService
+      -> RunObserver
+  -> packages/db + data/
 
-- `docs/architecture/open_questions.md`
+3D branch:
+RuntimeService -> rosbridge/ROS TCP -> Unity simulator -> forest_msgs
+```
 
-## Основные компоненты
+## Компоненты
 
-### Веб-клиент
+### Web client
 
-`apps/web` отвечает за выбор режима, параметров генерации, запусков и отображение текущего состояния среды.
-Подключение к backend-сервису сейчас идёт по WebSocket.
+`apps/web` - React + Vite приложение. Оно:
 
-### API backend-сервиса
+- выбирает route/mode;
+- отправляет WebSocket actions;
+- отображает preview и live state;
+- показывает список runs и replay.
 
-`apps/api` содержит FastAPI-приложение, WebSocket-маршруты и `ExperimentDispatcher`.
-Диспетчер отвечает за:
+### API backend
 
-- выбор маршрута времени исполнения;
-- генерацию или повторную загрузку сценария;
-- создание `run`;
-- запуск, остановку, сброс и освобождение сессий исполнения;
-- агрегацию состояния для клиента;
-- регистрацию сервисных логов и артефактов.
+`apps/api` содержит:
 
-### Генерация сценариев
+- FastAPI app;
+- WebSocket endpoints;
+- HTTP endpoints для runs/replay/checkpoint;
+- `ExperimentDispatcher`;
+- `RunObserver`;
+- export helpers для результатов run.
 
-`services/scenario_generator` уже является рабочим модулем, а не только архитектурной заготовкой.
-Он предоставляет:
+Backend является центром orchestration. Он не должен знать внутреннюю физику среды, но отвечает за единый lifecycle, storage и persistence.
 
-- единый `GenerationRequest`;
-- `GeneratedScenario` как каноническое описание результата;
-- валидацию через `ValidationReport`;
-- сериализацию в `scenario.json`, `preview.json` и файлы слоёв;
-- загрузку сохранённого сценария обратно в сервис исполнения.
+### Scenario generator
 
-### Адаптеры времени исполнения
+`services/scenario_generator` генерирует общий формат сценария:
 
-Сейчас за исполнение отвечают отдельные сервисы под разные режимы:
+- `GenerationRequest`;
+- `GeneratedScenario`;
+- layers;
+- `preview_payload`;
+- `runtime_context`;
+- `validation_report`;
+- `scenario.json`;
+- `preview.json`.
 
-| Ключ маршрута | Сервис исполнения | Назначение |
+Один и тот же контур генерации используется для 2D, grid и 3D routes.
+
+### Runtime services
+
+| Route key | Service | Назначение |
 | --- | --- | --- |
-| `continuous/trail` | `CamarService` | непрерывная 2D среда для прокладки маршрута |
-| `discrete/patrol` | `GridWorldService` | клеточная среда патрулирования |
-| `discrete/reforestation` | `SeedlingPlantingService` | клеточная среда посадки |
-| `continuous/coverage` | `AgrocareCoverageService` | headless-среда покрытия междурядий для scientific mode |
-| `threed/trail` | `Simulator3DService` | 3D-сервис сценариев прокладки маршрута |
-| `threed/patrol` | `Simulator3DService` | 3D-сервис сценариев патрулирования |
+| `continuous/trail` | `CamarService` | Непрерывная 2D среда прокладки тропы. |
+| `continuous/coverage` | `AgrocareCoverageService` | Headless coverage runtime для scientific MVP. |
+| `discrete/patrol` | `GridWorldService` | Клеточное патрулирование. |
+| `discrete/reforestation` | `SeedlingPlantingService` | Клеточная посадка саженцев. |
+| `threed/trail` | `Simulator3DService` | 3D trail adapter к Unity/ROS. |
+| `threed/patrol` | `Simulator3DService` | 3D patrol adapter к Unity/ROS. |
 
-Каждый сервис исполнения реализует один и тот же базовый набор операций:
+Минимальный interface runtime-сервиса описан в [../runtime/README.md](../runtime/README.md).
 
-- `load_scenario(...)`
-- `start(...)`
-- `stop()`
-- `reset()`
-- `get_state()`
+### Storage
 
-### Хранилище
+Хранение разделено на два слоя:
 
-В проекте разделены два слоя хранения:
+- PostgreSQL через `packages/db` - metadata, runs, episodes, metrics, events, artifacts;
+- файловое хранилище `data/` - scenario files, preview, layers, replay и крупные артефакты.
 
-- PostgreSQL через `packages/db` для метаданных, статусов, метрик, событий и связей между сущностями;
-- файловое хранилище внутри `data/` для сценариев, preview, replay и других крупных артефактов.
+### ROS/Unity
 
-## Поток данных
+3D слой состоит из:
 
-1. Клиент открывает WebSocket по одному из поддерживаемых route key.
-2. Backend принимает команду `generate`, `load`, `start`, `stop`, `reset` или `dispose`.
-3. При генерации диспетчер формирует `GenerationRequest` и вызывает `scenario_generator`.
-4. `scenario_generator` возвращает `GeneratedScenario`, который сохраняется в `data/scenarios/generated/...`.
-5. Диспетчер создает или переиспользует запись `run` в БД.
-6. Сервис исполнения загружает сохранённый сценарий и начинает исполнение.
-7. `RunObserver` периодически опрашивает сервис исполнения, пишет replay, метрики, эпизоды и события.
-8. Диспетчер отдает агрегированное состояние обратно в WebSocket-клиент.
+- `apps/simulator` - Unity build в Docker;
+- `ros2_ws` - ROS 2 Humble workspace;
+- `forest_msgs` - сообщения и сервисы;
+- `Simulator3DService` - backend adapter.
 
-## Что важно понимать про текущее состояние
+Каноническая 3D модель - синхронный `/env/step`, а ROS topics остаются live-мониторингом.
 
-- Публичный live API времени исполнения сейчас фактически работает через WebSocket.
-- Headless-контур scientific mode использует `ExperimentDispatcher` программно через `wait_run`, `get_run_result` и `export_run_bundle`.
-- `contracts/openapi.yaml` пока не описывает этот протокол.
-- Формальные JSON-схемы сценариев, replay, метрик, журнала эпизодов и scientific mode уже есть в `contracts/v1`, но route-specific runtime-поля остаются расширяемыми.
-- ROS 2 workspace содержит пакет `forest_msgs`, но фактические `.msg/.srv` еще не полностью синхронизированы с `contracts/v2/ros_interfaces.md`.
-- `Simulator3DService` пока содержит synthetic runtime loop для dispatcher/test flow; реальная связка Unity telemetry -> ROS -> reward/episode/replay требует отдельного архитектурного решения.
+## Поток run
+
+1. Клиент открывает WebSocket route.
+2. Клиент отправляет `generate` или `load`.
+3. Dispatcher строит/загружает scenario.
+4. Dispatcher создает или переиспользует DB rows.
+5. Runtime service получает `load_scenario(...)`.
+6. Клиент отправляет `start`.
+7. Runtime service начинает выполнение.
+8. RunObserver пишет replay, metrics, episodes и events.
+9. Dispatcher отдает state snapshots клиенту.
+10. Run завершается через `finish`, `stop`, `reset`, `dispose` или ошибку.
+
+## Контракты и версии
+
+Основные правила:
+
+- WebSocket runtime contract - `contracts/websocket_protocol.md`;
+- JSON artifacts - `contracts/v1/*.schema.json`;
+- ROS interfaces - реальные `.msg/.srv` в `ros2_ws/src/forest_msgs`;
+- `contracts/v2/ros_interfaces.md` - документация к ROS v2;
+- `v2` не означает перенос всех JSON-схем из `v1`.
+
+Подробнее: [../contracts/README.md](../contracts/README.md).
+
+## Текущее состояние 3D
+
+Принято:
+
+- основной 3D runtime - synchronous `/env/step`;
+- synthetic mode - только для тестов;
+- `forest_msgs/Event.msg` переведен на v2 breaking change без compatibility bridge;
+- основной compose требует GPU, CPU fallback вынесен отдельно.
+
+Не закрыто:
+
+- Unity renderer внутри Docker еще может быть `llvmpipe`;
+- Unity/ROS должен реализовать `/env/step`;
+- real observation/reward/done/info должны прийти из симуляции;
+- нужен end-to-end тест real ROS event -> platform event -> replay.
 
 ## Источники правды
 
-Для текущего состояния архитектуры опираться следует в первую очередь на:
+| Вопрос | Source of truth |
+| --- | --- |
+| Routes | `apps/api/dispatcher.py` |
+| WebSocket handling | `apps/api/websocket_manager.py` |
+| HTTP endpoints | `apps/api/app.py` |
+| Runtime observer | `apps/api/runtime_monitor.py` |
+| Scenario format | `services/scenario_generator`, `contracts/v1/scenario.schema.json` |
+| DB model | `packages/db/models/*`, `packages/db/migrations/*` |
+| ROS messages/services | `ros2_ws/src/forest_msgs/msg/*`, `ros2_ws/src/forest_msgs/srv/*` |
+| Docker runtime | `docker-compose.yml`, `docker-compose.cpu.yml` |
 
-- `README.md`
-- `apps/api/app.py`
-- `apps/api/dispatcher.py`
-- `apps/api/websocket_manager.py`
-- `apps/api/runtime_monitor.py`
-- `experiments/scientific/*`
-- `services/agrocare_coverage/*`
-- `services/simulator_3d/service.py`
-- `services/scenario_generator/*`
-- `packages/db/models/*`
+## Открытые архитектурные вопросы
+
+См. [open_questions.md](open_questions.md) и [../TODO.md](../TODO.md).

@@ -200,11 +200,12 @@ class TrailRobotGymWrapper(gym.Env):
         6 = INTRUDER_CAUGHT - пойман нарушитель
         """
         with self.lock:
-            event_type = msg.get('type', 0)
+            event_type = msg.get('event_type', 0)
             robot_id = msg.get('robot_id', 0)
-            x = msg.get('x', 0)
-            y = msg.get('y', 0)
-            value = msg.get('value', 0)
+            position = msg.get('position') or {}
+            x = position.get('x', 0)
+            y = position.get('y', 0)
+            intruder_id = msg.get('intruder_id', -1)
             
             # Проверяем, что событие для нашего робота (если robot_id не 0)
             if robot_id != 0 and robot_id != 1:  # robot_1
@@ -238,7 +239,7 @@ class TrailRobotGymWrapper(gym.Env):
                 print(f"🔍 СОБЫТИЕ: Нарушитель обнаружен!")
                 
             elif event_type == 6:  # INTRUDER_CAUGHT
-                print(f"✅ СОБЫТИЕ: Нарушитель пойман! +{value}")
+                print(f"✅ СОБЫТИЕ: Нарушитель пойман! intruder_id={intruder_id}")
                 self.intruder_from_event = True
     
     def _send_action(self, action):

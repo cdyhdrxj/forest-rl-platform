@@ -16,6 +16,7 @@
 Клиент подключается к одному из следующих путей:
 
 - `/continuous/trail`
+- `/continuous/coverage`
 - `/discrete/patrol`
 - `/discrete/reforestation`
 - `/threed/patrol`
@@ -102,6 +103,21 @@ ws://localhost:8000/threed/trail
 }
 ```
 
+### `start_eval`
+
+Запустить evaluation run из checkpoint другого run.
+Требует `source_run_id`; backend берет последний `model_checkpoint` source run и передает его в runtime как `load_checkpoint_path`.
+
+```json
+{
+  "action": "start_eval",
+  "source_run_id": 12,
+  "params": {
+    "deterministic": true
+  }
+}
+```
+
 ### `stop`
 
 Остановить текущий run.
@@ -109,6 +125,17 @@ ws://localhost:8000/threed/trail
 ```json
 {
   "action": "stop"
+}
+```
+
+### `finish`
+
+Финализировать текущий run со статусом `finished`.
+Для train run backend пытается сохранить checkpoint, если runtime-сервис выставил путь последнего checkpoint.
+
+```json
+{
+  "action": "finish"
 }
 ```
 
@@ -150,6 +177,19 @@ ws://localhost:8000/threed/trail
 - `algorithm`
 - `max_steps`
 - поля настройки награды и динамики
+
+### `/continuous/coverage`
+
+Плоский объект параметров для coverage runtime.
+Сейчас маршрут используется scientific MVP и обычно запускается программно через dispatcher/headless suite, но WebSocket endpoint также объявлен.
+
+Типичные ключи:
+
+- `seed`
+- `grid_size` or route-specific map params
+- `algorithm`
+- `max_steps`
+- параметры coverage task/runtime
 
 ### `/discrete/patrol`
 

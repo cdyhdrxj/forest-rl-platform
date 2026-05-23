@@ -76,6 +76,7 @@
 - `patrol`
 - `fast_grid`
 - `reforestation`
+- `coverage`
 
 ### `RunStatus`
 

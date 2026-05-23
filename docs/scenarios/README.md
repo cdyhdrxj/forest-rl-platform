@@ -113,9 +113,12 @@
 - `trail`
 - `patrol`
 - `reforestation`
+- `coverage`
 - `robot`
 
 Из них реально активны в runtime `trail`, `patrol` и `reforestation`.
+
+`coverage` также присутствует в dispatcher как `continuous/coverage`, но относится к scientific MVP. Развитие scientific mode сейчас заморожено.
 
 ## Валидация
 

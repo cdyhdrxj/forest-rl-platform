@@ -1,20 +1,31 @@
 # TODO проекта ForestRobotTwin
 
+## Документация для внешнего разработчика
+
+- [x] Собрать входную карту документации в `docs/README.md`
+- [x] Добавить quick start, Docker, runtime, ROS, simulator, contracts, testing и glossary
+- [x] Синхронизировать документацию с route `continuous/coverage`
+- [x] Описать WebSocket actions `start_eval` и `finish`
+- [ ] Заполнить полноценный OpenAPI для HTTP endpoints, если REST API станет публичным контрактом
+- [ ] Добавить диаграммы sequence flow для `generate/load/start/finish`
+- [ ] Добавить минимальный внешний integration guide для Unity-разработчика по реализации `/env/step`
+
 ## Архитектурные решения от 2026-05-23
 
 - [x] Убрать CRLF-причину падения `unity` и `ros2` entrypoint'ов в Docker
 - [x] Добавить базовую GPU-настройку для `unity` в `docker-compose.yml`
+- [x] Добавить CPU-only override для разработчиков без NVIDIA GPU
 - [x] Пересобрать и проверить, что `ros2` и `unity` стартуют без restart loop
 - [x] Закрыть недостающие runtime-зависимости Unity build (`libminizip1`, `libgomp1`, `libnvidia-encode.so`, `libdl`)
 - [ ] Перевести Unity renderer внутри контейнера с `llvmpipe` на NVIDIA OpenGL/EGL/VirtualGL-стек
-- [ ] Решить, нужен ли отдельный CPU override для разработчиков без NVIDIA GPU
 - [ ] Оптимизировать API Dockerfile/requirements, чтобы проверка `unity`/`ros2` не требовала тяжелой пересборки Python ML-зависимостей
-- [ ] Зафиксировать реальный 3D runtime contract: observation/action/reward/done/info/reset/step
+- [x] Зафиксировать реальный 3D runtime contract: observation/action/reward/done/info/reset/step
+- [ ] Реализовать `/env/step forest_msgs/srv/Step` на стороне Unity/ROS
 - [ ] Заменить synthetic loop в `Simulator3DService` на чтение ROS/Unity telemetry
-- [ ] Синхронизировать `ros2_ws/src/forest_msgs` с `contracts/v2/ros_interfaces.md`
-- [ ] Решить, менять ли `forest_msgs/Event.msg` сразу или вводить compatibility bridge для legacy event format
+- [x] Синхронизировать `ros2_ws/src/forest_msgs` с `contracts/v2/ros_interfaces.md`
+- [x] Сделать breaking change `forest_msgs/Event.msg` под v2 вместо compatibility bridge
 - [x] Описать текущую структуру scientific suite config и `report.json`
-- [ ] Добавить provenance-блок и статистические сравнения в scientific report
+- [x] Заморозить развитие scientific mode до отдельного решения
 
 ## Архитектура
 

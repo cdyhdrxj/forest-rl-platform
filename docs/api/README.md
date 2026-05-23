@@ -1,26 +1,40 @@
-# API и протокол WebSocket
+# API backend
 
 ## Текущее состояние
 
-Сейчас backend платформы построен вокруг FastAPI-приложения, но его рабочий внешний интерфейс — это WebSocket-маршруты.
-`contracts/openapi.yaml` хранит HTTP-метаданные backend-сервиса, а канонический контракт работы в реальном времени вынесен в `contracts/websocket_protocol.md`.
+Backend построен на FastAPI, но основной runtime-интерфейс платформы - WebSocket. HTTP endpoints используются для health check, списка runs, просмотра replay, переименования run и проверки checkpoint.
 
-## Поддерживаемые маршруты
+Канонический live-контракт:
 
-Активные маршруты определены в `apps/api/app.py`:
+- `contracts/websocket_protocol.md`
 
-- `/continuous/trail`
-- `/discrete/patrol`
-- `/discrete/reforestation`
-- `/threed/patrol`
-- `/threed/trail`
+HTTP/OpenAPI:
 
-Закомментированные маршруты не считаются частью поддерживаемого публичного интерфейса.
+- `contracts/openapi.yaml` сейчас неполный и не описывает все реальные HTTP endpoints;
+- source of truth для HTTP endpoints - `apps/api/app.py`.
 
-## Формат клиентского сообщения
+## WebSocket routes
 
-Клиент отправляет JSON-объект.
-Базовая форма сейчас такая:
+Активные routes определены в `apps/api/app.py` и `apps/api/dispatcher.py`:
+
+| Route | Route key | Назначение |
+| --- | --- | --- |
+| `/continuous/trail` | `continuous/trail` | 2D непрерывная прокладка тропы. |
+| `/continuous/coverage` | `continuous/coverage` | Headless coverage runtime для scientific MVP. |
+| `/discrete/patrol` | `discrete/patrol` | Grid patrol runtime. |
+| `/discrete/reforestation` | `discrete/reforestation` | Grid reforestation runtime. |
+| `/threed/patrol` | `threed/patrol` | 3D patrol через `Simulator3DService`. |
+| `/threed/trail` | `threed/trail` | 3D trail через `Simulator3DService`. |
+
+Пример:
+
+```text
+ws://localhost:8000/discrete/patrol
+```
+
+## Сообщение клиента
+
+Базовая форма:
 
 ```json
 {
@@ -29,122 +43,182 @@
 }
 ```
 
-Дополнительные поля используются точечно:
+Дополнительные поля верхнего уровня:
 
-- `run_id` — для загрузки уже существующего запуска;
-- `scenario_version_id` — для загрузки ранее сохраненной версии сценария;
-- `params` — параметры генерации, загрузки или старта.
+- `run_id` - загрузить существующий run;
+- `scenario_version_id` - создать новый run из сохраненной версии сценария;
+- `source_run_id` - источник checkpoint для `start_eval`;
+- `params` - параметры генерации, загрузки или старта.
 
-## Поддерживаемые действия
+## WebSocket actions
 
-На текущий момент в `apps/api/websocket_manager.py` реализованы:
+| Action | Статус | Смысл |
+| --- | --- | --- |
+| `generate` | рабочий | Сгенерировать сценарий и загрузить runtime session. |
+| `load` | рабочий | Загрузить `run_id` или `scenario_version_id`. |
+| `start` | рабочий | Запустить активный run; если run нет, backend может сначала сгенерировать его. |
+| `start_eval` | рабочий в коде | Запустить evaluation из checkpoint другого run. Требует `source_run_id`. |
+| `stop` | рабочий | Остановить run без финального статуса, потенциально сохранив checkpoint. |
+| `finish` | рабочий | Финализировать run со статусом `finished`. |
+| `reset` | рабочий | Сбросить run и повторно загрузить сценарий. |
+| `dispose` | рабочий | Освободить session и отменить run. |
 
-- `generate` — сгенерировать сценарий и сразу загрузить его в сервис исполнения;
-- `load` — загрузить `run_id` или `scenario_version_id`;
-- `start` — запустить сервис исполнения;
-- `stop` — остановить сервис исполнения;
-- `reset` — сбросить сервис исполнения и повторно загрузить сценарий;
-- `dispose` — освободить сессию исполнения.
+## Примеры команд
 
-## Формат серверного состояния
-
-Сервер отправляет JSON-снимок состояния с высокой частотой.
-Есть два слоя полей:
-
-### Общие поля от диспетчера
-
-Эти поля добавляются или нормализуются в `ExperimentDispatcher.get_state(...)`:
-
-- `running`
-- `route_key`
-- `environment_kind`
-- `task_kind`
-- `run_id`
-- `scenario_version_id`
-- `scenario_loaded`
-- `scenario_generated`
-- `execution_phase`
-- `world_file_uri`
-- `preview_uri`
-- `validation_passed`
-- `validation_messages`
-- `validation_report`
-- `error` — при ошибке во время исполнения
-
-### Поля от сервиса, зависящие от маршрута
-
-Конкретный сервис исполнения возвращает собственный набор полей через `get_state()`.
-Чаще всего встречаются:
-
-- `episode`
-- `step`
-- `total_reward`
-- `last_episode_reward`
-- `new_episode`
-- `agent_pos`
-- `goal_pos`
-- `landmark_pos`
-- `is_collision`
-- `goal_count`
-- `collision_count`
-- `trajectory`
-- `terrain_map`
-
-Дополнительные поля зависят от режима:
-
-- patrol: `intruders_remaining`
-- reforestation: `planted_pos`, `coverage_ratio`, `remaining_seedlings`, `invalid_plant_count`, `plantable_map`, `planted_map`
-- 3d-сервис: возвращает снимок собственного `_state`, включая события времени исполнения и данные, производные от preview
-
-## Ошибки
-
-Сейчас ошибки не выделены в отдельный формальный контракт ошибок.
-При исключении backend формирует текущее состояние и добавляет в него поле:
+Сгенерировать сценарий:
 
 ```json
 {
-  "error": "..."
+  "action": "generate",
+  "params": {
+    "seed": 17
+  }
 }
 ```
 
-Это рабочее поведение, но не финализированная контрактная модель.
+Загрузить run:
 
-## Реплеи, метрики и события
+```json
+{
+  "action": "load",
+  "run_id": 12
+}
+```
 
-Во время выполнения `RunObserver` записывает:
+Загрузить сохраненную версию сценария как новый run:
 
-- replay в `data/runs/run_<id>/replay_<timestamp>.jsonl`;
-- snapshot-метрики в таблицы `metric_series` и `metric_points`;
-- завершенные эпизоды в `episodes`;
-- события времени исполнения в `episode_events`;
-- сервисные логи в `service_logs`.
+```json
+{
+  "action": "load",
+  "scenario_version_id": 5,
+  "params": {
+    "algorithm": "ppo"
+  }
+}
+```
 
-## Что уже стабильно, а что нет
+Запустить:
 
-### Можно считать относительно стабильным
+```json
+{
+  "action": "start",
+  "params": {
+    "algorithm": "ppo",
+    "max_steps": 240
+  }
+}
+```
 
-- набор активных route key;
-- общий lifecycle run-сессии: generate/load/start/stop/reset/dispose;
-- наличие обязательных полей состояния, добавляемых диспетчером;
-- сценарий `generate -> load -> start -> observer -> replay/metrics`.
+Запустить evaluation из checkpoint:
 
-### Пока считаем черновым
+```json
+{
+  "action": "start_eval",
+  "source_run_id": 10,
+  "params": {
+    "deterministic": true
+  }
+}
+```
 
-- формальный JSON Schema для входных WebSocket-сообщений;
-- формальный JSON Schema для server state;
-- версия протокола и политика backward compatibility;
-- строгая модель ошибок;
-- разграничение обязательных полей и полей, зависящих от маршрута.
+Финализировать:
 
-## Что нужно формализовать дальше
+```json
+{
+  "action": "finish"
+}
+```
 
-Для переноса этого описания в `contracts/` нужны решения по:
+## State snapshots
 
-- месту хранения контракта реального времени: markdown рядом с OpenAPI или отдельный AsyncAPI;
-- набору обязательных state-полей;
-- политике расширения `params`;
-- версии протокола;
-- формату ошибок;
-- поддержке полей для multi-agent режима.
+Сервер отправляет JSON-снимки состояния примерно каждые `0.1` секунды, пока WebSocket открыт.
 
-Подробный список спорных решений вынесен в `../contracts_status.md`.
+Обязательные поля dispatcher:
+
+- `running`;
+- `route_key`;
+- `environment_kind`;
+- `task_kind`;
+- `run_id`;
+- `scenario_version_id`;
+- `scenario_loaded`;
+- `scenario_generated`;
+- `execution_phase`.
+
+После загрузки сценария добавляются:
+
+- `world_file_uri`;
+- `preview_uri`;
+- `validation_passed`;
+- `validation_messages`;
+- `validation_report`;
+- `error`, если была ошибка.
+
+Runtime service добавляет route-specific поля, например:
+
+- `episode`;
+- `step`;
+- `total_reward`;
+- `last_episode_reward`;
+- `new_episode`;
+- `agent_pos`;
+- `goal_pos`;
+- `trajectory`;
+- `terrain_map`;
+- `goal_count`;
+- `collision_count`;
+- `coverage_ratio`;
+- `intruders_remaining`.
+
+Для 3D также возможны:
+
+- `world_descriptor`;
+- `runtime_mode`;
+- `last_observation`;
+- `last_info`;
+- `terminated`;
+- `truncated`.
+
+## Execution phase
+
+Возможные значения:
+
+- `idle`;
+- `preview`;
+- `running`;
+- `finished`;
+- `stopped`;
+- `failed`;
+- `cancelled`.
+
+## HTTP endpoints
+
+Реальные endpoints в `apps/api/app.py`:
+
+| Method | Path | Назначение |
+| --- | --- | --- |
+| `GET` | `/api/health` | Health check backend. |
+| `GET` | `/api/runs` | Список runs с pagination и search. |
+| `GET` | `/api/runs/{run_id}` | Metadata конкретного run. |
+| `GET` | `/api/runs/{run_id}/replay` | Последний replay run как массив frames. |
+| `PATCH` | `/api/runs/{run_id}` | Переименовать run. |
+| `GET` | `/api/runs/{run_id}/checkpoint` | Проверить наличие checkpoint artifact. |
+
+## Ошибки
+
+В WebSocket `v1` отдельный error envelope не определен. При ошибке backend отправляет текущий state и добавляет:
+
+```json
+{
+  "error": "human-readable message"
+}
+```
+
+HTTP endpoints используют обычные JSON responses с `detail` и соответствующим status code там, где это реализовано.
+
+## Связанные документы
+
+- [../runtime/README.md](../runtime/README.md)
+- [../contracts/README.md](../contracts/README.md)
+- `contracts/websocket_protocol.md`
+- `apps/api/README.md`

@@ -80,7 +80,7 @@ def test_dispatcher_runs_three_d_flow_and_persists_runtime(tmp_path):
     assert preview_state["execution_phase"] == "preview"
     assert preview_state["validation_passed"] is True
 
-    dispatcher.start_run(session.run_id, {"max_steps": 18, "tick_sleep": 0.001})
+    dispatcher.start_run(session.run_id, {"max_steps": 18, "tick_sleep": 0.001, "synthetic": True})
 
     deadline = time.time() + 2.0
     state = preview_state
@@ -141,13 +141,13 @@ def test_dispatcher_restarts_three_d_run_without_duplicate_episode_indices(tmp_p
             time.sleep(0.02)
         return current
 
-    dispatcher.start_run(session.run_id, {"max_steps": 8, "tick_sleep": 0.001})
+    dispatcher.start_run(session.run_id, {"max_steps": 8, "tick_sleep": 0.001, "synthetic": True})
     first_state = wait_until_finished()
     assert first_state["execution_phase"] == "finished"
     first_episode_count = int(first_state["episode"])
     assert first_episode_count > 0
 
-    dispatcher.start_run(session.run_id, {"max_steps": 8, "tick_sleep": 0.001})
+    dispatcher.start_run(session.run_id, {"max_steps": 8, "tick_sleep": 0.001, "synthetic": True})
     second_state = wait_until_finished()
     assert second_state["execution_phase"] == "finished"
     assert int(second_state["episode"]) > 0

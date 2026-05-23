@@ -12,12 +12,26 @@ docker network create ros-unity-net
 
 ros2-endpoint
 
-## Запуск
+## Запуск через compose
 
-docker run -it --rm \
-  --name unity-sim \
-  --network ros-unity-net \
-  -e DISPLAY=host.docker.internal:0.0 \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -v $(pwd)/logs:/linux_build/logs \
-  unity-forest-simulator
+Основной профиль требует NVIDIA GPU:
+
+```bash
+docker compose up unity ros2 server
+```
+
+CPU-only fallback только для разработки на машинах без NVIDIA:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.cpu.yml up unity ros2 server
+```
+
+Проверка графического backend:
+
+```bash
+docker compose logs unity --tail=200
+```
+
+Если в логе `Renderer: llvmpipe`, Unity рендерит на CPU. Это не считается готовым GPU-режимом.
+
+`UNITY_GRAPHICS_API=vulkan` оставлен как диагностический режим. На текущей Windows + Docker Desktop + WSL2 машине Vulkan внутри контейнера видит только `llvmpipe`, поэтому стабильный default пока `glcore`.

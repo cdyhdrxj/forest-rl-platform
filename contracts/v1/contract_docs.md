@@ -17,7 +17,7 @@
 
 - `../websocket_protocol.md` - канонический контракт времени исполнения по WebSocket
 - `../openapi.yaml` - HTTP-метаданные backend-сервиса
-- `../v2/ros_interfaces.md` - основная ROS-спецификация событий и топиков, используемая текущей кодовой базой
+- `../v2/ros_interfaces.md` - документация к ROS v2; source of truth находится в `.msg/.srv` файлах `ros2_ws/src/forest_msgs`
 
 ## Примечания
 

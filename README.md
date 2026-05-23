@@ -82,7 +82,7 @@ forest-robot-twin/
 
 `contracts/websocket_protocol.md` фиксирует runtime WebSocket-протокол диспетчера экспериментов.
 
-`contracts/v1/ros_interfaces.md` и `contracts/v2/ros_interfaces.md` фиксируют версии соглашений по топикам, сервисам и сообщениям ROS 2.
+Файлы `.msg/.srv` в `ros2_ws/src/forest_msgs` являются источником правды для ROS 2. `contracts/v2/ros_interfaces.md` документирует актуальный ROS v2 contract, а `contracts/v1/ros_interfaces.md` оставлен как исторический материал.
 
 Все изменения контрактов должны быть согласованы до внесения изменений в прикладные модули.
 

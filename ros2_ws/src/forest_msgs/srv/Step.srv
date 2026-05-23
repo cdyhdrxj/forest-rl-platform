@@ -1,0 +1,12 @@
+# Synchronous Gymnasium-style environment step.
+forest_msgs/EnvAction[] actions
+float32 dt
+---
+bool success
+string message
+string observation_json
+float32 reward
+bool terminated
+bool truncated
+string info_json
+forest_msgs/Event[] events

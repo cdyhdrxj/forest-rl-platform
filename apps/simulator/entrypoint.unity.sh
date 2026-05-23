@@ -14,6 +14,14 @@ else
     unset LIBGL_ALWAYS_SOFTWARE
 fi
 
+if [ "${UNITY_REQUIRE_NVIDIA:-0}" = "1" ] && [ "${UNITY_SOFTWARE_RENDERING:-0}" != "1" ]; then
+    if ! command -v nvidia-smi >/dev/null 2>&1 || ! nvidia-smi >/dev/null 2>&1; then
+        echo "NVIDIA GPU is required for this compose profile, but nvidia-smi is not available." >&2
+        echo "Use docker-compose.cpu.yml only for explicit CPU-only development runs." >&2
+        exit 42
+    fi
+fi
+
 link_nvidia_runtime_library() {
     local name="$1"
     local lib_dir="/usr/lib/x86_64-linux-gnu"
@@ -47,8 +55,30 @@ trap cleanup EXIT
 
 sleep "${XVFB_STARTUP_DELAY:-2}"
 
-exec env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
-    /linux_build/simulator.x86_64 \
-    -logFile /dev/stdout \
-    -screen-width "${UNITY_SCREEN_WIDTH:-1280}" \
+UNITY_ARGS=(
+    -logFile /dev/stdout
+    -screen-width "${UNITY_SCREEN_WIDTH:-1280}"
     -screen-height "${UNITY_SCREEN_HEIGHT:-720}"
+)
+
+case "${UNITY_GRAPHICS_API:-vulkan}" in
+    vulkan)
+        UNITY_ARGS=(-force-vulkan "${UNITY_ARGS[@]}")
+        ;;
+    glcore|opengl)
+        UNITY_ARGS=(-force-glcore "${UNITY_ARGS[@]}")
+        ;;
+    auto|"")
+        ;;
+    *)
+        echo "Unknown UNITY_GRAPHICS_API='${UNITY_GRAPHICS_API}'. Expected vulkan, glcore or auto." >&2
+        exit 43
+        ;;
+esac
+
+if [ "${UNITY_HEADLESS_NO_GRAPHICS:-0}" = "1" ]; then
+    UNITY_ARGS=(-batchmode -nographics "${UNITY_ARGS[@]}")
+fi
+
+exec env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
+    /linux_build/simulator.x86_64 "${UNITY_ARGS[@]}"

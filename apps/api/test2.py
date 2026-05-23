@@ -43,7 +43,7 @@ def stop():
 # Подписка на столкновения
 def on_collision(msg):
     global collision, last_collision_time, current_state, turn_start_time
-    event_type = msg.get('type', 0)
+    event_type = msg.get('event_type', 0)
     # 2 = COLLISION_PASSABLE, 3 = COLLISION_IMPASSABLE
     if event_type in [2, 3]:
         current_time = time.time()
