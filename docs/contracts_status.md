@@ -49,6 +49,8 @@
 - `contracts/v1/scenario.schema.json` и `contracts/v1/preview.schema.json` описывают сохраняемые сценарии.
 - `contracts/v1/replay.schema.json` описывает одну строку replay NDJSON.
 - `contracts/v1/metrics.schema.json` и `contracts/v1/episode_log.schema.json` задают канонические export-форматы.
+- `contracts/v1/scientific_suite.schema.json` описывает конфиг headless scientific suite.
+- `contracts/v1/scientific_report.schema.json` описывает итоговый suite-level `report.json`.
 
 ## Принятые допущения
 
@@ -62,12 +64,14 @@
 6. `scenario.schema.json` описывает сохраненный `scenario.json`.
 7. `preview.json` считается частью формального контракта.
 8. Replay, metrics и episode log фиксируются как канонические форматы времени исполнения и экспорта с общим базовым ядром и расширениями по режимам.
-9. `contracts/v2/ros_interfaces.md` считается основной ROS-спецификацией, а `v1` сохраняется как историческая версия.
-10. Структура для multi-agent явно отложена за пределы `v1`.
+9. `contracts/v2/ros_interfaces.md` считается основной ROS-спецификацией, а `contracts/v1/ros_interfaces.md` сохраняется как историческая версия.
+10. Остальные JSON-контракты не переносятся в `v2` автоматически. Новая версия нужна только при breaking change конкретного артефакта.
+11. Структура для multi-agent явно отложена за пределы текущих JSON-схем `v1`.
 
 ## Что еще остается на будущее
 
-- оформить реальный ROS 2 message/service пакет в `ros2_ws/src/forest_interfaces`;
+- синхронизировать реальный ROS 2 пакет `ros2_ws/src/forest_msgs` с `contracts/v2/ros_interfaces.md`;
+- решить, нужен ли compatibility bridge для старого `forest_msgs/Event.msg`;
 - при необходимости ужесточить `params` и схемы состояния, зависящие от маршрута;
-- добавить тесты, валидирующие реальные артефакты против новых JSON Schema;
+- добавить тесты, валидирующие реальные артефакты против JSON Schema на CI;
 - решить, нужен ли в будущем AsyncAPI вместо markdown-описания WebSocket-протокола.

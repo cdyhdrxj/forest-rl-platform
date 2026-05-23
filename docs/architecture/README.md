@@ -11,6 +11,10 @@
 
 - `docs/experiments/scientific_mode_tz.md`
 
+Открытые архитектурные вопросы и решения, которые требуют подтверждения, вынесены в:
+
+- `docs/architecture/open_questions.md`
+
 ## Основные компоненты
 
 ### Веб-клиент
@@ -50,6 +54,7 @@
 | `continuous/trail` | `CamarService` | непрерывная 2D среда для прокладки маршрута |
 | `discrete/patrol` | `GridWorldService` | клеточная среда патрулирования |
 | `discrete/reforestation` | `SeedlingPlantingService` | клеточная среда посадки |
+| `continuous/coverage` | `AgrocareCoverageService` | headless-среда покрытия междурядий для scientific mode |
 | `threed/trail` | `Simulator3DService` | 3D-сервис сценариев прокладки маршрута |
 | `threed/patrol` | `Simulator3DService` | 3D-сервис сценариев патрулирования |
 
@@ -81,10 +86,12 @@
 
 ## Что важно понимать про текущее состояние
 
-- Публичный API времени исполнения сейчас фактически работает только через WebSocket.
+- Публичный live API времени исполнения сейчас фактически работает через WebSocket.
+- Headless-контур scientific mode использует `ExperimentDispatcher` программно через `wait_run`, `get_run_result` и `export_run_bundle`.
 - `contracts/openapi.yaml` пока не описывает этот протокол.
-- Формальные JSON-схемы сценариев, replay, метрик и журнала эпизодов пока не синхронизированы с текущими сериализуемыми структурами.
-- ROS 2 workspace присутствует в репозитории, но пакет собственных message/service интерфейсов еще не оформлен как рабочий `.msg/.srv` пакет.
+- Формальные JSON-схемы сценариев, replay, метрик, журнала эпизодов и scientific mode уже есть в `contracts/v1`, но route-specific runtime-поля остаются расширяемыми.
+- ROS 2 workspace содержит пакет `forest_msgs`, но фактические `.msg/.srv` еще не полностью синхронизированы с `contracts/v2/ros_interfaces.md`.
+- `Simulator3DService` пока содержит synthetic runtime loop для dispatcher/test flow; реальная связка Unity telemetry -> ROS -> reward/episode/replay требует отдельного архитектурного решения.
 
 ## Источники правды
 
@@ -95,5 +102,8 @@
 - `apps/api/dispatcher.py`
 - `apps/api/websocket_manager.py`
 - `apps/api/runtime_monitor.py`
+- `experiments/scientific/*`
+- `services/agrocare_coverage/*`
+- `services/simulator_3d/service.py`
 - `services/scenario_generator/*`
 - `packages/db/models/*`

@@ -9,6 +9,8 @@
 - `replay.schema.json` - схема одной NDJSON-строки в `replay_*.jsonl`
 - `metrics.schema.json` - канонический JSON-формат экспорта метрик
 - `episode_log.schema.json` - канонический JSON-формат экспорта эпизодов и событий
+- `scientific_suite.schema.json` - конфиг пакетного scientific suite
+- `scientific_report.schema.json` - итоговый JSON-отчет scientific suite
 - `ros_interfaces.md` - исторический контракт ROS-интерфейсов
 
 ## Связанные контракты вне этого каталога

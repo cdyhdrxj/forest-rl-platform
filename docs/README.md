@@ -6,10 +6,12 @@
 ## Что здесь лежит
 
 - `architecture/README.md` — актуальная схема компонентов и потоков данных.
+- `architecture/open_questions.md` — незакрытые архитектурные решения по GPU, 3D RL-циклу, контрактам и scientific mode.
 - `api/README.md` — текущее устройство backend API и WebSocket-протокола.
 - `scenarios/README.md` — генерация, хранение и загрузка сценариев.
 - `database/README.md` — текущая модель данных и смысл основных сущностей.
 - `experiments/README.md` — как в проекте сейчас устроены эксперименты, тесты и регрессионные сценарии.
+- `experiments/scientific_mode.md` — текущая пользовательская спецификация scientific mode: конфиг запуска, отчет и выходные файлы.
 - `experiments/scientific_mode_tz.md` — конкретное ТЗ на внедрение scientific mode для пакетных headless-экспериментов и агрегированной отчетности.
 - `contracts_status.md` — текущее покрытие контрактов, черновые выводы и список спорных решений, которые нужно подтвердить перед заполнением `contracts/`.
 - `TODO.md` — рабочий backlog проекта.
