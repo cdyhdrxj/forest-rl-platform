@@ -84,28 +84,29 @@ class Simulator3DService:
             "positions_y": [float(robot_config.get("position_y", 0.0))],
             "positions_z": [float(robot_config.get("position_z", 0.0))],
             "rotations_y": [float(robot_config.get("rotation_y", 0.0))],
-            "type": [int(robot_config.get("robot_type", 0))],
+            "type": [int(robot_config.get("robot_type", robot_config.get("type", 0)))],
         }
 
         target_config = self.loaded_runtime_config.get("target_config", {})
 
         threading.Thread(
-            target=self._call_ros_init,
-            args=(map_config, "/env/generate", "forest_msgs/srv/SetTerrainParams", ),
-            daemon=True
+            target=self._init_ros_scene,
+            args=(map_config, robots_ros_request, target_config),
+            daemon=True,
         ).start()
 
-        threading.Thread(
-            target=self._call_ros_init,
-            args=(robots_ros_request, "/env/set_robots", "forest_msgs/srv/SetRobots", ),
-            daemon=True
-        ).start()
-
-        threading.Thread(
-            target=self._call_ros_init,
-            args=(target_config, "/env/set_goal", "forest_msgs/srv/SetGoal", ),
-            daemon=True
-        ).start()
+    def _init_ros_scene(
+        self,
+        map_config: dict[str, Any],
+        robots_ros_request: dict[str, Any],
+        target_config: dict[str, Any],
+    ) -> None:
+        for config, service, service_type in (
+            (map_config, "/env/generate", "forest_msgs/srv/SetTerrainParams"),
+            (robots_ros_request, "/env/set_robots", "forest_msgs/srv/SetRobots"),
+            (target_config, "/env/set_goal", "forest_msgs/srv/SetGoal"),
+        ):
+            self._call_ros_init(config, service, service_type)
 
     def _call_ros_init(self, config: dict[str, Any] | None, service, service_type) -> None:
         try:

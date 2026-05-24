@@ -59,7 +59,7 @@ Dispatcher вызывает `service.start(params)`, затем создает `
 
 ### `stop`
 
-Останавливает runtime и observer без финального статуса. Для обучающих режимов dispatcher пытается сохранить checkpoint, если runtime выставил `_last_checkpoint_path`.
+Останавливает runtime и observer без финального статуса. Для обучающих режимов dispatcher пытается сохранить checkpoint, если runtime выставил `_last_checkpoint_path`. Checkpoint регистрируется как строка `models` и связанный `ArtifactType.model_checkpoint`.
 
 ### `finish`
 
@@ -71,7 +71,7 @@ Dispatcher вызывает `service.start(params)`, затем создает `
 
 ### `dispose`
 
-Освобождает session, отменяет run и используется при закрытии WebSocket или переключении активного run.
+Освобождает session, отменяет run и используется при закрытии WebSocket или переключении активного run. Для train run также делает последнюю попытку зарегистрировать checkpoint.
 
 ## Runtime service interface
 

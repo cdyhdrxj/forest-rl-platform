@@ -82,6 +82,8 @@ Backend является центром orchestration. Он не должен з
 - PostgreSQL через `packages/db` - metadata, runs, episodes, metrics, events, artifacts;
 - файловое хранилище `data/` - scenario files, preview, layers, replay и крупные артефакты.
 
+Обученные модели хранятся как checkpoint-файлы в `data/runs/run_<id>/...`, описываются строкой `models` и регистрируются как связанный `ArtifactType.model_checkpoint`.
+
 ### ROS/Unity
 
 3D слой состоит из:

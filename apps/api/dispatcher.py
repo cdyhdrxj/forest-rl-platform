@@ -14,6 +14,7 @@ from apps.api.run_exports import build_run_result_payload, export_run_bundle
 from apps.api.runtime_monitor import RunObserver, write_service_log
 from packages.db.models.algorithm import Algorithm
 from packages.db.models.artifact import Artifact
+from packages.db.models.model import Model
 from packages.db.models.project import Project
 from packages.db.models.run import Run
 from packages.db.models.scenario import Scenario
@@ -659,6 +660,11 @@ class ExperimentDispatcher:
             session.observer = None
         if session.service.get_state().get("running"):
             session.service.stop()
+        is_inference = session.training_params.get("execution_role") == "eval"
+        if not is_inference:
+            checkpoint_path = _get_service_checkpoint_path(session.service)
+            if checkpoint_path:
+                _save_model_artifact(run_id, checkpoint_path)
         self._update_run_status(run_id, status=RunStatus.cancelled, finished_at=datetime.utcnow())
         write_service_log(
             run_id=run_id,
@@ -926,12 +932,42 @@ def _get_service_checkpoint_path(service) -> str | None:
  
  
 def _save_model_artifact(run_id: int, checkpoint_path: str) -> None:
-    """Записать артефакт model_checkpoint в БД."""
+    """Записать модельный checkpoint в models и artifacts."""
     from pathlib import Path
     p = Path(checkpoint_path)
     size = p.stat().st_size if p.exists() else 0
  
     with db_session() as db:
+        run = db.query(Run).filter(Run.id == run_id).first()
+        framework = "stable_baselines3"
+        if run is not None and run.algorithm is not None and run.algorithm.framework:
+            framework = str(run.algorithm.framework)
+
+        model = (
+            db.query(Model)
+            .filter(
+                Model.run_id == run_id,
+                Model.storage_uri == checkpoint_path,
+            )
+            .first()
+        )
+        if model is None:
+            model = Model(
+                run_id=run_id,
+                name=p.name,
+                framework=framework,
+                storage_uri=checkpoint_path,
+                checkpoint_epoch=None,
+                is_best=True,
+                metrics_json=None,
+            )
+            db.add(model)
+            db.flush()
+        else:
+            model.name = p.name
+            model.framework = framework
+            model.is_best = True
+
         exists = (
             db.query(Artifact)
             .filter(
@@ -943,9 +979,11 @@ def _save_model_artifact(run_id: int, checkpoint_path: str) -> None:
         )
         if exists:
             exists.size_bytes = size
+            exists.model_id = model.id
             return
         db.add(Artifact(
             run_id=run_id,
+            model_id=model.id,
             artifact_type=ArtifactType.model_checkpoint,
             name=p.name,
             storage_uri=checkpoint_path,

@@ -139,3 +139,16 @@
 - `contracts/v1/preview.schema.json`
 
 При этом содержимое `preview_payload`, `runtime_context`, `runtime_config` и параметрических словарей, зависящее от маршрута, остаётся расширяемым, потому что именно в этих местах проект пока продолжает активно расти.
+
+## Особенность `simulator_3d`
+
+Для 3D сценариев `GeneratedScenario` не хранит готовую матрицу высот как source of truth. Unity строит terrain процедурно по `seed` и `map_config`, которые затем уходят в `/env/generate`.
+
+В `scenario.json` для 3D сохраняются:
+
+- `runtime_context.simulator_3d.world_descriptor` - описание процедурного мира;
+- `runtime_context.simulator_3d.map_config` - параметры `SetTerrainParams`;
+- `runtime_context.simulator_3d.robot_config` - параметры `SetRobots`;
+- `runtime_context.simulator_3d.target_config` - параметры `SetGoal`.
+
+`preview_payload.agent_pos` и `preview_payload.goal_pos` для 3D являются 2D-проекцией сверху для UI. `preview_payload.landmark_pos` в текущем 3D режиме не имеет обязательной семантики и обычно пустой. Если симулятору понадобятся реальные ориентиры, их нужно добавить как отдельный слой или отдельный типизированный параметр, а не выводить из preview.

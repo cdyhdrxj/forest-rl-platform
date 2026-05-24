@@ -31,6 +31,59 @@ docker compose
 - response преобразуется в platform state;
 - events сохраняются через `RunObserver`.
 
+## Прием данных генерации карты
+
+Для 3D симулятора backend не передает готовый `terrain_map`. Карта строится процедурно на стороне Unity по seed и параметрам шума. `terrain_map` остается форматом preview/layer для 2D и grid-сред.
+
+При `generate` dispatcher сохраняет `GeneratedScenario`, а `Simulator3DService.load_scenario(...)` отправляет в ROS три группы параметров:
+
+| Группа | ROS service | Что делает симулятор |
+| --- | --- | --- |
+| `map_config` | `/env/generate` (`forest_msgs/srv/SetTerrainParams`) | Строит terrain и статические объекты процедурно. |
+| `robot_config` | `/env/set_robots` (`forest_msgs/srv/SetRobots`) | Задает стартовые позиции и типы роботов. |
+| `target_config` | `/env/set_goal` (`forest_msgs/srv/SetGoal`) | Задает цель или первую runtime-цель. |
+
+`world_descriptor` хранится в `scenario.json` и state как человекочитаемое описание мира: источник terrain, seed, `map_config`, `robot_config`, `target_config`, `max_steps`. Сейчас это не отдельный ROS service, а сохраненная обертка вокруг фактических ROS-параметров.
+
+### Поля `map_config`
+
+Текущий ROS source of truth - `ros2_ws/src/forest_msgs/srv/SetTerrainParams.srv`:
+
+- `uniform_scale`;
+- `mesh_height_multiplayer`;
+- `noise_scale`;
+- `seed`;
+- `octaves`;
+- `persistance`;
+- `lacunarity`;
+- `offset_x`;
+- `offset_y`;
+- `density`;
+- `max_view_dst`;
+- `noise_normalize_mode`.
+
+`density` - это плотность процедурно размещаемых статических объектов в Unity. Если текущая сцена генерирует только деревья, симулятор может трактовать ее как плотность деревьев. Если появятся камни, кусты, валежник или другие классы, нужно расширить контракт типизированными плотностями, а не перегружать `tree_density`.
+
+`terrain_hilliness` не является полем ROS-контракта. Для 3D сейчас используются прямые параметры шума и высоты: `mesh_height_multiplayer`, `noise_scale`, `octaves`, `lacunarity`. Высокоуровневый слайдер `terrain_hilliness` можно оставить только как UI alias, который backend преобразует в параметры шума.
+
+### Preview-поля
+
+`preview_payload` нужен UI и быстрому state snapshot. Для 3D это не источник построения сцены.
+
+- `agent_pos` - старт робота в 2D-проекции сверху;
+- `goal_pos` - цель или preview-позиции целей в 2D-проекции сверху;
+- `landmark_pos` - статические ориентиры/препятствия для 2D preview. В текущем 3D контракте они не используются и обычно пустые.
+
+Для 2D/grid `landmark_pos` часто означает препятствия или недоступные клетки. Для 3D, если нужны реальные ориентиры, их надо оформить отдельным typed layer или отдельным ROS-параметром, иначе это поле останется только визуальным preview.
+
+### Что должно быть реализовано в Unity/ROS
+
+1. `/env/generate` должен детерминированно строить terrain и статические объекты по `SetTerrainParams`.
+2. `/env/set_robots` должен сохранить стартовые позы до `/env/reset`.
+3. `/env/set_goal` должен сохранить цель до `/env/reset`.
+4. `/env/reset` должен очистить текущую сцену и применить последние параметры generate/robots/goal.
+5. `/env/step` должен вернуть реальное `observation_json`, `reward`, `terminated`, `truncated`, `info_json` и события шага.
+
 ## Synthetic mode
 
 Synthetic mode оставлен только для тестов dispatcher/runtime observer.

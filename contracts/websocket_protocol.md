@@ -207,16 +207,20 @@ Backend принимает плоский объект, совместимый �
 
 ### `/threed/patrol` и `/threed/trail`
 
-Плоский объект параметров.
-Сейчас backend-сервис обычно использует здесь такие ключи:
+Backend принимает текущий nested payload фронта:
 
-- `seed`
-- `preview_size` or `grid_size`
-- `tree_density`
-- `terrain_hilliness`
+- `map_config`
+- `robot_config`
+- `target_config`
 - `algorithm`
 - `max_steps`
 - параметры обучения, зависящие от задачи
+
+`map_config` преобразуется в `/env/generate forest_msgs/srv/SetTerrainParams`.
+Основные поля: `seed`, `mesh_height_multiplayer`, `noise_scale`, `octaves`, `lacunarity`, `density`, `max_view_dst`.
+
+Для совместимости backend также принимает старые плоские ключи `seed`, `density`, `tree_density`, `terrain_hilliness`, `robot_position_*`, `target_position_*`.
+`tree_density` считается legacy alias для `density`, если Unity генерирует только деревья. Каноническое поле ROS сейчас называется `density` и означает плотность процедурных объектов.
 
 ## Формат сообщения сервера
 

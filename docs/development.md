@@ -49,7 +49,7 @@ contracts -> scenario generation -> dispatcher -> runtime service -> observer ->
 | Metadata, runs, episodes, metrics | PostgreSQL через `packages/db` |
 | Сценарии и preview | `data/scenarios/generated/...` |
 | Replay | `data/runs/run_<id>/replay_<timestamp>.jsonl` |
-| Model checkpoints | как `ArtifactType.model_checkpoint`, путь зависит от runtime |
+| Model checkpoints | файл в `data/runs/run_<id>/...`, запись в `models`, связанный `ArtifactType.model_checkpoint` |
 | Scientific reports | `experiments/scientific` и configured output dir |
 
 ## Работа с БД
