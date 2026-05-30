@@ -116,9 +116,16 @@
 - `coverage`
 - `robot`
 
-Из них реально активны в runtime `trail`, `patrol` и `reforestation`.
+В backend runtime сейчас подключены:
 
-`coverage` также присутствует в dispatcher как `continuous/coverage`, но относится к scientific MVP. Развитие scientific mode сейчас заморожено.
+- `trail`;
+- `patrol`;
+- `reforestation`;
+- `coverage`.
+
+`coverage` присутствует в dispatcher как `continuous/coverage`, но относится к scientific MVP. Развитие scientific mode сейчас заморожено, поэтому этот route поддерживается как существующий MVP, а не как активно расширяемое направление.
+
+`robot` остается значением предметной модели, но отдельного runtime route для него сейчас нет.
 
 ## Валидация
 

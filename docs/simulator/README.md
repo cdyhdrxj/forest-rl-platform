@@ -9,6 +9,8 @@ Unity simulator должен быть физическим 3D runtime для м�
 
 Backend отвечает за dispatcher, replay, metrics и хранение. Unity/ROS отвечает за физику, сенсоры, события и синхронный step.
 
+Если вы реализуете Unity/ROS-сторону `/env/step`, начните с короткого внешнего guide: [unity_env_step_integration.md](unity_env_step_integration.md).
+
 ## Контур запуска
 
 ```text

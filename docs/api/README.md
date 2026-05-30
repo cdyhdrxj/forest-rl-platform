@@ -13,6 +13,8 @@ HTTP/OpenAPI:
 - `contracts/openapi.yaml` сейчас неполный и не описывает все реальные HTTP endpoints;
 - source of truth для HTTP endpoints - `apps/api/app.py`.
 
+Отдельно существует вспомогательный WebRTC-signaling слой для Unity video stream. Он не управляет lifecycle run и не заменяет runtime WebSocket routes.
+
 ## WebSocket routes
 
 Активные routes определены в `apps/api/app.py` и `apps/api/dispatcher.py`:
@@ -25,6 +27,8 @@ HTTP/OpenAPI:
 | `/discrete/reforestation` | `discrete/reforestation` | Grid reforestation runtime. |
 | `/threed/patrol` | `threed/patrol` | 3D patrol через `Simulator3DService`. |
 | `/threed/trail` | `threed/trail` | 3D trail через `Simulator3DService`. |
+
+Это список backend routes. Текущий frontend selector может показывать подмножество этих routes; например `threed/patrol` объявлен в backend и `WS_MAP`, но не включен в `TASKS_BY_ENV` как ручной выбор нового эксперимента.
 
 Пример:
 
@@ -203,6 +207,18 @@ Runtime service добавляет route-specific поля, например:
 | `GET` | `/api/runs/{run_id}/replay` | Последний replay run как массив frames. |
 | `PATCH` | `/api/runs/{run_id}` | Переименовать run. |
 | `GET` | `/api/runs/{run_id}/checkpoint` | Проверить наличие checkpoint artifact. |
+
+## WebRTC signaling endpoints
+
+`apps/api/app.py` подключает `apps/api/webrtc_routes.py`. Эти endpoints нужны компоненту Unity WebRTC stream во frontend:
+
+| Type | Path | Назначение |
+| --- | --- | --- |
+| `GET` | `/webrtc/config` | Конфигурация signaling mode для WebRTC player. |
+| WebSocket | `/ws` | Основной signaling канал, который использует текущий `WebRTCPlayer`. |
+| WebSocket | `/signaling` | Совместимый WebSocket signaling endpoint. |
+
+`apps/web/src/constants/envs.js` также содержит legacy HTTP key `WebrtcSignaling` для старого polling-клиента, но текущий компонент `WebRTCPlayer` использует `WebSocketSignaling` и подключается к `/ws`.
 
 ## Ошибки
 

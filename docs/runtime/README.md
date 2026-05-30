@@ -24,6 +24,8 @@
 
 Source of truth для таблицы - `DEFAULT_ROUTES` в `apps/api/dispatcher.py`.
 
+Эта таблица описывает backend routes. Доступность route в UI задается отдельно в `apps/web/src/constants/envs.js`: `WS_MAP` хранит адреса, а `TASKS_BY_ENV` определяет, что видно в селекторе нового эксперимента.
+
 ## Lifecycle
 
 ```text

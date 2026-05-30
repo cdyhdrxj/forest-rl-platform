@@ -8,6 +8,23 @@ python -m pip install -r packages/common/requirements.txt
 
 Если локальное окружение не содержит `gymnasium`, часть runtime/import тестов будет падать. Docker image `server` устанавливает зависимости из `packages/common/requirements.txt`.
 
+## База данных в локальных проверках
+
+Если `DATABASE_URL` не задан, код использует SQLite `data/platform_dev.sqlite3`. Многие unit/integration тесты дополнительно переопределяют `DATABASE_URL` на временный SQLite-файл, поэтому для первого `pytest` PostgreSQL не обязателен.
+
+PostgreSQL обязателен, когда вы проверяете:
+
+- Alembic migrations;
+- поведение, зависящее от PostgreSQL dialect;
+- compose-flow `postgres -> migrate -> server`.
+
+Для локальной проверки миграций с PostgreSQL, поднятым через compose:
+
+```powershell
+$env:DATABASE_URL = "postgresql://forest:forest@localhost:5432/forest_rl"
+alembic upgrade head
+```
+
 ## Быстрые unit-проверки
 
 ```powershell
@@ -55,6 +72,18 @@ Backend health:
 ```powershell
 Invoke-RestMethod http://localhost:8000/api/health
 ```
+
+## Frontend checks
+
+Команды frontend выполняются из `apps/web`:
+
+```powershell
+cd apps/web
+npm install
+npm run build
+```
+
+Root-level npm scripts не являются проверкой реального frontend build.
 
 ## ROS checks
 

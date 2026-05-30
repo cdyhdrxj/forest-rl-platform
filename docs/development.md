@@ -10,6 +10,14 @@ contracts -> scenario generation -> dispatcher -> runtime service -> observer ->
 
 Новые режимы, поля состояния и артефакты лучше добавлять через эти точки, а не напрямую в UI или отдельный сервис.
 
+## Быстрый маршрут новой правки
+
+1. Найдите source of truth: route в `apps/api/dispatcher.py`, WebSocket protocol в `contracts/websocket_protocol.md`, HTTP endpoint в `apps/api/app.py`, ROS interface в `ros2_ws/src/forest_msgs`.
+2. Проверьте, затрагивает ли правка контракт. Если да, сначала обновите contract/schema/docs, затем код и тесты.
+3. Для backend/runtime правок начните с локального SQLite smoke или временной SQLite БД в тестах. Для изменений схемы БД обязательно проверьте PostgreSQL + Alembic migration.
+4. Для frontend правок используйте `apps/web`, а не root-level `package.json`: корневые npm scripts сейчас placeholders.
+5. Для 3D правок отдельно различайте synthetic test mode и реальный `sync_step` через `/env/step`.
+
 ## Как добавить новый runtime route
 
 1. Добавить или переиспользовать `GenerationRequest` builder в `services/scenario_generator`.
@@ -25,7 +33,7 @@ contracts -> scenario generation -> dispatcher -> runtime service -> observer ->
 4. Зарегистрировать `RuntimeRoute` в `apps/api/dispatcher.py`.
 5. Добавить WebSocket endpoint в `apps/api/app.py`.
 6. Добавить route в `apps/web/src/constants/envs.js` и UI, если маршрут должен быть доступен пользователю.
-7. Обновить `contracts/websocket_protocol.md`, `contracts/openapi.yaml`, `docs/api/README.md` и `docs/runtime/README.md`.
+7. Обновить `contracts/websocket_protocol.md`, `docs/api/README.md` и `docs/runtime/README.md`. `contracts/openapi.yaml` трогайте только если меняется публичная HTTP-часть или metadata, потому что runtime-контракт сейчас живет в WebSocket-документе.
 8. Добавить тесты генерации, загрузки, start/stop и replay/metrics persistence.
 
 ## Как менять контракт
@@ -36,7 +44,7 @@ contracts -> scenario generation -> dispatcher -> runtime service -> observer ->
 | --- | --- |
 | Добавочное поле runtime state | Можно оставить `v1`, если обязательные поля не меняются. |
 | Удаление/переименование обязательного поля | Нужна новая версия или совместимый bridge. |
-| Новый route key | Обновить WebSocket contract, OpenAPI extension, docs и frontend constants. |
+| Новый route key | Обновить WebSocket contract, docs и frontend constants; OpenAPI менять только при изменении публичной HTTP-части или metadata. |
 | Breaking change ROS `.msg/.srv` | Обновить `ros2_ws/src/forest_msgs`, `contracts/v2/ros_interfaces.md`, mapping tests. |
 | Breaking change JSON artifact | Создать новую версию схемы только для этого артефакта. |
 
@@ -57,6 +65,13 @@ contracts -> scenario generation -> dispatcher -> runtime service -> observer ->
 Актуальная модель - SQLAlchemy-модели в `packages/db/models`. Миграции лежат в `packages/db/migrations`.
 
 Docker запускает миграции через сервис `migrate` перед стартом `server`.
+
+Локальный Python-запуск без `DATABASE_URL` использует SQLite `data/platform_dev.sqlite3`. Это удобно для быстрой проверки dispatcher/UI flow, но миграции Alembic так не проверяются. Если нужно проверить PostgreSQL локально, задайте `DATABASE_URL` на host-адрес:
+
+```powershell
+$env:DATABASE_URL = "postgresql://forest:forest@localhost:5432/forest_rl"
+alembic upgrade head
+```
 
 Если меняется модель:
 

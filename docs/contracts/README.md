@@ -7,7 +7,7 @@
 | Файл | Область | Статус |
 | --- | --- | --- |
 | `contracts/websocket_protocol.md` | Realtime WebSocket API | Канонический live runtime contract. |
-| `contracts/openapi.yaml` | HTTP metadata | Неполный, runtime intentionally вынесен в WebSocket contract. |
+| `contracts/openapi.yaml` | HTTP metadata | Неполный; runtime намеренно вынесен в WebSocket contract. |
 | `contracts/v1/scenario.schema.json` | `scenario.json` | Стабильный JSON artifact v1. |
 | `contracts/v1/preview.schema.json` | `preview.json` | Стабильный JSON artifact v1. |
 | `contracts/v1/replay.schema.json` | replay JSONL line | Стабильный JSON artifact v1. |

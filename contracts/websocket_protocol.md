@@ -50,6 +50,7 @@ ws://localhost:8000/threed/trail
 
 - `run_id`
 - `scenario_version_id`
+- `source_run_id`
 - `params`
 
 ## Поддерживаемые действия

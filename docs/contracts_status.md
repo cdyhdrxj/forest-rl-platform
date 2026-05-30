@@ -71,7 +71,7 @@
 
 ## Что еще остается на будущее
 
-- довести Unity/ROS runtime до реализации `/env/step forest_msgs/srv/Step`;
+- довести Unity/ROS runtime до фактической реализации `/env/step forest_msgs/srv/Step`; контракт и минимальный guide уже описаны в `contracts/v2/ros_interfaces.md` и `docs/simulator/unity_env_step_integration.md`;
 - при необходимости ужесточить `params` и схемы состояния, зависящие от маршрута;
 - добавить тесты, валидирующие реальные артефакты против JSON Schema на CI;
 - решить, нужен ли в будущем AsyncAPI вместо markdown-описания WebSocket-протокола.

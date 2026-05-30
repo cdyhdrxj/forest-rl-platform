@@ -23,6 +23,8 @@ ROS 2 слой связывает backend и Unity/симулятор. Сейч�
 
 Человеческое описание находится в `contracts/v2/ros_interfaces.md`.
 
+Минимальный guide для разработчика Unity/ROS, который реализует синхронный step, находится в [../simulator/unity_env_step_integration.md](../simulator/unity_env_step_integration.md).
+
 ## Docker-сервис
 
 `ros2` основан на `osrf/ros:humble-desktop`.

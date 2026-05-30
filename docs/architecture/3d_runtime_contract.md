@@ -1,6 +1,6 @@
 # 3D runtime contract
 
-Дата ревизии: 2026-05-23.
+Дата ревизии: 2026-05-30.
 
 ## Решение
 
@@ -22,6 +22,8 @@ Live-топики ROS (`/robot_{id}/pose`, `/robot_{id}/base_scan`, `/env/events
 - `/env/step` - один синхронный шаг среды, тип `forest_msgs/srv/Step`.
 
 Источник правды для ROS-интерфейсов - файлы `.msg/.srv` в `ros2_ws/src/forest_msgs`. `contracts/v2/ros_interfaces.md` является документацией к ним.
+
+Практический checklist для Unity/ROS-разработчика: [../simulator/unity_env_step_integration.md](../simulator/unity_env_step_integration.md).
 
 ## Action
 

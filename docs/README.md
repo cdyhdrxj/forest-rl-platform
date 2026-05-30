@@ -1,6 +1,6 @@
 # Документация ForestRobotTwin
 
-Дата ревизии: 2026-05-23.
+Дата ревизии: 2026-05-30.
 
 Этот каталог описывает текущее состояние проекта, а не только целевую архитектуру. Документация рассчитана на внешнего разработчика, который впервые открывает репозиторий и должен понять, что уже работает, где находятся источники правды и какие части еще не закрыты.
 
@@ -16,10 +16,18 @@
 8. [infrastructure/docker.md](infrastructure/docker.md) - compose-сервисы, GPU/CPU режимы и диагностика.
 9. [ros/README.md](ros/README.md) - ROS 2 workspace, `forest_msgs` и 3D handshake.
 10. [simulator/README.md](simulator/README.md) - Unity/ROS 3D runtime и текущие ограничения.
-11. [testing.md](testing.md) - быстрые проверки, интеграционные тесты и известные caveats.
-12. [experiments/README.md](experiments/README.md) - эксперименты и замороженный scientific mode.
-13. [glossary.md](glossary.md) - основные термины проекта.
-14. [TODO.md](TODO.md) - открытые задачи.
+11. [simulator/unity_env_step_integration.md](simulator/unity_env_step_integration.md) - минимальный guide для Unity/ROS-разработчика, который реализует `/env/step`.
+12. [testing.md](testing.md) - быстрые проверки, интеграционные тесты и известные caveats.
+13. [experiments/README.md](experiments/README.md) - эксперименты и замороженный scientific mode.
+14. [glossary.md](glossary.md) - основные термины проекта.
+15. [TODO.md](TODO.md) - открытые задачи.
+
+## Первые ориентиры для внешнего разработчика
+
+- `ForestRobotTwin` - название платформы и предметной области; `forest-rl-platform` - имя текущего репозитория/пакета.
+- Самый надежный первый маршрут - поднять backend и frontend, проверить `GET /api/health`, затем запустить 2D/grid route (`continuous/trail`, `discrete/patrol` или `discrete/reforestation`). 3D routes сейчас полезны для проверки интеграционной обвязки, но реальный RL loop ждет `/env/step` в Unity/ROS.
+- Docker-запуск с Unity по умолчанию требует NVIDIA GPU. Для разработки без NVIDIA используйте CPU-only compose override, а для чистого backend-smoke можно запускать Python локально с SQLite fallback.
+- Если документация расходится с кодом, source of truth указан в таблице ниже. Для HTTP endpoints это `apps/api/app.py`, для runtime routes - `apps/api/dispatcher.py`, для ROS - реальные `.msg/.srv`.
 
 ## Проект в одном абзаце
 
@@ -62,6 +70,8 @@ Simulator3DService
 | `data` | Сценарии, replay и runtime-артефакты. |
 | `tests` | Unit, integration и e2e проверки. |
 
+Некоторые каталоги являются заготовками или историческими прототипами, а не готовыми runtime-компонентами. Перед использованием проверьте локальный README: это особенно важно для `apps/worker`, `services/marl_coordination`, `services/evaluation`, `services/replay_builder`, `services/robot_control_base` и `services/trail_planning`.
+
 ## Поддерживаемые runtime-маршруты
 
 | Route key | Среда | Задача | Статус |
@@ -73,12 +83,15 @@ Simulator3DService
 | `threed/trail` | `simulator_3d` | тропа в 3D | контракт задан, реальный `/env/step` в Unity/ROS еще нужен |
 | `threed/patrol` | `simulator_3d` | патруль в 3D | контракт задан, реальный `/env/step` в Unity/ROS еще нужен |
 
+Важно различать backend route и видимость в текущем UI. Backend объявляет все шесть WebSocket routes из таблицы. В селекторе нового эксперимента frontend сейчас показывает `continuous/trail`, `continuous/coverage`, `discrete/patrol`, `discrete/reforestation` и `threed/trail`; `threed/patrol` есть в `WS_MAP`, но не включен в `TASKS_BY_ENV` для ручного выбора. Если нужно открыть его в UI, обновите `apps/web/src/constants/envs.js`.
+
 ## Источники правды
 
 | Область | Смотреть в первую очередь |
 | --- | --- |
 | WebSocket runtime API | `contracts/websocket_protocol.md`, `apps/api/websocket_manager.py` |
 | HTTP endpoints | `apps/api/app.py`, затем `docs/api/README.md` |
+| Unity WebRTC stream | `apps/api/webrtc_routes.py`, `apps/web/src/components/WebRTCPlayer.jsx` |
 | Runtime routes | `apps/api/dispatcher.py` |
 | Сценарии | `services/scenario_generator/*`, `contracts/v1/scenario.schema.json`, `contracts/v1/preview.schema.json` |
 | Replay/metrics/episodes | `apps/api/runtime_monitor.py`, `contracts/v1/*` |

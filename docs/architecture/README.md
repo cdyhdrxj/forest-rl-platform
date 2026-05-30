@@ -32,7 +32,8 @@ RuntimeService -> rosbridge/ROS TCP -> Unity simulator -> forest_msgs
 - выбирает route/mode;
 - отправляет WebSocket actions;
 - отображает preview и live state;
-- показывает список runs и replay.
+- показывает список runs и replay;
+- опционально подключает Unity WebRTC stream через `WebRTCPlayer`.
 
 ### API backend
 
@@ -41,11 +42,13 @@ RuntimeService -> rosbridge/ROS TCP -> Unity simulator -> forest_msgs
 - FastAPI app;
 - WebSocket endpoints;
 - HTTP endpoints для runs/replay/checkpoint;
+- WebRTC signaling endpoints для Unity stream;
 - `ExperimentDispatcher`;
 - `RunObserver`;
 - export helpers для результатов run.
 
 Backend является центром orchestration. Он не должен знать внутреннюю физику среды, но отвечает за единый lifecycle, storage и persistence.
+WebRTC endpoints обслуживают только видеопоток/интерактивный stream Unity и не являются runtime lifecycle API.
 
 ### Scenario generator
 
@@ -143,6 +146,7 @@ Backend является центром orchestration. Он не должен з
 | Routes | `apps/api/dispatcher.py` |
 | WebSocket handling | `apps/api/websocket_manager.py` |
 | HTTP endpoints | `apps/api/app.py` |
+| WebRTC signaling | `apps/api/webrtc_routes.py`, `apps/web/src/components/WebRTCPlayer.jsx` |
 | Runtime observer | `apps/api/runtime_monitor.py` |
 | Scenario format | `services/scenario_generator`, `contracts/v1/scenario.schema.json` |
 | DB model | `packages/db/models/*`, `packages/db/migrations/*` |
