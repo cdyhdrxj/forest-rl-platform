@@ -6,6 +6,8 @@ import time
 import threading
 import urllib.parse
 from typing import Optional
+import math
+from services.trail_robot.lidar_processor import LidarProcessor
 
 class TrailRobotGymWrapper(gym.Env):
     """
@@ -16,17 +18,22 @@ class TrailRobotGymWrapper(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
     
     def __init__(self, 
-                 ros_url: str = "ws://localhost:9090",
+                 ros_url: str = "ws://ros2:9090",
                  goal_topic: str = "/goal_pose",
                  max_steps: int = 500,
-                 goal_reward: float = 10.0,
-                 collision_penalty: float = 5.0,
+                 goal_reward: float = 80.0,
+                 collision_penalty: float = 12.0,
                  step_penalty: float = 0.01,
                  goal_distance_threshold: float = 0.5,
+                 progress_weight: float = 40.0,
+                 angle_penalty: float = 3.0,
+                 bush_reward: float = 0.01,
+                 flip_penalty: float = 50.0,
+                 robot_type: int = 1,
                  render_mode: Optional[str] = None):
         
         super().__init__()
-        
+        self.robot_type = robot_type
         # Параметры
         self.ros_url = ros_url
         self.goal_topic = goal_topic
@@ -36,17 +43,27 @@ class TrailRobotGymWrapper(gym.Env):
         self.step_penalty = step_penalty
         self.goal_distance_threshold = goal_distance_threshold
         self.render_mode = render_mode
-        
+        self.progress_weight = progress_weight
+        self.angle_penalty = angle_penalty
+        self.bush_reward = bush_reward
+        self.flip_penalty = flip_penalty
+        self.last_yaw = 0.0
+
         # Данные для обучения
-        self.last_scan_sectors = np.zeros(9, dtype=np.float32)
-        self.last_position = np.array([0.0, 0.0], dtype=np.float32)
-        
+        #self.last_scan_sectors = np.zeros(9, dtype=np.float32)
+        self.last_position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+        self.goal_position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+        self.lidar_processor = LidarProcessor(degrees_per_sector=5, max_range=5.0)
+        self.n_lidar_sectors = self.lidar_processor.n_sectors  # 36 секторов
+        self.last_scan_sectors = np.zeros(self.n_lidar_sectors, dtype=np.float32)
+
         # Данные о цели
-        self.goal_position = np.array([0.0, 0.0], dtype=np.float32)
         self.goal_received = False
         self.distance_to_goal = 0.0
         self.prev_distance = 0.0
         
+        self.hp = 100.0
+        self.last_event_type = 0
         self.last_reward = 0.0
         self.collision = False
         self.goal_reached = False
@@ -87,61 +104,54 @@ class TrailRobotGymWrapper(gym.Env):
             dtype=np.float32
         )
         
-        # Пространство наблюдений (13: лидар 9 + позиция 2 + цель 2)
+        # Пространство наблюдений(координаты(2), цель(2), угол(2), лидар(n))
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(13,),
+            shape=(self.n_lidar_sectors + 8,),
             dtype=np.float32
         )
         
         self._connect_ros()
     
     def _connect_ros(self):
-        """Подключение к rosbridge"""
-        print(f"🔄 Подключение к {self.ros_url}...")
+        """Подключение к rosbridge через общий объект ros"""
+        from services.ros_2.ros_api_connection import ros
         
-        parsed = urllib.parse.urlparse(self.ros_url)
-        host = parsed.hostname or 'localhost'
-        port = parsed.port or 9090
+        print(f"🔄 Подключение к ROS через общий клиент...")
         
-        self.client = roslibpy.Ros(host=host, port=port)
-        self.client.on_error = self._on_error
-        self.client.run()
+        if not ros.connected:
+            print("❌ ROS не подключен")
+            return
         
-        timeout = 5
-        start = time.time()
-        while time.time() - start < timeout:
-            if self.client.is_connected:
-                self.connected = True
-                print(f"✅ Подключено к ROS bridge!")
-                
-                # Издатель команд
-                self.cmd_vel = roslibpy.Topic(self.client, '/robot_1/cmd_vel', 'geometry_msgs/msg/Twist')
-                
-                # Подписка на лидар
-                print(f"🔄 Подписка на /robot_1/scan")
-                self.scan_sub = roslibpy.Topic(self.client, '/robot_1/scan', 'sensor_msgs/msg/LaserScan')
-                self.scan_sub.subscribe(self._scan_callback)
-                
-                # Подписка на одометрию
-                print(f"🔄 Подписка на /robot_1/odom")
-                self.odom_sub = roslibpy.Topic(self.client, '/robot_1/odom', 'nav_msgs/msg/Odometry')
-                self.odom_sub.subscribe(self._odom_callback)
-                
-                # Подписка на цель
-                print(f"🔄 Подписка на цель: {self.goal_topic}")
-                self.goal_sub = roslibpy.Topic(self.client, self.goal_topic, 'geometry_msgs/msg/PoseStamped')
-                self.goal_sub.subscribe(self._goal_callback)
-                
-                # 🆕 Подписка на события
-                print(f"🔄 Подписка на /env/events")
-                self.event_sub = roslibpy.Topic(self.client, '/env/events', 'forest_msgs/Event')
-                self.event_sub.subscribe(self._event_callback)
+        self.client = ros.client
+        self.connected = True
+        print(f"✅ Подключено к ROS bridge!")
 
-                break
-            time.sleep(0.0001)
-    
+        prefix = f"robot_{self.robot_type}"
+        # Издатель команд
+        self.cmd_vel = roslibpy.Topic(self.client, f'/{prefix}/cmd_vel', 'geometry_msgs/msg/Twist')
+        
+        # Подписка на лидар
+        print(f"🔄 Подписка на /robot_1/scan")
+        self.scan_sub = roslibpy.Topic(self.client, f'/{prefix}/scan', 'sensor_msgs/msg/LaserScan')
+        self.scan_sub.subscribe(self._scan_callback)
+        
+        # Подписка на одометрию
+        print(f"🔄 Подписка на /robot_1/odom")
+        self.odom_sub = roslibpy.Topic(self.client, f'/{prefix}/odom', 'nav_msgs/msg/Odometry')
+        self.odom_sub.subscribe(self._odom_callback)
+        
+        # Подписка на цель
+        print(f"🔄 Подписка на цель: {self.goal_topic}")
+        self.goal_sub = roslibpy.Topic(self.client, self.goal_topic, 'geometry_msgs/msg/PoseStamped')
+        self.goal_sub.subscribe(self._goal_callback)
+        
+        # Подписка на события
+        print(f"🔄 Подписка на /env/events")
+        self.event_sub = roslibpy.Topic(self.client, '/env/events', 'forest_msgs/Event')
+        self.event_sub.subscribe(self._event_callback)
+
     def _on_error(self, error):
         print(f"❌ Ошибка ROS: {error}")
         with self.lock:
@@ -150,25 +160,24 @@ class TrailRobotGymWrapper(gym.Env):
     def _scan_callback(self, msg):
         with self.lock:
             self.last_scan_raw = msg['ranges']
-            ranges = np.array(msg['ranges'])
-            ranges = np.clip(ranges, 0, 10)
-            ranges = np.nan_to_num(ranges, nan=10.0, posinf=10.0, neginf=0.0)
-            
-            if len(ranges) > 0:
-                sectors = np.array_split(ranges, 9)
-                self.last_scan_sectors = np.array([np.min(s) for s in sectors], dtype=np.float32)
-                
-                if np.min(self.last_scan_sectors) < 0.3:
-                    self.collision = True
+            self.last_scan_sectors = self.lidar_processor.process(msg['ranges'])
+            if self.lidar_processor.get_min(self.last_scan_sectors) < 0.3:
+                self.collision = True
     
     def _odom_callback(self, msg):
         with self.lock:
             try:
                 self.last_position = np.array([
                     msg['pose']['pose']['position']['x'],
-                    msg['pose']['pose']['position']['y']
+                    msg['pose']['pose']['position']['y'],
+                    msg['pose']['pose']['position']['z']
                 ], dtype=np.float32)
                 
+                # Yaw из кватерниона
+                qz = msg['pose']['pose']['orientation']['z']
+                qw = msg['pose']['pose']['orientation']['w']
+                self.last_yaw = math.atan2(2 * qw * qz, 1 - 2 * qz * qz)
+
                 self.trajectory.append(self.last_position.copy())
                 if len(self.trajectory) > 100:
                     self.trajectory.pop(0)
@@ -181,7 +190,8 @@ class TrailRobotGymWrapper(gym.Env):
             try:
                 self.goal_position = np.array([
                     msg['pose']['position']['x'],
-                    msg['pose']['position']['y']
+                    msg['pose']['position']['y'],
+                    msg['pose']['position']['z']  
                 ], dtype=np.float32)
                 self.goal_received = True
             except Exception as e:
@@ -200,6 +210,7 @@ class TrailRobotGymWrapper(gym.Env):
         6 = INTRUDER_CAUGHT - пойман нарушитель
         """
         with self.lock:
+            self.last_event_type = event_type
             event_type = msg.get('event_type', 0)
             robot_id = msg.get('robot_id', 0)
             position = msg.get('position') or {}
@@ -261,7 +272,7 @@ class TrailRobotGymWrapper(gym.Env):
         except Exception as e:
             print(f"Ошибка отправки команды: {e}")
             return False
-    
+
     def _get_obs(self):
         with self.lock:
             lidar = self.last_scan_sectors.copy()
@@ -270,41 +281,65 @@ class TrailRobotGymWrapper(gym.Env):
             if self.goal_received:
                 goal = self.goal_position.copy()
                 self.distance_to_goal = np.linalg.norm(position - goal)
+                
+                dx = goal[0] - position[0]
+                dy = goal[1] - position[1]
+                desired_angle = math.atan2(dy, dx)
+                heading_error = math.atan2(
+                    math.sin(desired_angle - self.last_yaw),
+                    math.cos(desired_angle - self.last_yaw)
+                )
+                angle_features = np.array([math.sin(heading_error), math.cos(heading_error)], dtype=np.float32)
             else:
-                goal = np.array([0.0, 0.0], dtype=np.float32)
+                goal = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+                angle_features = np.array([0.0, 0.0], dtype=np.float32)
                 self.distance_to_goal = float('inf')
         
-        return np.concatenate([lidar, position, goal]).astype(np.float32)
+        return np.concatenate([position, goal, angle_features, lidar]).astype(np.float32)
     
     def _compute_reward(self, obs, action):
-        """Расчёт награды с учётом событий"""
-        position = obs[9:11]
-        goal = obs[11:13]
+        """Расчёт награды: прогресс, столкновения, HP, переворот"""
+        n = self.n_lidar_sectors
+        position = obs[0:3]
+        goal = obs[3:6]
+
         
         if not self.goal_received:
             return -self.step_penalty
         
         dist_to_goal = np.linalg.norm(position - goal)
+        progress = self.prev_distance - dist_to_goal
+        self.prev_distance = dist_to_goal
         
-        reward = -dist_to_goal * 0.1
+        prev_hp = self.hp
+        reward = 0.0
         
-        # Штраф за столкновение из события
+        # Базовые
+        reward -= self.step_penalty                          
+        reward -= self.angle_penalty * abs(float(action[1])) 
+        reward += self.progress_weight * progress           
+        
+        # Столкновения
         if self.collision_from_event:
-            reward -= self.collision_penalty
+            if self.last_event_type == 2:  # COLLISION_PASSABLE (куст)
+                reward += self.bush_reward * max(progress, 0)  # W_BUSH = 0.01
+            elif self.last_event_type == 3:  # COLLISION_IMPASSABLE (дерево)
+                velocity = abs(float(action[0]) * 0.5 * self.speed_multiplier)
+                damage = self.collision_penalty * velocity   
+                self.hp -= damage
+            elif self.last_event_type == 1:  # FLIP (переворот)
+                reward -= self.flip_penalty                   
+            
             self.collision_count += 1
             self.collision_from_event = False
         
-        # Бонус за поимку нарушителя
-        if self.intruder_from_event:
-            reward += 20.0
-            self.intruder_from_event = False
+        # Штраф за потерю HP
+        hp_loss = prev_hp - self.hp
+        reward -= 1.0 * hp_loss
         
-        # Штраф за шаг
-        reward -= self.step_penalty
-        
-        # Бонус за цель
+        # Достижение цели
         if self.goal_from_event or dist_to_goal < self.goal_distance_threshold:
-            reward += self.goal_reward
+            reward += self.goal_reward                       
             self.goal_count += 1
             self.goal_reached = True
             self.goal_from_event = False
@@ -313,12 +348,10 @@ class TrailRobotGymWrapper(gym.Env):
     
     def _is_done(self, obs):
         """Проверка завершения эпизода"""
-        if self.goal_reached:
-            return True
-        
-        if self.current_step >= self.max_steps:
-            return True
-        
+        if self.goal_reached: return True
+        if self.current_step >= self.max_steps: return True 
+        if self.hp <= 0.0: return True          #  Исчерпан ресурс
+        if self.last_event_type == 1: return True  #  FLIP (переворот)
         return False
     
     def reset_environment(self):
@@ -353,7 +386,7 @@ class TrailRobotGymWrapper(gym.Env):
         self.collision_from_event = False
         self.goal_from_event = False
         self.intruder_from_event = False
-        
+        self.hp = 100.0
         # Вызываем сервис /env/reset
         self.reset_environment()
         
@@ -363,15 +396,18 @@ class TrailRobotGymWrapper(gym.Env):
         self.goal_reached = False
         self.trajectory = []
         
-        # Генерация новой цели
-        angle = np.random.uniform(0, 2*np.pi)
-        distance = np.random.uniform(3.0, 7.0)
-        self.goal_position = np.array([
-            distance * np.cos(angle),
-            distance * np.sin(angle)
-        ], dtype=np.float32)
-        self.goal_received = True
-        
+        if not self.goal_received:
+            time.sleep(0.5)
+        if not self.goal_received:
+            angle = np.random.uniform(0, 2*np.pi)
+            distance = np.random.uniform(3.0, 7.0)
+            self.goal_position = np.array([
+                distance * np.cos(angle),
+                distance * np.sin(angle),
+                np.random.uniform(0, 2.0)  
+            ], dtype=np.float32)
+            self.goal_received = True
+
         self._send_action([0.0, 0.0])
         self.prev_distance = np.linalg.norm(self.last_position - self.goal_position)
         
@@ -393,6 +429,25 @@ class TrailRobotGymWrapper(gym.Env):
         
         terminated = self._is_done(obs)
         truncated = False
+
+        position = self.last_position.copy()
+        goal = self.goal_position.copy() if self.goal_received else None
+        lidar = self.last_scan_sectors.copy()
+            
+            # Физические команды (после масштабирования)
+        cmd_linear = float(action[0] * 0.5 * self.speed_multiplier)
+        cmd_angular = float(action[1] * 1.0 * self.speed_multiplier)
+            
+        print(f"\n[STEP {self.current_step:4d}] " + "-"*60)
+        print(f"  Робот:  pos=({position[0]:6.2f}, {position[1]:6.2f}, {position[2]:6.2f}) м")
+        if goal is not None:
+            print(f"  Цель:   pos=({goal[0]:6.2f}, {goal[1]:6.2f}, {goal[2]:6.2f}) м | dist={np.linalg.norm(position[:2]-goal[:2]):5.2f} м")
+        print(f"  Команда: v={cmd_linear:5.2f} м/с, ω={cmd_angular:5.2f} рад/с")
+        print(f"  Reward: {reward:7.3f} | HP: {self.hp:5.1f}")
+        print(f"  LiDAR: {np.array2string(lidar, precision=2, separator=', ', suppress_small=True)}")
+        if self.collision_from_event:
+            print(f"  СОБЫТИЕ: event_type={self.last_event_type}")
+        print("-"*60)
         
         info = {
             "collision": self.collision,

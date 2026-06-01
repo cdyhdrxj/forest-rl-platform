@@ -103,9 +103,9 @@ def _make_continuous_trail_service():
 
 
 def _make_simulator_3d_service():
-    from services.simulator_3d import Simulator3DService
+    from services.trail_robot.service import TrailRobotService
 
-    return Simulator3DService()
+    return TrailRobotService()
 
 
 def _build_patrol_runtime_config(params: dict[str, Any], scenario: GeneratedScenario) -> dict[str, Any]:
