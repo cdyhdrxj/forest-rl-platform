@@ -14,9 +14,14 @@ class IntruderConfig(BaseModel):
         description= "Текущая позиция нарушителя в среде"
     )
     is_random_spawned: bool = Field(
-        default= False,
-        description= "При каждом сбросе среды (reset), \
-        если True, нарушитель случайным образом размещается в среде"
+        default=False,
+        description="При каждом сбросе среды (reset), "
+                    "если True, нарушитель случайным образом размещается в среде"
+    )
+    manual_spawn: bool = Field(
+        default=False,
+        description="True — спавн в момент incoming_moment в позицию pos (ручной). "
+                    "False — время и позиция назначаются планировщиком случайно."
     )
     catch_reward: float = Field(
         default= 1.0,
@@ -85,8 +90,42 @@ class PoacherSimpleConfig(IntruderConfig):
     )
     
 
+class PoacherAltConfig(IntruderConfig):
+    """Конфигурация нарушителя-браконьера PoacherAlt (без search_patience, с N ближайших целей)"""
+    type: Literal["poacher_alt"] = "poacher_alt"
+
+    m_plan: float = Field(
+        default=100.0,
+        description="Размер ущерба, который браконьер должен причинить вырубкой"
+    )
+    m_tool_power: float = Field(
+        default=100.0,
+        description="Мощность инструмента браконьера"
+    )
+    n_targets: int = Field(
+        default=1,
+        description="Размер пула ближайших целей для случайного выбора. 1 = всегда ближайшая"
+    )
+    use_idleness_targeting: bool = Field(
+        default=False,
+        description="Если True, выбирает ближайшую из топ-N клеток по score=value×idleness "
+                    "(ценные и давно не посещённые агентом). Если False — N ближайших со случайным выбором."
+    )
+    use_passability_routing: bool = Field(
+        default=False,
+        description="Если True, стоимость ребра в A* = 1/passability: браконьер ищет маршрут "
+                    "с максимальной проходимостью, избегая труднопроходимых клеток. "
+                    "Если False — кратчайший путь по числу шагов."
+    )
+
+    incoming_moment: int = Field(
+        default=10,
+        description="Шаг появления. -1 — выбирается случайно"
+    )
+
+
 IntruderConfigType = Annotated[
-    ControllableConfig | WandererConfig | PoacherConfig | PoacherSimpleConfig,
+    ControllableConfig | WandererConfig | PoacherConfig | PoacherSimpleConfig | PoacherAltConfig,
     Field(discriminator="type")
 ]
 

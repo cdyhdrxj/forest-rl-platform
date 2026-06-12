@@ -49,7 +49,7 @@ export const WS_MAP = {
 export const ALGOS_BY_ROUTE = {
   [`${ENV.CONTINUOUS}/${TASK.TRAIL}`]:        ["PPO", "SAC", "A2C"],
   [`${ENV.CONTINUOUS}/${TASK.COVERAGE}`]:     ["greedy_nearest", "greedy_two_step", "PPO", "SAC", "A2C"],
-  [`${ENV.DISCRETE}/${TASK.PATROL}`]:         ["PPO", "A2C"],
+  [`${ENV.DISCRETE}/${TASK.PATROL}`]:         ["PPO", "DQN", "DRQN"],
   [`${ENV.DISCRETE}/${TASK.REFORESTATION}`]:  ["PPO", "A2C"],
   [`${ENV.SIM_3D}/${TASK.PATROL}`]:           ["PPO", "SAC", "A2C"],
   [`${ENV.SIM_3D}/${TASK.TRAIL}`]:            ["PPO", "SAC", "A2C"],

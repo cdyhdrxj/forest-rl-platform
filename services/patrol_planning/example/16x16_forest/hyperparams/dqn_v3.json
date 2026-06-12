@@ -1,0 +1,37 @@
+{
+  "algo_config": {
+    "lr": 3e-4,
+    "gamma": 0.999,
+    "batch_size": 256,
+    "buffer_size": 750000,
+    "learning_starts": 25000,
+    "target_update_interval": 8000,
+    "exploration_fraction": 0.45,
+    "exploration_final_eps": 0.05,
+    "n_envs": 4,
+    "common_seed": false,
+    "normalize_rewards": true,
+    "use_cnn": true,
+    "features_dim": 64,
+    "use_torch_compile": true,
+    "device": "cuda",
+    "cpu_cores_num": 8,
+    "verbose": 1
+  },
+  "run_config": {
+    "algorithm": "dqn",
+    "total_timesteps": 3000000,
+    "seed": 42,
+    "exclude_layers": ["terrain"],
+    "checkpoint_freq": 150000,
+    "use_tensorboard": true
+  },
+  "validation_config": {
+    "config_path": "services/patrol_planning/research/16x16_forest/test_configs/forest_16x16_val_v3.json",
+    "exclude_layers": ["terrain"],
+    "freq": 100000,
+    "n_episodes": 20,
+    "seed": 2026,
+    "verbose": true
+  }
+}

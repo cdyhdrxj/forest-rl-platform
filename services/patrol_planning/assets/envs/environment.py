@@ -17,6 +17,7 @@ from services.patrol_planning.assets.observations.obs_box import ObservationBox
 from services.patrol_planning.assets.intruders.wanderer import Wanderer
 from services.patrol_planning.assets.intruders.models import WandererConfig
 from services.patrol_planning.assets.intruders.controllable import Controllable
+# from services.patrol_planning.assets.intruders.poacher_simple_fixed import PoacherSimple
 from services.patrol_planning.assets.intruders.poacher_simple import PoacherSimple
 from services.patrol_planning.service.models import GridWorldTrainState
 # TRAJECTORY_MAX_LEN = 200
@@ -57,6 +58,9 @@ class GridWorld(gym.Env):
         #Если не задана структура сохранения данных обучения, создаём её вручную. Если класс используется внутри сервиса, то сервис перезапишет на свою модель.
         if not self.train_state:
             self.train_state = GridWorldTrainState()
+
+        # Список событий шага; компоненты пишут сюда, RewardManager читает.
+        self.step_events: list = []
         
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -84,28 +88,18 @@ class GridWorld(gym.Env):
         return observation, info
 
     def step(self, action):
-        obs_reward = 0.0
-        
-        reward = 0 #Награда за этот шаг
-        
+        self.step_events = []
+
+        reward = 0.0
+
         #Обработка действия агента
         reward += self.agent.step(self, action)
 
-        
         terminated = False
         truncated = False
-        
+
         observation = self.obs.build_observation(self.world_layers, self.agent)
-        
-        #Получаем слой с нарушителями (1 слой начиная с 0)
-        intruders_layer = observation[1]
-        
-        #Даём награду за попадание в область видимости
-        for row in intruders_layer:
-            for e in row:
-                if e == 1:
-                    reward += obs_reward * self.intruder_detection_reward
-        
+
         #Обновляем нарушителей
         for i in self.intruders:
             reward += i.step(self)
@@ -134,30 +128,22 @@ class GridWorld(gym.Env):
     
     def update_train_state(self, truncated,
                            terminated, reward, obs):
-        #Обновляем train_state если включено
         if self.train_state:
-            #Позиция агента
-            self.train_state.agent_pos = [[self.agent.x, self.agent.y]]
-            #Маршрут
-            self.train_state.trajectory.append([self.agent.x, self.agent.y])
-            #Награда
+            # Always: reward and episode tracking (needed for charts)
             self.train_state.total_reward += reward
-            #Наблюдение
-            self.train_state.obs_raw = obs
-            
-            
-            #Позиции нарушителей
-            goal_pos = []
-            for i in self.intruders:
-                goal_pos.append([i.x, i.y])
-            #Позиции
-            self.train_state.goal_pos = goal_pos.copy()
-            
-            #Осталось нарушителей
-            self.train_state.i_count = len(self.intruders)
-            
-            #Шаг
-            self.train_state.new_episode = truncated or terminated
+            done = truncated or terminated
+            self.train_state.new_episode = done
+            if done:
+                self.train_state.last_episode_reward = self.train_state.total_reward
+                self.train_state.episode += 1
+
+            # Visual data: only in visualize mode to prevent OOM during parallel training
+            if self.train_state.visualize:
+                self.train_state.agent_pos = [[self.agent.x, self.agent.y]]
+                self.train_state.trajectory.append([self.agent.x, self.agent.y])
+                self.train_state.obs_raw = obs
+                self.train_state.goal_pos = [[i.x, i.y] for i in self.intruders]
+                self.train_state.i_count = len(self.intruders)
             
         
 

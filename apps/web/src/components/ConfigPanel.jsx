@@ -1,17 +1,38 @@
 import { useEffect, useRef, useState } from "react"
 import { Theme, card, secLabel, selStyle } from "../constants/colors"
-import { 
-  TASKS_BY_ENV, 
-  ALGOS_BY_ROUTE, 
-  SLIDER_CONFIG, 
+import {
+  TASKS_BY_ENV,
+  ALGOS_BY_ROUTE,
+  SLIDER_CONFIG,
   ALGO_SUPPORTED_PARAMS,
   filterParamsForAlgo,
   isParamLockedForInference
 } from "../constants/config"
 import { ENV, TASK, CLASSIC_ALGOS } from "../constants/envs"
 
+// ── Dev-флаги раздела «Дискретная / Патруль» ───────────────────────────────
+// Вкладки среды скрыты из UI (среда задаётся JSON-конфигом). Чтобы вернуть их
+// обратно — удалите соответствующие названия из массива или очистите его: []
+const HIDDEN_PATROL_TABS = ["Карта", "Агент", "Наблюдение", "Нарушитель"]
+// Чекбоксы «Визуализировать обучение» и «Использовать конфиги» зафиксированы
+// включёнными. Чтобы разрешить пользователю их переключать — поставьте false.
+const FREEZE_PATROL_SETTINGS = true
+
 const Label = ({ children }) =>
   <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{children}</div>
+
+const CheckRow = ({ label, checked, onChange, disabled }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <input
+      type="checkbox"
+      checked={!!checked}
+      onChange={e => onChange?.(e.target.checked)}
+      disabled={disabled}
+      style={{ accentColor: Theme.accent, cursor: disabled ? "not-allowed" : "pointer" }}
+    />
+    <span style={{ fontSize: 11, color: Theme.textSecond }}>{label}</span>
+  </div>
+)
 
 const CoordinatesGroup = ({ label, prefix, valueX, valueY, valueZ, onChange, disabled }) => {
   const setCoord = (coord, val) => {
@@ -146,7 +167,7 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
     )
   }
 
-  // Слайдер 
+  // Слайдер
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
@@ -154,7 +175,7 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
         <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>{value}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(param, type === "int" ? parseInt(e.target.value) : parseFloat(e.target.value))} 
+        onChange={e => onChange(param, type === "int" ? parseInt(e.target.value) : parseFloat(e.target.value))}
         disabled={disabled}
         style={{ width: "100%", accentColor: Theme.accent, cursor: disabled ? "not-allowed" : "pointer" }} />
     </div>
@@ -169,28 +190,28 @@ export function extractParamsFromRun(run) {
   const config = run?.config_json || {}
   const trainingParams = config.training_params || {}
   const runtimeConfig = config.runtime_config || {}
-  
+
   const algorithm = normalizeAlgorithm(
     trainingParams.algorithm || runtimeConfig.algorithm || config.algorithm
   )
-  
+
   const mergedParams = { ...trainingParams, ...runtimeConfig }
-  
+
   const routeKeyFromRun = run.route_key || config.route_key
   let env = ENV.CONTINUOUS
   let task = TASK.TRAIL
-  
+
   if (routeKeyFromRun) {
     if (routeKeyFromRun.startsWith("continuous")) env = ENV.CONTINUOUS
     else if (routeKeyFromRun.startsWith("discrete")) env = ENV.DISCRETE
     else if (routeKeyFromRun.startsWith("threed")) env = ENV.SIM_3D
-    
+
     if (routeKeyFromRun.endsWith("trail")) task = TASK.TRAIL
     else if (routeKeyFromRun.endsWith("patrol")) task = TASK.PATROL
     else if (routeKeyFromRun.endsWith("coverage")) task = TASK.COVERAGE
     else if (routeKeyFromRun.endsWith("reforestation")) task = TASK.REFORESTATION
   }
-  
+
   return { algorithm, mergedParams, env, task, routeKey: routeKeyFromRun }
 }
 
@@ -198,32 +219,58 @@ export function ConfigPanel({
   activeEnv, setActiveEnv,
   activeTask, setActiveTask,
   envLocked = false,
-  paramsLocked = false,      
+  paramsLocked = false,
   isInference = false,
-  readOnly = false,         
+  readOnly = false,
   algo, setAlgo,
   params, setParams,
   tab, setTab,
   running,
   jsonConfig, setJsonConfig,
-}) {  
+  useConfigFiles = false,
+  setUseConfigFiles,
+  algoConfigJson = null,
+  setAlgoConfigJson,
+  envConfigJson = null,
+  setEnvConfigJson,
+  valEnvConfigJson = null,
+  setValEnvConfigJson,
+  loadMapFromConfig = false,
+  setLoadMapFromConfig,
+  visualize = false,
+  setVisualize,
+  stepDelay = 0,
+  setStepDelay,
+  useGeneratedForValidation = false,
+  setUseGeneratedForValidation,
+}) {
 
-  // Функция изменения параметров с учетом блокировки
-  const set = (k, v) => {
-    if (isInference && isParamLockedForInference(k, activeEnv, true)) {
-      return
-    }
-    if (readOnly || paramsLocked) return
-    setParams(p => ({ ...p, [k]: v }))
-  }
+  // Валидация включена, если задан val-конфиг ИЛИ помечено «использовать
+  // сгенерированный сценарий для валидации». Настройки валидации в «Конфигурациях»
+  // редактируемы только когда валидация включена любым из способов.
+  const valConfigProvided = valEnvConfigJson !== null
+  const validationEnabled = valConfigProvided || useGeneratedForValidation
 
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
   const isCoverage = activeEnv === ENV.CONTINUOUS && activeTask === TASK.COVERAGE
   const isClassic = CLASSIC_ALGOS.has(algo)
   const is3D = activeEnv === ENV.SIM_3D
-  
+
   const isControlDisabled = running || readOnly || paramsLocked
   const isEnvDisabled = running || envLocked || readOnly
+
+  // Слайдеры гиперпараметров редактируемы и при включённых конфигах: они служат
+  // базой для _build_algo_config, когда пользователь не загрузил algo_config.json.
+  const isSlidersDisabled = isControlDisabled
+
+  const isAlgoLocked = isInference || isControlDisabled
+
+  // Функция изменения параметров с учетом блокировки
+  const set = (k, v) => {
+    if (isInference && isParamLockedForInference(k, activeEnv, true)) return
+    if (readOnly || paramsLocked) return
+    setParams(p => ({ ...p, [k]: v }))
+  }
 
   const routeKey = `${activeEnv}/${activeTask}`
   const algos = ALGOS_BY_ROUTE?.[routeKey] ?? ["PPO"]
@@ -241,13 +288,13 @@ export function ConfigPanel({
     }
   }, [algo])
 
-  // Обработчик смены алгоритма с фильтрацией параметров  
+  // Обработчик смены алгоритма с фильтрацией параметров
   const handleAlgoChange = (e) => {
     const newAlgo = e.target.value
     if (newAlgo === algo) return
-    
+
     const filteredParams = filterParamsForAlgo(params, newAlgo)
-    
+
     setAlgo(newAlgo)
     setParams(filteredParams)
     setAlgoType(CLASSIC_ALGOS.has(newAlgo) ? "classic" : "rl")
@@ -269,7 +316,7 @@ export function ConfigPanel({
     const normalizedAlgo = algo?.toUpperCase()
     const normalizedAlgos = algos.map(a => a.toUpperCase())
     const isAlgoInList = normalizedAlgos.includes(normalizedAlgo)
-    
+
     if (isAlgoInList) {
       if (algo !== algos[normalizedAlgos.indexOf(normalizedAlgo)]) {
         const correctCaseAlgo = algos[normalizedAlgos.indexOf(normalizedAlgo)]
@@ -277,7 +324,7 @@ export function ConfigPanel({
       }
       return
     }
-    
+
     if (algo && !isAlgoInList) {
       const first = algos[0]
       setAlgo(first)
@@ -298,6 +345,19 @@ export function ConfigPanel({
     e.target.value = ""
   }
 
+  const handleConfigFile = (e, setter) => {
+    if (isControlDisabled) return
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try { setter({ ...JSON.parse(ev.target.result), _fileName: file.name }) }
+      catch { alert("Ошибка разбора JSON файла") }
+    }
+    reader.readAsText(file)
+    e.target.value = ""
+  }
+
   const [fitTabs, setFitTabs] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const tabsRef = useRef(null)
@@ -309,28 +369,28 @@ export function ConfigPanel({
     setFitTabs(el.scrollWidth <= el.clientWidth)
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
   }
-  
+
   const onMouseDown = (e) => {
     const el = tabsRef.current
     dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false }
     el.style.cursor = "grabbing"
   }
-  
-  const onMouseUp = () => { 
+
+  const onMouseUp = () => {
     dragState.current.isDown = false
-    if (tabsRef.current) tabsRef.current.style.cursor = "grab" 
+    if (tabsRef.current) tabsRef.current.style.cursor = "grab"
   }
-  
+
   const onMouseMove = (e) => {
     if (!dragState.current.isDown) return
     const diff = (e.pageX - tabsRef.current.offsetLeft) - dragState.current.startX
     if (Math.abs(diff) > 3) dragState.current.moved = true
     tabsRef.current.scrollLeft = dragState.current.scrollLeft - diff
   }
-  
-  const onTabClick = (t) => { 
+
+  const onTabClick = (t) => {
     if (!dragState.current.moved) setTab(t)
-    dragState.current.moved = false 
+    dragState.current.moved = false
   }
 
   const shouldShowSlider = (s) => {
@@ -338,7 +398,7 @@ export function ConfigPanel({
         s.param === "target_position_y" || s.param === "target_position_z") {
       return false
     }
-    
+
     if (s.algoOnly) {
       const normalizedAlgo = algo.toUpperCase()
       const normalizedAlgoOnly = s.algoOnly.map(a => a.toUpperCase())
@@ -348,7 +408,7 @@ export function ConfigPanel({
   }
 
 
-    const renderSliderOrCoordinates = (s) => {
+  const renderSliderOrCoordinates = (s) => {
     if (s.type === "coordinates" && s.group === "robot") {
       if (s.param === "robot_position_x") {
         return (
@@ -360,13 +420,13 @@ export function ConfigPanel({
             valueY={params.robot_position_y ?? 0}
             valueZ={params.robot_position_z ?? 0}
             onChange={set}
-            disabled={isControlDisabled}
+            disabled={isSlidersDisabled}
           />
         )
       }
-      return null 
+      return null
     }
-    
+
     if (s.type === "coordinates" && s.group === "target") {
       if (s.param === "target_position_x") {
         return (
@@ -378,7 +438,7 @@ export function ConfigPanel({
             valueY={params.target_position_y ?? 0}
             valueZ={params.target_position_z ?? 5}
             onChange={set}
-            disabled={isControlDisabled}
+            disabled={isSlidersDisabled}
           />
         )
       }
@@ -388,37 +448,62 @@ export function ConfigPanel({
     const value = s.type === "bool"
       ? (params[s.param] ?? s.default ?? false)
       : (params[s.param] ?? s.default ?? s.min)
-    
+
     const isLocked = isInference && isParamLockedForInference(s.param, activeEnv, true)
-    
+
     return (
-      <Slider 
-        key={s.param} 
-        {...s} 
-        value={value} 
-        onChange={(k, v) => set(k, v)} 
-        disabled={isControlDisabled || isLocked}
+      <Slider
+        key={s.param}
+        {...s}
+        value={value}
+        onChange={(k, v) => set(k, v)}
+        disabled={isSlidersDisabled || isLocked}
       />
     )
   }
 
-  const availableTabs = ["Алгоритм", "Ландшафт", "Робот", "Цель", "Карта", "Агент", "Наблюдение", "Нарушитель"]
+  const baseAvailableTabs = ["Алгоритм", "Генерировать сценарий", "Ландшафт", "Робот", "Цель", "Карта", "Агент", "Наблюдение", "Нарушитель"]
+    .filter(t => !(isPatrol && HIDDEN_PATROL_TABS.includes(t)))
     .filter(t => (SLIDER_CONFIG[activeEnv]?.[activeTask]?.[t] ?? []).some(sl => shouldShowSlider(sl)))
 
-  useEffect(() => { 
+  // Для патруля всегда доступны «Настройки» (чекбоксы режима) и «Конфигурации»
+  // (загрузка JSON, шаги/сид, задержка отрисовки).
+  const availableTabs = isPatrol
+    ? [...baseAvailableTabs, "Настройки", "Конфигурации"]
+    : baseAvailableTabs
+
+  useEffect(() => {
     checkTabs()
     window.addEventListener("resize", checkTabs)
     return () => window.removeEventListener("resize", checkTabs)
   }, [availableTabs])
-  
-  useEffect(() => { 
-    if (!availableTabs.includes(tab)) setTab(availableTabs[0]) 
+
+  useEffect(() => {
+    if (!availableTabs.includes(tab)) setTab(availableTabs[0])
   }, [availableTabs.join(","), tab])
 
   const sliders = SLIDER_CONFIG[activeEnv]?.[activeTask]?.[tab] ?? []
   const hideSliders = isPatrol && jsonConfig
 
-  const isAlgoLocked = isInference || isControlDisabled
+  const fileUploadStyle = (disabled) => ({
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+    padding: "7px 0", fontSize: 11, color: Theme.textSecond,
+    border: `1px dashed ${Theme.border}`, borderRadius: 6,
+    cursor: disabled ? "not-allowed" : "pointer",
+    background: "transparent",
+    opacity: disabled ? 0.6 : 1,
+  })
+
+  const fileLoadedStyle = {
+    display: "flex", alignItems: "center", gap: 6, padding: "6px 8px",
+    background: `${Theme.accent}12`, border: `1px solid ${Theme.accent}`, borderRadius: 6,
+  }
+
+  const fileRemoveBtn = (disabled) => ({
+    padding: "1px 6px", fontSize: 10, color: Theme.textMuted,
+    background: "transparent", border: `1px solid ${Theme.border}`, borderRadius: 4,
+    cursor: disabled ? "not-allowed" : "pointer", flexShrink: 0,
+  })
 
   return (
     <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -447,9 +532,9 @@ export function ConfigPanel({
         ) : (
           <>
             <Label>Среда</Label>
-            <select 
-              value={activeEnv} 
-              disabled={isEnvDisabled} 
+            <select
+              value={activeEnv}
+              disabled={isEnvDisabled}
               style={{ ...selStyle, marginBottom: 10 }}
               onChange={e => {
                 const env = e.target.value
@@ -462,10 +547,10 @@ export function ConfigPanel({
             </select>
 
             <Label>Задача</Label>
-            <select 
-              value={activeTask} 
+            <select
+              value={activeTask}
               onChange={e => setActiveTask(e.target.value)}
-              disabled={isEnvDisabled} 
+              disabled={isEnvDisabled}
               style={selStyle}
             >
               {TASKS_BY_ENV[activeEnv].map(t => <option key={t}>{t}</option>)}
@@ -473,7 +558,9 @@ export function ConfigPanel({
           </>
         )}
 
-        <div style={{ marginTop: 12 }}>
+        {/* Чекбоксы режима патруля вынесены во вкладку «Настройки» */}
+
+        {!isPatrol && <div style={{ marginTop: 12 }}>
           <Label>Конфиг (.json)</Label>
           {jsonConfig ? (
             <div style={{
@@ -483,8 +570,8 @@ export function ConfigPanel({
               <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {jsonConfig._fileName ?? "config.json"}
               </span>
-              <button 
-                onClick={() => setJsonConfig(null)} 
+              <button
+                onClick={() => setJsonConfig(null)}
                 disabled={isControlDisabled}
                 style={{
                   padding: "1px 6px", fontSize: 10, color: Theme.textMuted,
@@ -498,55 +585,55 @@ export function ConfigPanel({
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               padding: "7px 0", fontSize: 11, color: Theme.textSecond,
               border: `1px dashed ${Theme.border}`, borderRadius: 6,
-              cursor: isControlDisabled ? "not-allowed" : "pointer", 
+              cursor: isControlDisabled ? "not-allowed" : "pointer",
               background: "transparent",
               opacity: isControlDisabled ? 0.6 : 1,
             }}>
-              <input 
-                type="file" accept=".json" 
-                onChange={handleJsonFile} 
-                disabled={isControlDisabled} 
-                style={{ display: "none" }} 
+              <input
+                type="file" accept=".json"
+                onChange={handleJsonFile}
+                disabled={isControlDisabled}
+                style={{ display: "none" }}
               />
               + Загрузить файл
             </label>
           )}
-        </div>
+        </div>}
       </div>
-        
+
       {/* Параметры */}
       <div style={{ ...card, overflow: "hidden", display: hideSliders ? "none" : undefined }}>
         <div style={{ position: "relative" }}>
           <div ref={tabsRef}
-            onMouseDown={onMouseDown} 
+            onMouseDown={onMouseDown}
             onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp} 
-            onMouseMove={onMouseMove} 
+            onMouseLeave={onMouseUp}
+            onMouseMove={onMouseMove}
             onScroll={checkTabs}
-            style={{ 
-              overflowX: "auto", 
-              scrollbarWidth: "none", 
-              cursor: "grab", 
-              userSelect: "none", 
-              background: "#f8fafc", 
+            style={{
+              overflowX: "auto",
+              scrollbarWidth: "none",
+              cursor: "grab",
+              userSelect: "none",
+              background: "#f8fafc",
               borderBottom: `1px solid ${Theme.border}`
             }}
           >
             <div style={{ display: "flex", width: "100%" }}>
               {availableTabs.map(t => (
-                <button 
-                  key={t} 
-                  onClick={() => onTabClick(t)} 
+                <button
+                  key={t}
+                  onClick={() => onTabClick(t)}
                   style={{
                     padding: "8px 10px", fontSize: 11,
                     fontWeight: tab === t ? 600 : 400,
                     color: tab === t ? Theme.accent : Theme.textMuted,
                     background: tab === t ? Theme.surface : "transparent",
-                    border: "none", 
+                    border: "none",
                     borderBottom: tab === t ? `2px solid ${Theme.accent}` : "2px solid transparent",
-                    cursor: "pointer", 
-                    flex: fitTabs ? 1 : "0 0 auto", 
-                    textAlign: "center", 
+                    cursor: "pointer",
+                    flex: fitTabs ? 1 : "0 0 auto",
+                    textAlign: "center",
                     whiteSpace: "nowrap",
                   }}
                 >{t}</button>
@@ -566,20 +653,20 @@ export function ConfigPanel({
           {tab === "Алгоритм" && (
             <>
               {hasBothTypes && (
-                <div style={{ 
-                  display: "flex", gap: 0, marginBottom: 12, 
-                  border: `1px solid ${Theme.border}`, 
-                  borderRadius: Theme.radiusSm, 
-                  overflow: "hidden" 
+                <div style={{
+                  display: "flex", gap: 0, marginBottom: 12,
+                  border: `1px solid ${Theme.border}`,
+                  borderRadius: Theme.radiusSm,
+                  overflow: "hidden"
                 }}>
                   {[["rl", "RL"], ["classic", "Классический"]].map(([type, label]) => (
-                    <button 
-                      key={type} 
+                    <button
+                      key={type}
                       disabled={isAlgoLocked}
                       onClick={() => handleAlgoType(type)}
                       style={{
                         flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 600,
-                        border: "none", 
+                        border: "none",
                         cursor: isAlgoLocked ? "not-allowed" : "pointer",
                         background: algoType === type ? Theme.accent : "transparent",
                         color: algoType === type ? "#fff" : Theme.textSecond,
@@ -592,10 +679,10 @@ export function ConfigPanel({
               )}
 
               <Label>Алгоритм</Label>
-              <select 
-                value={algo} 
-                onChange={handleAlgoChange} 
-                disabled={isAlgoLocked} 
+              <select
+                value={algo}
+                onChange={handleAlgoChange}
+                disabled={isAlgoLocked}
                 style={{ ...selStyle, marginBottom: 14, opacity: isAlgoLocked ? 0.6 : 1 }}
               >
                 {(hasBothTypes
@@ -606,10 +693,232 @@ export function ConfigPanel({
             </>
           )}
 
-          {sliders.filter(s => shouldShowSlider(s)).length === 0
-            ? <div style={{ fontSize: 11, color: Theme.textMuted }}>Нет параметров</div>
-            : sliders.filter(s => shouldShowSlider(s)).map(s => renderSliderOrCoordinates(s))
-          }
+          {tab === "Настройки" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <CheckRow
+                label="Визуализировать обучение"
+                checked={visualize}
+                onChange={v => setVisualize?.(v)}
+                disabled={FREEZE_PATROL_SETTINGS || isControlDisabled}
+              />
+              <CheckRow
+                label="Использовать конфиги"
+                checked={useConfigFiles}
+                onChange={v => {
+                  setUseConfigFiles?.(v)
+                  if (!v) setLoadMapFromConfig?.(false)
+                }}
+                disabled={FREEZE_PATROL_SETTINGS || isControlDisabled}
+              />
+              <CheckRow
+                label="Загрузка карты из конфига"
+                checked={loadMapFromConfig}
+                onChange={v => setLoadMapFromConfig?.(v)}
+                disabled={isControlDisabled || !useConfigFiles}
+              />
+              {FREEZE_PATROL_SETTINGS && (
+                <div style={{ fontSize: 10, color: Theme.textMuted, lineHeight: 1.4 }}>
+                  Режимы «Визуализировать обучение» и «Использовать конфиги» зафиксированы.
+                </div>
+              )}
+            </div>
+          ) : tab === "Конфигурации" ? (
+            <div>
+              {/* ── Шаги и сид ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                <div>
+                  <Label>Шагов обучения</Label>
+                  <input
+                    type="number"
+                    value={params.total_timesteps ?? 3000000}
+                    min={100000} max={20000000} step={100000}
+                    disabled={isControlDisabled}
+                    onChange={e => setParams?.(p => ({ ...p, total_timesteps: parseInt(e.target.value) || 3000000 }))}
+                    style={{
+                      width: "100%", padding: "6px 8px", fontSize: 12,
+                      background: Theme.surface, color: Theme.textPrimary,
+                      border: `1px solid ${Theme.border}`, borderRadius: Theme.radiusSm,
+                      boxSizing: "border-box",
+                      opacity: isControlDisabled ? 0.5 : 1,
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label>Сид</Label>
+                  <input
+                    type="number"
+                    value={params.seed ?? 42}
+                    min={0} max={999999} step={1}
+                    disabled={isControlDisabled}
+                    onChange={e => setParams?.(p => ({ ...p, seed: parseInt(e.target.value) || 0 }))}
+                    style={{
+                      width: "100%", padding: "6px 8px", fontSize: 12,
+                      background: Theme.surface, color: Theme.textPrimary,
+                      border: `1px solid ${Theme.border}`, borderRadius: Theme.radiusSm,
+                      boxSizing: "border-box",
+                      opacity: isControlDisabled ? 0.5 : 1,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* ── Задержка обновления (только режим визуализации) ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                  <span style={{ color: visualize ? Theme.textSecond : Theme.textMuted }}>Задержка обновления</span>
+                  <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>{stepDelay} мс</span>
+                </div>
+                <input
+                  type="range"
+                  min={0} max={500} step={10}
+                  value={stepDelay}
+                  onChange={e => setStepDelay?.(parseInt(e.target.value))}
+                  disabled={isControlDisabled || !visualize}
+                  style={{ width: "100%", accentColor: Theme.accent, cursor: (isControlDisabled || !visualize) ? "not-allowed" : "pointer", opacity: visualize ? 1 : 0.4 }}
+                />
+              </div>
+
+              {/* ── Конфиг алгоритма ── */}
+              <div style={{ marginBottom: 16 }}>
+                <Label>Конфиг алгоритма (.json)</Label>
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 6 }}>
+                  {algo}TrainConfig
+                </div>
+                {algoConfigJson ? (
+                  <div style={fileLoadedStyle}>
+                    <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {algoConfigJson._fileName ?? "algo_config.json"}
+                    </span>
+                    <button
+                      onClick={() => setAlgoConfigJson?.(null)}
+                      disabled={isControlDisabled}
+                      style={fileRemoveBtn(isControlDisabled)}
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label style={fileUploadStyle(isControlDisabled)}>
+                    <input type="file" accept=".json" onChange={e => handleConfigFile(e, setAlgoConfigJson)} disabled={isControlDisabled} style={{ display: "none" }} />
+                    + Загрузить
+                  </label>
+                )}
+              </div>
+
+              {/* ── Конфиг среды ── */}
+              <div style={{ marginBottom: 16 }}>
+                <Label>Конфиг среды (.json)</Label>
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 6 }}>
+                  GridForestConfig
+                </div>
+                {envConfigJson ? (
+                  <div style={fileLoadedStyle}>
+                    <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {envConfigJson._fileName ?? "env_config.json"}
+                    </span>
+                    <button
+                      onClick={() => setEnvConfigJson?.(null)}
+                      disabled={isControlDisabled}
+                      style={fileRemoveBtn(isControlDisabled)}
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label style={fileUploadStyle(isControlDisabled)}>
+                    <input type="file" accept=".json" onChange={e => handleConfigFile(e, setEnvConfigJson)} disabled={isControlDisabled} style={{ display: "none" }} />
+                    + Загрузить
+                  </label>
+                )}
+              </div>
+
+              {/* ── Конфиг среды для валидации ── */}
+              <div>
+                <Label>Конфиг среды для валидации (.json)</Label>
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 6 }}>
+                  GridForestConfig (опционально)
+                </div>
+                {valEnvConfigJson ? (
+                  <div style={fileLoadedStyle}>
+                    <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {valEnvConfigJson._fileName ?? "val_env_config.json"}
+                    </span>
+                    <button
+                      onClick={() => setValEnvConfigJson?.(null)}
+                      disabled={isControlDisabled}
+                      style={fileRemoveBtn(isControlDisabled)}
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label style={fileUploadStyle(isControlDisabled)}>
+                    <input type="file" accept=".json" onChange={e => handleConfigFile(e, setValEnvConfigJson)} disabled={isControlDisabled} style={{ display: "none" }} />
+                    + Загрузить
+                  </label>
+                )}
+              </div>
+
+              {/* ── Настройки валидации (активны только при включённой валидации) ── */}
+              {(() => {
+                const valDisabled = isControlDisabled || !validationEnabled
+                const valInput = (key, def, min, max, step) => (
+                  <input
+                    type="number"
+                    value={params[key] ?? def}
+                    min={min} max={max} step={step}
+                    disabled={valDisabled}
+                    onChange={e => setParams?.(p => ({ ...p, [key]: parseInt(e.target.value) || def }))}
+                    style={{
+                      width: "100%", padding: "6px 8px", fontSize: 12,
+                      background: Theme.surface, color: Theme.textPrimary,
+                      border: `1px solid ${Theme.border}`, borderRadius: Theme.radiusSm,
+                      boxSizing: "border-box", opacity: valDisabled ? 0.5 : 1,
+                    }}
+                  />
+                )
+                return (
+                  <div style={{ marginTop: 16 }}>
+                    <Label>Настройки валидации</Label>
+                    <div style={{ fontSize: 10, color: validationEnabled ? Theme.accent : Theme.textMuted, marginBottom: 8 }}>
+                      {validationEnabled
+                        ? (valConfigProvided ? "Включена (конфиг среды задан)" : "Включена (сгенерированный сценарий)")
+                        : "Выключена — задайте конфиг среды или отметьте «Использовать для валидации»"}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                      <div>
+                        <Label>Сид</Label>
+                        {valInput("validation_seed", 2026, 0, 999999, 1)}
+                      </div>
+                      <div>
+                        <Label>Эпизодов</Label>
+                        {valInput("validation_n_episodes", 20, 1, 200, 1)}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Частота (шагов)</Label>
+                      {valInput("validation_freq", 100000, 1000, 5000000, 1000)}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          ) : tab === "Генерировать сценарий" ? (
+            <>
+              {sliders.filter(s => shouldShowSlider(s)).map(s => renderSliderOrCoordinates(s))}
+              <div style={{ marginTop: 10, paddingTop: 12, borderTop: `1px solid ${Theme.border}` }}>
+                <CheckRow
+                  label="Использовать для валидации"
+                  checked={useGeneratedForValidation}
+                  onChange={v => setUseGeneratedForValidation?.(v)}
+                  disabled={isControlDisabled || valConfigProvided}
+                />
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginTop: 4, lineHeight: 1.4 }}>
+                  {valConfigProvided
+                    ? "Валидация уже задана конфигом во вкладке «Конфигурации»."
+                    : "После генерации эта же карта будет использоваться для валидации."}
+                </div>
+              </div>
+            </>
+          ) : (
+            sliders.filter(s => shouldShowSlider(s)).length === 0
+              ? <div style={{ fontSize: 11, color: Theme.textMuted }}>Нет параметров</div>
+              : sliders.filter(s => shouldShowSlider(s)).map(s => renderSliderOrCoordinates(s))
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from services.patrol_planning.assets.agents.models import AgentConfig
 from services.patrol_planning.assets.intruders.models import IntruderConfigType, WandererConfig, ControllableConfig, PoacherSimpleConfig
 from services.patrol_planning.assets.observations.models import ObservationConfigType, ObsBoxConfig
+from services.patrol_planning.assets.rewards.reward_config import RewardConfig
+from services.patrol_planning.learning.metrics.metrics_config import MetricsConfig
 from typing import List, Optional
 
 class GridWorldStepImage(BaseModel):
@@ -45,25 +47,46 @@ class GridWorldConfig(BaseModel):
     )
 
 
+class LoadLayersConfig(BaseModel):
+    """Пути к CSV-файлам для загрузки слоёв карты."""
+
+    passability: str = Field(
+        description="Путь к CSV-файлу с картой проходимости (матрица grid_size×grid_size)"
+    )
+
+    value: str = Field(
+        description="Путь к CSV-файлу с картой ценности (матрица grid_size×grid_size)"
+    )
+
+
 class GridForestConfig(GridWorldConfig):
     """Конфигурация лесной среды GridForest."""
+
+    reward_config: RewardConfig = Field(
+        default_factory=RewardConfig,
+        description="Конфигурация системы наград (веса компонентов, штрафы)"
+    )
+
+    metrics_config: MetricsConfig = Field(
+        default_factory=MetricsConfig,
+        description="Конфигурация метрик задачи (веса Z(π) = w1·M_damage + w2·M_move + w3·M_idleness)"
+    )
 
     intruder_config: List[IntruderConfigType] = Field(
         default_factory=lambda: [PoacherSimpleConfig()],
         description="Список с конфигурациями нарушителей (по умолчанию — Poacher)"
     )
     
-    #Параметры прихода нарушителей
-    random_spawn_position: bool = Field(
-        default=True,
-        description="Игнорировать заданную позицию нарушителя и использовать случайную"
+    mu_min: float = Field(
+        default=0.9,
+        description="Минимальная проходимость граничной клетки для спавна и выхода нарушителей"
     )
-    
-    random_spawn_time: bool = Field(
-        default=True,
-        description="Игнорировать заданный момент прихода и использовать случайный"
+
+    max_intruders: int = Field(
+        default=-1,
+        description="Макс. число нарушителей за эпизод: -1 = без ограничений, 0 = нет, >0 = не более K"
     )
-    
+
     tau_min: int = Field(
         default=5,
         description="Минимальная длина интервала появления"
@@ -99,10 +122,34 @@ class GridForestConfig(GridWorldConfig):
         default=0.7,
         description="Доля проходимых клеток, имеющих ценность > 0"
     )
-    
 
+    random_map: bool = Field(
+        default=False,
+        description="Генерировать новую случайную карту при каждом reset() (seed игнорируется)"
+    )
 
+    load_layers: Optional[LoadLayersConfig] = Field(
+        default=None,
+        description=(
+            "Загрузить passability и value из CSV-файлов вместо процедурной генерации. "
+            "Несовместимо с random_map=True."
+        )
+    )
 
+    continue_until_max_steps: bool = Field(
+        default=False,
+        description=(
+            "Не завершать эпизод досрочно при поимке/выходе всех запланированных нарушителей; "
+            "ждать до истечения max_steps (truncated)."
+        )
+    )
 
-    
-    
+    @model_validator(mode="after")
+    def _check_load_layers_vs_random_map(self) -> "GridForestConfig":
+        if self.load_layers is not None and self.random_map:
+            raise ValueError(
+                "load_layers и random_map=True несовместимы: "
+                "нельзя одновременно загружать карту из файлов и генерировать случайную"
+            )
+        return self
+

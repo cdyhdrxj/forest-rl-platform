@@ -130,18 +130,19 @@ def bfs(env, start, goal):
 
     return []
 
-# A*, ищущий путь до цели 
-def target2path(env, start, goal, pass_mltply = 10):
+# A*, ищущий путь до цели
+# cost_by_passability=True: стоимость ребра = 1/passability, маршрут оптимален по проходимости.
+# cost_by_passability=False (по умолчанию): стоимость ребра = 1 (кратчайший по шагам).
+def target2path(env, start, goal, pass_mltply=10, cost_by_passability=False):
 
     u = env.world_layers["passability"]
     a = env.agent
     i = env.world_layers['intruders']
-    
+
     rows, cols = len(u), len(u[0])
 
-    # эвристика
     def h(cell):
-        return (abs(cell[0] - goal[0]) + abs(cell[1] - goal[1])) + (1- u[cell[0]][cell[1]])*pass_mltply
+        return (abs(cell[0] - goal[0]) + abs(cell[1] - goal[1])) + (1 - u[cell[0]][cell[1]]) * pass_mltply
 
     open_list = [start]
     came_from = {}
@@ -155,14 +156,13 @@ def target2path(env, start, goal, pass_mltply = 10):
         open_list.remove(current)
 
         if current == goal:
-            # восстановление пути
             path = [current]
             while current in came_from:
                 current = came_from[current]
                 path.append(current)
             path.reverse()
 
-            cost = g_score[goal] + h(goal)   # ← стоимость с эвристикой
+            cost = g_score[goal] + h(goal)
             return path, cost
 
         closed.add(current)
@@ -186,7 +186,11 @@ def target2path(env, start, goal, pass_mltply = 10):
             if neighbor in closed:
                 continue
 
-            tentative_g = g_score[current] + 1
+            if cost_by_passability:
+                edge_cost = 1.0 / max(float(u[neighbor[0]][neighbor[1]]), 0.01)
+            else:
+                edge_cost = 1.0
+            tentative_g = g_score[current] + edge_cost
 
             if neighbor not in g_score or tentative_g < g_score[neighbor]:
                 g_score[neighbor] = tentative_g

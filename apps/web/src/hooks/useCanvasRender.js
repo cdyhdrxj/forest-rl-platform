@@ -25,7 +25,7 @@ export function useCanvasRender(activeEnv, state, activeGridSize, showTrail = tr
   }, [activeGridSize])
 
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current || !state) return
 
     let terrain = null
     if (state?.world_layers) {

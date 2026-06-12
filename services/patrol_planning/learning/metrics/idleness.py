@@ -6,14 +6,15 @@ from typing import Tuple, Dict, Any
 class IdlenessMetric:
     """
     Хранит моменты посещения каждой ячейки и вычисляет метрику idleness.
+    Также ведёт оперативную карту простоя ℓ_ij,t — время с последней проверки.
     """
 
     def __init__(self, env):
-        
+
         #Получаем информацию о размерах территории
         i = env.world_layers['intruders']
         rows, cols = len(i), len(i[0])
-        
+
         self.height = rows
         self.width = cols
 
@@ -22,7 +23,10 @@ class IdlenessMetric:
             [list() for _ in range(self.width)]
             for _ in range(self.height)
         ]
-        
+
+        # Карта простоя: сколько шагов прошло с момента последней проверки ячейки
+        self.staleness_map = np.zeros((self.height, self.width), dtype=np.float32)
+
     def reset(self):
         """
         Сброс состояния для нового эпизода
@@ -31,6 +35,9 @@ class IdlenessMetric:
             [list() for _ in range(self.width)]
             for _ in range(self.height)
         ]
+
+        # Сбрасываем карту простоя: каждый новый эпизод начинается с нулей
+        self.staleness_map = np.zeros((self.height, self.width), dtype=np.float32)
 
     def update(
         self,
@@ -42,22 +49,72 @@ class IdlenessMetric:
         obs_h, obs_w = observation.shape[1:3]
 
         ay, ax = agent_pos
-
         offset_y = obs_h // 2
         offset_x = obs_w // 2
 
-        for dy in range(obs_h):
-            for dx in range(obs_w):
+        # Вычисляем границы один раз, убираем проверку внутри цикла
+        gy_start = max(0, ay - offset_y)
+        gy_stop  = min(self.height, ay - offset_y + obs_h)
+        gx_start = max(0, ax - offset_x)
+        gx_stop  = min(self.width,  ax - offset_x + obs_w)
 
-                gy = ay + (dy - offset_y)
-                gx = ax + (dx - offset_x)
+        for gy in range(gy_start, gy_stop):
+            for gx in range(gx_start, gx_stop):
+                self.visit_times[gy][gx].append(step)
 
-                if 0 <= gy < self.height and 0 <= gx < self.width:
-                    self.visit_times[gy][gx].append(step)
+    def increment_staleness(self):
+        """Увеличивает простой всех ячеек на один шаг (без сброса видимых)."""
+        self.staleness_map += 1.0
 
-    def calculate_metric(self, episode_length: int) -> Dict[str, Any]:
+    def reset_visible(
+        self,
+        observation: np.ndarray,
+        agent_pos: Tuple[int, int],
+    ):
+        """
+        Сбрасывает простой ячеек, попавших в текущую область видимости, в ноль.
+
+        observation — текущее наблюдение формата (channels, height, width)
+        agent_pos   — (x, y) позиция агента в глобальных координатах
+        """
+        obs_h, obs_w = observation.shape[1:3]
+        ay, ax = agent_pos
+        offset_y = obs_h // 2
+        offset_x = obs_w // 2
+
+        # Один numpy-срез вместо Python double-loop (obs_h × obs_w итераций)
+        gy_start = max(0, ay - offset_y)
+        gy_stop  = min(self.height, ay - offset_y + obs_h)
+        gx_start = max(0, ax - offset_x)
+        gx_stop  = min(self.width,  ax - offset_x + obs_w)
+
+        self.staleness_map[gy_start:gy_stop, gx_start:gx_stop] = 0.0
+
+    def update_staleness(
+        self,
+        observation: np.ndarray,
+        agent_pos: Tuple[int, int],
+    ):
+        """
+        Обновляет карту простоя по правилу:
+            ℓ_ij,t+1 = 0,           если v_ij ∈ V_t^obs (ячейка в поле зрения агента)
+            ℓ_ij,t+1 = ℓ_ij,t + 1,  иначе
+
+        observation — текущее наблюдение формата (channels, height, width)
+        agent_pos   — (x, y) позиция агента в глобальных координатах
+        """
+        self.increment_staleness()
+        self.reset_visible(observation, agent_pos)
+
+    def get_staleness_layer(self) -> np.ndarray:
+        """Возвращает копию текущей карты простоя."""
+        return self.staleness_map.copy()
+
+    def calculate_metric(self, episode_length: int, cell_mask: "np.ndarray | None" = None) -> Dict[str, Any]:
         """
         episode_length — T (длина эпизода)
+        cell_mask      — булева маска (height, width); если задана, max/mean считаются
+                         только по ячейкам где mask=True. map всегда полный.
 
         Возвращает:
             max
@@ -90,8 +147,13 @@ class IdlenessMetric:
 
                 interval_map[y, x] = float(np.mean(intervals))
 
+        if cell_mask is not None and cell_mask.any():
+            relevant = interval_map[cell_mask]
+        else:
+            relevant = interval_map.ravel()
+
         return {
-            "max": float(np.max(interval_map)),
-            "mean": float(np.mean(interval_map)),
+            "max": float(relevant.max()),
+            "mean": float(relevant.mean()),
             "map": interval_map,
         }
