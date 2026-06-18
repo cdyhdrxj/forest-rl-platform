@@ -53,4 +53,3 @@ docker compose exec ros2 bash -lc "source /ros2_ws/install/setup.bash && ros2 se
 ```powershell
 docker compose exec ros2 bash -lc "source /ros2_ws/install/setup.bash && ros2 service call /env/generate forest_msgs/srv/SetTerrainParams '{uniform_scale: 0.1, mesh_height_multiplayer: 10.0, noise_scale: 60.0, seed: 15, octaves: 4, persistance: 0.5, lacunarity: 2.0, offset_x: 0.0, offset_y: 0.0, density: 20, max_view_dst: 500, noise_normalize_mode: 0}'"
 ```
->>>>>>> origin/main
