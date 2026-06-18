@@ -1,0 +1,1349 @@
+ScriptsOnlyBuild:
+  usedScripts:
+    Assembly-CSharp.dll:
+    - ArticulationBodyInitialization
+    - ArticulationWheelController
+    - EventPublisher
+    - ImagePublisher
+    - JointStatePublisher
+    - KeyboardControl
+    - Laser
+    - LaserScanPublisher
+    - PoseStampedPublisher
+    - ROSClockPublisher
+    - ROSTransformTreePublisher
+    - RobotIdentity
+    - RobotResetter
+    - SimpleGoal
+    - StateReader
+    - TwistStampedPublisher
+    - TwistSubscriber
+    Unity.InputSystem.dll:
+    - UnityEngine.InputSystem.InputActionAsset
+    - UnityEngine.InputSystem.InputActionReference
+    - UnityEngine.InputSystem.InputSettings
+    - UnityEngine.InputSystem.InputSystemObject
+    - UnityEngine.InputSystem.RemoteInputPlayerConnection
+    - UnityEngine.InputSystem.UI.InputSystemUIInputModule
+    Unity.RenderStreaming.Editor.dll:
+    - Unity.RenderStreaming.Editor.RenderStreamingProjectSettings
+    - Unity.RenderStreaming.Editor.RenderStreamingSettingsEditor
+    Unity.RenderStreaming.Sample.WebBrowserInput.dll:
+    - Unity.RenderStreaming.Samples.WebBrowserInputChannelReceiver
+    Unity.RenderStreaming.Sample.dll:
+    - CopyTransform
+    - Unity.RenderStreaming.Samples.BackButton
+    - Unity.RenderStreaming.Samples.WebBrowserInputSample
+    Unity.RenderStreaming.dll:
+    - Unity.RenderStreaming.AudioStreamSender
+    - Unity.RenderStreaming.Broadcast
+    - Unity.RenderStreaming.RenderStreamingSettings
+    - Unity.RenderStreaming.SignalingManager
+    - Unity.RenderStreaming.VideoStreamSender
+    Unity.Rider.Editor.dll:
+    - Packages.Rider.Editor.UnitTesting.CallbackData
+    Unity.Robotics.ROSTCPConnector:
+    - Unity.Robotics.ROSTCPConnector.HudPanel
+    - Unity.Robotics.ROSTCPConnector.ROSConnection
+    - Unity.Robotics.ROSTCPConnector.ROSGeometry.GeometryCompass
+    Unity.Robotics.ROSTCPConnector.dll:
+    - Unity.Robotics.ROSTCPConnector.HudPanel
+    - Unity.Robotics.ROSTCPConnector.ROSConnection
+    Unity.Robotics.UrdfImporter.dll:
+    - Unity.Robotics.UrdfImporter.Control.Controller
+    - Unity.Robotics.UrdfImporter.UrdfCollision
+    - Unity.Robotics.UrdfImporter.UrdfCollisions
+    - Unity.Robotics.UrdfImporter.UrdfInertial
+    - Unity.Robotics.UrdfImporter.UrdfJointContinuous
+    - Unity.Robotics.UrdfImporter.UrdfJointFixed
+    - Unity.Robotics.UrdfImporter.UrdfLink
+    - Unity.Robotics.UrdfImporter.UrdfPlugins
+    - Unity.Robotics.UrdfImporter.UrdfRobot
+    - Unity.Robotics.UrdfImporter.UrdfVisual
+    - Unity.Robotics.UrdfImporter.UrdfVisuals
+    UnityEditor.TestRunner.dll:
+    - UnityEditor.TestTools.TestRunner.Api.CallbacksHolder
+    - UnityEditor.TestTools.TestRunner.CommandLineTest.RunData
+    - UnityEditor.TestTools.TestRunner.TestListCacheData
+    - UnityEditor.TestTools.TestRunner.TestRun.TestJobDataHolder
+    UnityEngine.UI.dll:
+    - UnityEngine.EventSystems.EventSystem
+    - UnityEngine.UI.Button
+    - UnityEngine.UI.CanvasScaler
+    - UnityEngine.UI.Dropdown
+    - UnityEngine.UI.GraphicRaycaster
+    - UnityEngine.UI.Image
+    - UnityEngine.UI.Mask
+    - UnityEngine.UI.ScrollRect
+    - UnityEngine.UI.Scrollbar
+    - UnityEngine.UI.Text
+    - UnityEngine.UI.Toggle
+  serializedClasses:
+    Unity.InputSystem:
+    - UnityEngine.InputSystem.InputAction
+    - UnityEngine.InputSystem.InputActionMap
+    - UnityEngine.InputSystem.InputBinding
+    - UnityEngine.InputSystem.InputControlScheme
+    - UnityEngine.InputSystem.InputControlScheme/DeviceRequirement
+    - UnityEngine.InputSystem.InputSettings/iOSSettings
+    - UnityEngine.InputSystem.iOS.PrivacyDataUsage
+    Unity.RenderStreaming:
+    - Unity.RenderStreaming.AudioCodecInfo
+    - Unity.RenderStreaming.Range
+    - Unity.RenderStreaming.VideoCodecInfo
+    - Unity.RenderStreaming.WebSocketSignalingSettings
+    Unity.RenderStreaming.Sample.WebBrowserInput:
+    - Unity.RenderStreaming.Samples.ButtonClickElement
+    - Unity.RenderStreaming.Samples.ButtonClickEvent
+    UnityEngine.CoreModule:
+    - UnityEngine.Events.ArgumentCache
+    - UnityEngine.Events.PersistentCallGroup
+    - UnityEngine.Events.PersistentListenerMode
+    UnityEngine.UI:
+    - UnityEngine.UI.AnimationTriggers
+    - UnityEngine.UI.Button/ButtonClickedEvent
+    - UnityEngine.UI.ColorBlock
+    - UnityEngine.UI.Dropdown/DropdownEvent
+    - UnityEngine.UI.Dropdown/OptionData
+    - UnityEngine.UI.Dropdown/OptionDataList
+    - UnityEngine.UI.FontData
+    - UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
+    - UnityEngine.UI.Navigation
+    - UnityEngine.UI.ScrollRect/ScrollRectEvent
+    - UnityEngine.UI.Scrollbar/ScrollEvent
+    - UnityEngine.UI.SpriteState
+    - UnityEngine.UI.Toggle/ToggleEvent
+  methodsToPreserve:
+  - assembly: Unity.RenderStreaming.Sample
+    fullTypeName: Unity.RenderStreaming.Samples.BackButton
+    methodName: BackButtonPressed
+  - assembly: UnityEngine.CoreModule
+    fullTypeName: UnityEngine.GameObject
+    methodName: SetActive
+  sceneClasses:
+    Assets/Scenes/RobotROS.unity:
+    - Class: 1
+      Script: {instanceID: 0}
+    - Class: 4
+      Script: {instanceID: 0}
+    - Class: 20
+      Script: {instanceID: 0}
+    - Class: 21
+      Script: {instanceID: 0}
+    - Class: 23
+      Script: {instanceID: 0}
+    - Class: 28
+      Script: {instanceID: 0}
+    - Class: 33
+      Script: {instanceID: 0}
+    - Class: 43
+      Script: {instanceID: 0}
+    - Class: 48
+      Script: {instanceID: 0}
+    - Class: 64
+      Script: {instanceID: 0}
+    - Class: 65
+      Script: {instanceID: 0}
+    - Class: 81
+      Script: {instanceID: 0}
+    - Class: 82
+      Script: {instanceID: 0}
+    - Class: 83
+      Script: {instanceID: 0}
+    - Class: 104
+      Script: {instanceID: 0}
+    - Class: 108
+      Script: {instanceID: 0}
+    - Class: 114
+      Script: {instanceID: 26736}
+    - Class: 114
+      Script: {instanceID: 29948}
+    - Class: 114
+      Script: {instanceID: 27578}
+    - Class: 114
+      Script: {instanceID: 25660}
+    - Class: 114
+      Script: {instanceID: 28828}
+    - Class: 114
+      Script: {instanceID: 25044}
+    - Class: 114
+      Script: {instanceID: 28976}
+    - Class: 114
+      Script: {instanceID: 30014}
+    - Class: 114
+      Script: {instanceID: 29876}
+    - Class: 114
+      Script: {instanceID: 28026}
+    - Class: 114
+      Script: {instanceID: 27030}
+    - Class: 114
+      Script: {instanceID: 30216}
+    - Class: 114
+      Script: {instanceID: 28372}
+    - Class: 114
+      Script: {instanceID: 25400}
+    - Class: 114
+      Script: {instanceID: 30320}
+    - Class: 114
+      Script: {instanceID: 27288}
+    - Class: 114
+      Script: {instanceID: 25232}
+    - Class: 114
+      Script: {instanceID: 29256}
+    - Class: 114
+      Script: {instanceID: 26508}
+    - Class: 114
+      Script: {instanceID: 26588}
+    - Class: 114
+      Script: {instanceID: 29512}
+    - Class: 114
+      Script: {instanceID: 26842}
+    - Class: 114
+      Script: {instanceID: 25176}
+    - Class: 114
+      Script: {instanceID: 27602}
+    - Class: 114
+      Script: {instanceID: 26490}
+    - Class: 114
+      Script: {instanceID: 27670}
+    - Class: 114
+      Script: {instanceID: 29378}
+    - Class: 114
+      Script: {instanceID: 29070}
+    - Class: 114
+      Script: {instanceID: 26586}
+    - Class: 114
+      Script: {instanceID: 26854}
+    - Class: 114
+      Script: {instanceID: 26964}
+    - Class: 114
+      Script: {instanceID: 29028}
+    - Class: 114
+      Script: {instanceID: 27580}
+    - Class: 114
+      Script: {instanceID: 29500}
+    - Class: 114
+      Script: {instanceID: 29628}
+    - Class: 114
+      Script: {instanceID: 29744}
+    - Class: 114
+      Script: {instanceID: 27512}
+    - Class: 114
+      Script: {instanceID: 27846}
+    - Class: 114
+      Script: {instanceID: 25482}
+    - Class: 114
+      Script: {instanceID: 28478}
+    - Class: 114
+      Script: {instanceID: 27268}
+    - Class: 114
+      Script: {instanceID: 26910}
+    - Class: 114
+      Script: {instanceID: 26286}
+    - Class: 114
+      Script: {instanceID: 29234}
+    - Class: 114
+      Script: {instanceID: 27474}
+    - Class: 114
+      Script: {instanceID: 25634}
+    - Class: 114
+      Script: {instanceID: 25848}
+    - Class: 114
+      Script: {instanceID: 27716}
+    - Class: 114
+      Script: {instanceID: 28580}
+    - Class: 114
+      Script: {instanceID: 26288}
+    - Class: 114
+      Script: {instanceID: 30290}
+    - Class: 114
+      Script: {instanceID: 26112}
+    - Class: 114
+      Script: {instanceID: 29438}
+    - Class: 115
+      Script: {instanceID: 0}
+    - Class: 128
+      Script: {instanceID: 0}
+    - Class: 135
+      Script: {instanceID: 0}
+    - Class: 157
+      Script: {instanceID: 0}
+    - Class: 196
+      Script: {instanceID: 0}
+    - Class: 213
+      Script: {instanceID: 0}
+    - Class: 222
+      Script: {instanceID: 0}
+    - Class: 223
+      Script: {instanceID: 0}
+    - Class: 224
+      Script: {instanceID: 0}
+    - Class: 171741748
+      Script: {instanceID: 0}
+  scriptHashData:
+  - hash:
+      serializedVersion: 2
+      Hash: 1fcee5231cd75fec46cde8d10d1d536e
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: JointStatePublisher
+  - hash:
+      serializedVersion: 2
+      Hash: aae2f93155a8b7e8019330b312f51d5e
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: 
+    className: JointControl
+  - hash:
+      serializedVersion: 2
+      Hash: 04b6685b6f724c0d6024e6b6f96c8202
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: TimelineAsset
+  - hash:
+      serializedVersion: 2
+      Hash: 8e1487cadd01c1ed62940abbb1f7300b
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: WebBrowserInputSample
+  - hash:
+      serializedVersion: 2
+      Hash: b838cbada0b03f1cfbaebc8e124f4f39
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.OnScreen
+    className: OnScreenButton
+  - hash:
+      serializedVersion: 2
+      Hash: b2d2a01a2a85d9ed12e80cb33a9a6044
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: AnimationTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 737b92379ae9895a700eae42dad3377e
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: TwistStampedPublisher
+  - hash:
+      serializedVersion: 2
+      Hash: 215d2dc6ec6ea06728398ea39a103cb3
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.OnScreen
+    className: OnScreenStick
+  - hash:
+      serializedVersion: 2
+      Hash: 5874b789cd9832847c61ebfa803213af
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UIElements
+    className: PanelEventHandler
+  - hash:
+      serializedVersion: 2
+      Hash: b06a66bbfa70080440a78f777713bb71
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: RobotResetter
+  - hash:
+      serializedVersion: 2
+      Hash: d7839c93f2a431303c898a8452cebe8c
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: SignalingSettingsObject
+  - hash:
+      serializedVersion: 2
+      Hash: 756dea23fb63537b41b0292375e6969f
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfJointPrismatic
+  - hash:
+      serializedVersion: 2
+      Hash: fef7b1de2fd1557ad8228e9840b78b9c
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TextMeshProUGUI
+  - hash:
+      serializedVersion: 2
+      Hash: 8cd7b645812b333dbeaea22742b33450
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: 
+    className: RuntimeUrdfImporterExample
+  - hash:
+      serializedVersion: 2
+      Hash: 868c001c78004e34ba0027e867d6d74c
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfVisuals
+  - hash:
+      serializedVersion: 2
+      Hash: b439708f45fed2b894199f3dd22ba7ed
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: PrismaticJointLimitsManager
+  - hash:
+      serializedVersion: 2
+      Hash: e8d390bd9ecacc453a7500b90d0c0292
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: Physics2DRaycaster
+  - hash:
+      serializedVersion: 2
+      Hash: 5ebc58ec194dd44630b25fcc270ad4af
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Dropdown
+  - hash:
+      serializedVersion: 2
+      Hash: 1bb64487056d4c7e552d1a6fd29c8baa
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: EventPublisher
+  - hash:
+      serializedVersion: 2
+      Hash: a3901985eb076c1c9b7562fca82ca3e0
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: SignalAsset
+  - hash:
+      serializedVersion: 2
+      Hash: ed8e62f07ec878233f5493a335003493
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI
+    className: VirtualMouseInput
+  - hash:
+      serializedVersion: 2
+      Hash: f295412bc00b58b9095a71e9764cc886
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: AudioTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 5a4aa2850fe11587f47e34c270c7fd22
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: GraphicRaycaster
+  - hash:
+      serializedVersion: 2
+      Hash: 8e6dc3d79712ca4934f6d50c80f010b1
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_SpriteAnimator
+  - hash:
+      serializedVersion: 2
+      Hash: 86344100c716167fb86137c127ca9eee
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputActionImporterEditor
+  - hash:
+      serializedVersion: 2
+      Hash: cf32d98954e63b8e30e9334b152e9b8e
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: BaseInput
+  - hash:
+      serializedVersion: 2
+      Hash: 64c18095c27721566d364e952334f4c6
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: InputReceiver
+  - hash:
+      serializedVersion: 2
+      Hash: 68e3a5c8a323832677cd3c3b52846a4c
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputDebuggerWindow
+  - hash:
+      serializedVersion: 2
+      Hash: e7e95903ca66d58e1a7cbd71f824e16d
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_SubMeshUI
+  - hash:
+      serializedVersion: 2
+      Hash: e28ede075fe7916fee22cd2697590b58
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfJointRevolute
+  - hash:
+      serializedVersion: 2
+      Hash: 9c2a74050ab21a942c069c35174c3804
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: InputSystemObject
+  - hash:
+      serializedVersion: 2
+      Hash: e74e603af475b52d57587b6b1095c66c
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: GyroSample
+  - hash:
+      serializedVersion: 2
+      Hash: b75d8d505459e1768403f72bb2baed87
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: AutomaticStreaming
+  - hash:
+      serializedVersion: 2
+      Hash: 0370b9f95798139b666659c7e1be6147
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI
+    className: BaseInputOverride
+  - hash:
+      serializedVersion: 2
+      Hash: 4ac0e1d725e5c3ea56a9c9e612e9bd28
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: BidirectionalSample
+  - hash:
+      serializedVersion: 2
+      Hash: d93e37e16049e213e7b85cfaf2b1d543
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: AudioSpectrumView
+  - hash:
+      serializedVersion: 2
+      Hash: b5007673bbbdb9d12597a1d8201370f5
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Text
+  - hash:
+      serializedVersion: 2
+      Hash: febcfbf0a0d85e37808a3740e3c2c6fa
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: MarkerTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 8ed5daadd237bb82e132790f75ffccaf
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: PlayerInputEditor
+  - hash:
+      serializedVersion: 2
+      Hash: f89ed7ed285a1f666cb8a6c430235239
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: 
+    className: AspectRatioFitterPatched
+  - hash:
+      serializedVersion: 2
+      Hash: daeac1347f8039f61cd4017ff33bd3c6
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI
+    className: InputSystemUIInputModule
+  - hash:
+      serializedVersion: 2
+      Hash: d5cd7f207e91ca8336c65a577a6fb2a0
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: ScrollRect
+  - hash:
+      serializedVersion: 2
+      Hash: 2a6b9bda1f997dfa4c846dc57703f4c4
+    assemblyName: vhacd
+    namespaceName: MeshProcess
+    className: VHACD
+  - hash:
+      serializedVersion: 2
+      Hash: 8d95f96f47fd0ce421cfb5671fcf724c
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: MultiplaySample
+  - hash:
+      serializedVersion: 2
+      Hash: 55060a7bf226ac385ce19ebd450f199f
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UIElements
+    className: PanelRaycaster
+  - hash:
+      serializedVersion: 2
+      Hash: 8dff8e9853297d341afa0c11f9091b59
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: LayoutElement
+  - hash:
+      serializedVersion: 2
+      Hash: 00bbd9db8634496d079d17711b2ff7c4
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Selectable
+  - hash:
+      serializedVersion: 2
+      Hash: 8016e9874bead8fecc11b4ce53c3a9cc
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: SceneSelectUI
+  - hash:
+      serializedVersion: 2
+      Hash: b34e86c4d44e34b642134bf593f2acb2
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: SingleConnection
+  - hash:
+      serializedVersion: 2
+      Hash: 35f29dea72374e1e9d7392a9bae43abb
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: VideoStreamSender
+  - hash:
+      serializedVersion: 2
+      Hash: ffdc38c2257e3caa741be81d46716002
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: AudioStreamSender
+  - hash:
+      serializedVersion: 2
+      Hash: a54ccb6b35c883a3f6d1efb32e61b3bd
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter.Control
+    className: Controller
+  - hash:
+      serializedVersion: 2
+      Hash: 6ddd5a9b167461e8d799259fb976bfb4
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: Broadcast
+  - hash:
+      serializedVersion: 2
+      Hash: fb79e95da8891fc7ac6c36ca6967af23
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: ActivationTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 682dfc653b22feea53b38adb3bc66414
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: SignalReceiver
+  - hash:
+      serializedVersion: 2
+      Hash: bfa9d6dfbc3c74a843a3b197bdcc6639
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_Settings
+  - hash:
+      serializedVersion: 2
+      Hash: 3e6e06affe6f6e9818bcdf7ff44d36a5
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: ReceiverSample
+  - hash:
+      serializedVersion: 2
+      Hash: 8dc40a01667ca02b3354a4e7a61be082
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: GridLayoutGroup
+  - hash:
+      serializedVersion: 2
+      Hash: dfe89e262bb3a92445e65e46b59eae06
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: ArticulationBodyInitialization
+  - hash:
+      serializedVersion: 2
+      Hash: 9f5199f2e532f2924c1bff02fab7c3d2
+    assemblyName: Unity.Robotics.ROSTCPConnector
+    namespaceName: Unity.Robotics.ROSTCPConnector
+    className: TFAttachment
+  - hash:
+      serializedVersion: 2
+      Hash: 9dd54ce33440072d6692a67e0c384ad1
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: GroupTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 4883c9d3cb73c9868976d9031414da92
+    assemblyName: Unity.RenderStreaming.Sample.WebBrowserInput
+    namespaceName: Unity.RenderStreaming.Samples
+    className: WebBrowserInputChannelReceiver
+  - hash:
+      serializedVersion: 2
+      Hash: b5cbb0d3d4bbfa9979d5d02eabea5f9e
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfCollision
+  - hash:
+      serializedVersion: 2
+      Hash: bc75926bfd3609757f7bf33ff766f026
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.EnhancedTouch
+    className: TouchSimulation
+  - hash:
+      serializedVersion: 2
+      Hash: 20a120e55ad3ab65556328d5fd8309dd
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Outline
+  - hash:
+      serializedVersion: 2
+      Hash: 4878e735441f4041539853759559c86f
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: VerticalLayoutGroup
+  - hash:
+      serializedVersion: 2
+      Hash: 33eb495d99aa9bea4dbe8b4c4e02c7bb
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: InputActionReference
+  - hash:
+      serializedVersion: 2
+      Hash: b8bd3958b201698e597cff1d008540af
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfCollisions
+  - hash:
+      serializedVersion: 2
+      Hash: 40be2ad159aa1a2b72ecc74cb38c7824
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI
+    className: MultiplayerEventSystem
+  - hash:
+      serializedVersion: 2
+      Hash: 2bbd05175d4cdd21e24f9716cdd24f83
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.XR
+    className: TrackedPoseDriver
+  - hash:
+      serializedVersion: 2
+      Hash: 1553f209ae0b2d5d3a35685fca55f9c3
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_ScrollbarEventHandler
+  - hash:
+      serializedVersion: 2
+      Hash: 0e9efd53a6615bd72c04aedccb3d1f7b
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: ROSClockPublisher
+  - hash:
+      serializedVersion: 2
+      Hash: b88f5dca8e70601e5bed5ecb276c3376
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: Multiplay
+  - hash:
+      serializedVersion: 2
+      Hash: 8d5318ed8488b1fe17c08044ce1b8309
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_StyleSheet
+  - hash:
+      serializedVersion: 2
+      Hash: e18dfd2b913b09fbbb2405165a2e6a44
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_Dropdown
+  - hash:
+      serializedVersion: 2
+      Hash: c44610b07773fdc524e6672265c91765
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter.Control
+    className: IKRobot
+  - hash:
+      serializedVersion: 2
+      Hash: f34cc490b6857195b9cdb30787d4b96f
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UIElements
+    className: WorldDocumentRaycaster
+  - hash:
+      serializedVersion: 2
+      Hash: d85292b1d7ddb10e5a2df5d221dcba86
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: InputActionAsset
+  - hash:
+      serializedVersion: 2
+      Hash: 6290198a4bb61fd821d5e7500b0ffd48
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfPlugin
+  - hash:
+      serializedVersion: 2
+      Hash: 6fbde743bd836da26d1358ac44cb2c85
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: StateReader
+  - hash:
+      serializedVersion: 2
+      Hash: 185e7bacfbbc5defefa609c70f7ff4ce
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_ColorGradient
+  - hash:
+      serializedVersion: 2
+      Hash: 1a680d9a08de79b0d2c779e78c9843b4
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: RectMask2D
+  - hash:
+      serializedVersion: 2
+      Hash: 4f4acacf26ce3cda0ceff4eadb24875b
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputDeviceDebuggerWindow
+  - hash:
+      serializedVersion: 2
+      Hash: e6ee7dccba41ae87d10e3d922c6cb71c
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_InputField
+  - hash:
+      serializedVersion: 2
+      Hash: 53e329840e6d03aebec76623c3b054db
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Slider
+  - hash:
+      serializedVersion: 2
+      Hash: 6cf63e9dc888f92a3672d2e4db631c8e
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: PlayerInputManagerEditor
+  - hash:
+      serializedVersion: 2
+      Hash: 540882762544409cc4530e60db00e951
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: CanvasScaler
+  - hash:
+      serializedVersion: 2
+      Hash: 80ce71bcb4ae6931d15a68d6ab706e0e
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfRobot
+  - hash:
+      serializedVersion: 2
+      Hash: 09d38d8b0e6a450dd1142fd87ccb8a91
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: RenderTextureBlitter
+  - hash:
+      serializedVersion: 2
+      Hash: 3074afe1b03a0fb081e176a4ef1b9d09
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputActionAssetEditor
+  - hash:
+      serializedVersion: 2
+      Hash: eeb13b047377bf1a612a64ecf7d46784
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: 
+    className: CopyTransform
+  - hash:
+      serializedVersion: 2
+      Hash: 352b3897399177bba4c844dfb8aedf20
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfJointContinuous
+  - hash:
+      serializedVersion: 2
+      Hash: 3493e189b34776769afe1124015a305c
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: SignalingManager
+  - hash:
+      serializedVersion: 2
+      Hash: 3f7bf9e8e0f7b78cb99e5e98c191a087
+    assemblyName: Unity.Robotics.ROSTCPConnector
+    namespaceName: Unity.Robotics.ROSTCPConnector
+    className: HudPanel
+  - hash:
+      serializedVersion: 2
+      Hash: dd9dda1dfd39e605c49e72003342ef5d
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Image
+  - hash:
+      serializedVersion: 2
+      Hash: 321cef2bb01757185811b2970cab9a14
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.HID.Editor
+    className: HIDDescriptorWindow
+  - hash:
+      serializedVersion: 2
+      Hash: e1ad5fe1f31a59ad2528f8b89a4eeabd
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfVisual
+  - hash:
+      serializedVersion: 2
+      Hash: 28fd3d045acc780719a17f02073eb448
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: InputField
+  - hash:
+      serializedVersion: 2
+      Hash: dc201de005c73eb3aca4d8091c6b2836
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputActionDebuggerWindow
+  - hash:
+      serializedVersion: 2
+      Hash: ec012393992b4df3113a3efc7ae297f9
+    assemblyName: Unity.RenderStreaming.Sample.Stats
+    namespaceName: Unity.RenderStreaming.Samples
+    className: ShowStatsUI
+  - hash:
+      serializedVersion: 2
+      Hash: 5fb59b860b86344337ff980c5a97d8eb
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: PoseStampedPublisher
+  - hash:
+      serializedVersion: 2
+      Hash: e2a84eb8223dc58d2ff3718fdcf7cc9f
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: MultiplayChannel
+  - hash:
+      serializedVersion: 2
+      Hash: 90cf308600fb4aeb677786843453ec55
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: RemoteInputPlayerConnection
+  - hash:
+      serializedVersion: 2
+      Hash: 33f160a5c07e580c29aba2bd1e4db811
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: HorizontalLayoutGroup
+  - hash:
+      serializedVersion: 2
+      Hash: 038b997b2664805b20890177a6869972
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfJointFloating
+  - hash:
+      serializedVersion: 2
+      Hash: ff76cf6cf52b4db7b95af6ffadca9288
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: SignalEmitter
+  - hash:
+      serializedVersion: 2
+      Hash: c4cdb902228df56d5b2b639d6a6bbd3c
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: PlayerInputManager
+  - hash:
+      serializedVersion: 2
+      Hash: af58ee4c1f076a53646c248b221534d9
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: SimpleCameraController
+  - hash:
+      serializedVersion: 2
+      Hash: 4fcf0bb4aff1d14a1dfcdedc4b07bd05
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: TouchInputModule
+  - hash:
+      serializedVersion: 2
+      Hash: 0f19765290d81f9e93eff7828a091d40
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: PlayerInput
+  - hash:
+      serializedVersion: 2
+      Hash: 4e025951810619650820ecfeb51efe7f
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: RobotIdentity
+  - hash:
+      serializedVersion: 2
+      Hash: 8703b6ae2b0eefd9dafbc44d8d333fb1
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Shadow
+  - hash:
+      serializedVersion: 2
+      Hash: c55ad216f140968184d599156192b74c
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: VideoStreamReceiver
+  - hash:
+      serializedVersion: 2
+      Hash: 1ab136900c0edaeeb49424c852595030
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: RawImage
+  - hash:
+      serializedVersion: 2
+      Hash: e987953190eb4c12cf19df790566dc2c
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: EventSystem
+  - hash:
+      serializedVersion: 2
+      Hash: 6a33c47fdbf17a01cd03c7aa4acf117b
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: RenderStreamingSettings
+  - hash:
+      serializedVersion: 2
+      Hash: b747f5d40674055dd70e18552f1b0447
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Mask
+  - hash:
+      serializedVersion: 2
+      Hash: b17a4364c77338d3cba80938e6283f79
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputStateWindow
+  - hash:
+      serializedVersion: 2
+      Hash: 7053e305cdc1eb560f4c3be49d3b5136
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: PhysicsRaycaster
+  - hash:
+      serializedVersion: 2
+      Hash: e5f9868e485ac5248f96a3be584a5e4a
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: ControlPlayableAsset
+  - hash:
+      serializedVersion: 2
+      Hash: 0bc7ef1b7516f21320ec49bfd31eef2e
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI
+    className: TrackedDeviceRaycaster
+  - hash:
+      serializedVersion: 2
+      Hash: 810e3c228b295cc60c4de2cdd94b18cb
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_SpriteAsset
+  - hash:
+      serializedVersion: 2
+      Hash: 0b63f6d3335e11939ce8790b904c8691
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: ActivationPlayableAsset
+  - hash:
+      serializedVersion: 2
+      Hash: e6b258489c88376c5869946b2735e7e5
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_FontAsset
+  - hash:
+      serializedVersion: 2
+      Hash: 33656f83bb0079184b2206a69690ec46
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: AspectRatioFitter
+  - hash:
+      serializedVersion: 2
+      Hash: 17ed3fd703da540d38999af6ea2125e9
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: ImagePublisher
+  - hash:
+      serializedVersion: 2
+      Hash: 2b4e393a3e361cd8d1bf11b9fca48014
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: InputActionsEditorWindow
+  - hash:
+      serializedVersion: 2
+      Hash: 9104447b683bf70406fa01f12ecb564a
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: StandaloneInputModule
+  - hash:
+      serializedVersion: 2
+      Hash: a92561298b80715aa69e8fa770123cb5
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI.Editor
+    className: InputSystemUIInputModuleEditor
+  - hash:
+      serializedVersion: 2
+      Hash: 6a0b5b415c00f783202fd1ae2d556cb2
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: AudioPlayableAsset
+  - hash:
+      serializedVersion: 2
+      Hash: 9972985af141dd364073476f6491da5c
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: KeyboardControl
+  - hash:
+      serializedVersion: 2
+      Hash: b73a90d5410f0f83a2d58be6a6d560f7
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfInertial
+  - hash:
+      serializedVersion: 2
+      Hash: 1c2deb5ed7339c5ef4d48189c80ae1c2
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter.Control
+    className: FKRobot
+  - hash:
+      serializedVersion: 2
+      Hash: 7e13ff7c879466f70e2f32bffc61985b
+    assemblyName: Unity.Robotics.ROSTCPConnector
+    namespaceName: Unity.Robotics.ROSTCPConnector.ROSGeometry
+    className: GeometryCompass
+  - hash:
+      serializedVersion: 2
+      Hash: 5190388b8c6337e7102dca0915c21338
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.Editor
+    className: AdvancedDropdownWindow
+  - hash:
+      serializedVersion: 2
+      Hash: a17289e53396756e696127914ee60224
+    assemblyName: Unity.WebRTC
+    namespaceName: Unity.WebRTC
+    className: AudioCustomFilter
+  - hash:
+      serializedVersion: 2
+      Hash: 915204dac8acad99f076d6e72ada0a0f
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Button
+  - hash:
+      serializedVersion: 2
+      Hash: 35ffc0f7c58de21c6f3d88eaac496291
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: TwistSubscriber
+  - hash:
+      serializedVersion: 2
+      Hash: 999ec126b5cbe7a9728c32f41b049731
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TextMeshPro
+  - hash:
+      serializedVersion: 2
+      Hash: 95426d463074947dcbffc797c44e779c
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem.UI.Editor
+    className: StandaloneInputModuleModuleEditor
+  - hash:
+      serializedVersion: 2
+      Hash: 477bcaaa76efa09a9638c663e1e799f4
+    assemblyName: Unity.Robotics.ROSTCPConnector
+    namespaceName: Unity.Robotics.ROSTCPConnector
+    className: ROSConnection
+  - hash:
+      serializedVersion: 2
+      Hash: 10c17b309bdca62b4d7fbaf113ed4ca0
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Toggle
+  - hash:
+      serializedVersion: 2
+      Hash: c66014d11c003811ebca0b4ca4715794
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfJointFixed
+  - hash:
+      serializedVersion: 2
+      Hash: 7ddee3982ee46bef759034751eb6b583
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: BackButton
+  - hash:
+      serializedVersion: 2
+      Hash: 13f262cc0741566a7ab72682984bc3e1
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_SubMesh
+  - hash:
+      serializedVersion: 2
+      Hash: e63fe08659e7e4647a51098c666f8845
+    assemblyName: Unity.InputSystem
+    namespaceName: 
+    className: DownloadableSample
+  - hash:
+      serializedVersion: 2
+      Hash: afb7b65d28d5a7423e69a1b076be0064
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: PositionAsUV1
+  - hash:
+      serializedVersion: 2
+      Hash: d8c0bcad2015c1a5cb0d2cfd9a7f7896
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfLink
+  - hash:
+      serializedVersion: 2
+      Hash: 0a4ef3c4e73b2f3eef913e2325924084
+    assemblyName: Unity.InputSystem
+    namespaceName: UnityEngine.InputSystem
+    className: InputSettings
+  - hash:
+      serializedVersion: 2
+      Hash: 4728e3d21cc2a12e391e71ec9b7eed0b
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: SignalTrack
+  - hash:
+      serializedVersion: 2
+      Hash: d0392b7f3f52d5af537ade186b4f51f1
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: ControlTrack
+  - hash:
+      serializedVersion: 2
+      Hash: ad481ff06161f16088f359b541d13adf
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfPlugins
+  - hash:
+      serializedVersion: 2
+      Hash: b6c556e5484a71437fb03ba0ad65e064
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: UIControllerV2
+  - hash:
+      serializedVersion: 2
+      Hash: 30796cb5055540b269e999027598a2c1
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: PlayerController
+  - hash:
+      serializedVersion: 2
+      Hash: b1cbbd480794d924bc1e2d85c8a9ee07
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: UrdfJointPlanar
+  - hash:
+      serializedVersion: 2
+      Hash: c67bc98d3d2cddae48b061b594407a23
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: LaserScanPublisher
+  - hash:
+      serializedVersion: 2
+      Hash: 3b5263a98bcc71d9a9d1d78a31b34ced
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TMP_SelectionCaret
+  - hash:
+      serializedVersion: 2
+      Hash: 0109d1b29ee6e229cc9b6e592ffb41a2
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: ArticulationWheelController
+  - hash:
+      serializedVersion: 2
+      Hash: a1ac4c50e55874de16eee3db71aa9784
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: ToggleGroup
+  - hash:
+      serializedVersion: 2
+      Hash: 671ad5852edff2ecd30a51d9113c307c
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: BroadcastSample
+  - hash:
+      serializedVersion: 2
+      Hash: d41ab9b5ea92474f9c0a6937a0607ce1
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: ContentSizeFitter
+  - hash:
+      serializedVersion: 2
+      Hash: 9706c678439d5846e396feb7c6482ac6
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: UIController
+  - hash:
+      serializedVersion: 2
+      Hash: bedda6644da4dbd16086d6060c62bf40
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: Laser
+  - hash:
+      serializedVersion: 2
+      Hash: 51b80d3734ea86b38e3101db98029e15
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: AnimationPlayableAsset
+  - hash:
+      serializedVersion: 2
+      Hash: d718c5b76e558fa3495ebfa733617c65
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: FollowTransform
+  - hash:
+      serializedVersion: 2
+      Hash: a2e48ee2530281c0b8107889bc33e06f
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: ROSTransformTreePublisher
+  - hash:
+      serializedVersion: 2
+      Hash: a118f6199d0cc46d213ee8bba05c52a1
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: CustomEventSystem
+  - hash:
+      serializedVersion: 2
+      Hash: a90f6a00b23520788be7d89ee3b0773d
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.UI
+    className: Scrollbar
+  - hash:
+      serializedVersion: 2
+      Hash: 8bbce9932f67ad8e7f4eefec87800f94
+    assemblyName: Unity.TextMeshPro
+    namespaceName: TMPro
+    className: TextContainer
+  - hash:
+      serializedVersion: 2
+      Hash: b19100ed5037cc16f0b1f399916ae2c1
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: AudioStreamReceiver
+  - hash:
+      serializedVersion: 2
+      Hash: c4c51b82162715a6604e44245d4c5965
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: SimpleGoal
+  - hash:
+      serializedVersion: 2
+      Hash: f2305da2400dfe6f069770a1a63f0f7c
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: PlayableTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 871766fbc33197021896cfdbfd9b0285
+    assemblyName: Unity.RenderStreaming
+    namespaceName: Unity.RenderStreaming
+    className: InputSender
+  - hash:
+      serializedVersion: 2
+      Hash: 7bb32d6e4c7614a97d9723ce7e26588c
+    assemblyName: Unity.Timeline
+    namespaceName: UnityEngine.Timeline
+    className: BasicPlayableBehaviour
+  - hash:
+      serializedVersion: 2
+      Hash: d0cdd713f9bf4e6a625d9e7804deca42
+    assemblyName: UnityEngine.UI
+    namespaceName: UnityEngine.EventSystems
+    className: EventTrigger
+  - hash:
+      serializedVersion: 2
+      Hash: 92484fc54765841d6b41455af07f5e44
+    assemblyName: Unity.Robotics.UrdfImporter
+    namespaceName: Unity.Robotics.UrdfImporter
+    className: HingeJointLimitsManager
+  - hash:
+      serializedVersion: 2
+      Hash: 3be56f9e5445d0ad1dfb19d0e665be71
+    assemblyName: Unity.RenderStreaming.Sample
+    namespaceName: Unity.RenderStreaming.Samples
+    className: SimpleCameraControllerV2
+  platform: 19
+  scenePathNames:
+  - Assets/Scenes/RobotROS.unity
+  playerPath: F:/unity_docker_proj/unity_docker/windows_build/Mobile Robot Demo.exe

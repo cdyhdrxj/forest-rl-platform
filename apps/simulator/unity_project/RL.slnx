@@ -1,0 +1,8 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Unity.RenderStreaming.Sample.csproj" />
+  <Project Path="Unity.RenderStreaming.Sample.WebBrowserInput.csproj" />
+  <Project Path="Unity.RenderStreaming.Sample.Stats.csproj" />
+  <Project Path="Unity.RenderStreaming.Sample.Editor.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+</Solution>

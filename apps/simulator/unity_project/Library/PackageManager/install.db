@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "packages": {
+    "com.unity.renderstreaming": {
+      "tarball": {
+        "hash": "3f814804bfc3",
+        "mtime": 1775515425597,
+        "size": 30094848,
+        "localPath": "C:\\Users\\Vovasik\\Downloads\\com.unity.renderstreaming-3.1.0-exp.9.tgz"
+      }
+    }
+  }
+}

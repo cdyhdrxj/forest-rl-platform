@@ -1,0 +1,133 @@
+<linker>
+	<assembly fullname="Assembly-CSharp">
+		<type fullname="ArticulationBodyInitialization" preserve="nothing"/>
+		<type fullname="ArticulationWheelController" preserve="nothing"/>
+		<type fullname="EnvGenerate" preserve="nothing"/>
+		<type fullname="EnvReset" preserve="nothing"/>
+		<type fullname="EnvSetGoal" preserve="nothing"/>
+		<type fullname="EnvSetRobots" preserve="nothing"/>
+		<type fullname="EventPublisher" preserve="nothing"/>
+		<type fullname="FoliageData" preserve="nothing"/>
+		<type fullname="GoalDetector" preserve="nothing"/>
+		<type fullname="ImagePublisher" preserve="nothing"/>
+		<type fullname="JointStatePublisher" preserve="nothing"/>
+		<type fullname="KeyboardControl" preserve="nothing"/>
+		<type fullname="Laser" preserve="nothing"/>
+		<type fullname="LaserScanPublisher" preserve="nothing"/>
+		<type fullname="MapDisplay" preserve="nothing"/>
+		<type fullname="MapGenerator" preserve="nothing"/>
+		<type fullname="NoiseData" preserve="nothing"/>
+		<type fullname="PoseStampedPublisher" preserve="nothing"/>
+		<type fullname="RobotCollisionHandler" preserve="nothing"/>
+		<type fullname="RobotIdentity" preserve="nothing"/>
+		<type fullname="ROSClockPublisher" preserve="nothing"/>
+		<type fullname="ROSTransformTreePublisher" preserve="nothing"/>
+		<type fullname="SimpleGoal" preserve="nothing"/>
+		<type fullname="StateReader" preserve="nothing"/>
+		<type fullname="TerData" preserve="nothing"/>
+		<type fullname="TerrainSize" preserve="nothing"/>
+		<type fullname="TexData" preserve="nothing"/>
+		<type fullname="TwistStampedPublisher" preserve="nothing"/>
+		<type fullname="TwistSubscriber" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="Unity.InputSystem">
+		<type fullname="UnityEngine.InputSystem.InputActionAsset" preserve="nothing"/>
+		<type fullname="UnityEngine.InputSystem.InputActionReference" preserve="nothing"/>
+		<type fullname="UnityEngine.InputSystem.InputSettings" preserve="nothing"/>
+		<type fullname="UnityEngine.InputSystem.InputSystemObject" preserve="nothing"/>
+		<type fullname="UnityEngine.InputSystem.RemoteInputPlayerConnection" preserve="nothing"/>
+		<type fullname="UnityEngine.InputSystem.UI.InputSystemUIInputModule" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="Unity.RenderStreaming">
+		<type fullname="Unity.RenderStreaming.AudioStreamSender" preserve="nothing"/>
+		<type fullname="Unity.RenderStreaming.Broadcast" preserve="nothing"/>
+		<type fullname="Unity.RenderStreaming.RenderStreamingSettings" preserve="nothing"/>
+		<type fullname="Unity.RenderStreaming.SignalingManager" preserve="nothing"/>
+		<type fullname="Unity.RenderStreaming.VideoStreamSender" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="Unity.RenderStreaming.Sample">
+		<type fullname="Unity.RenderStreaming.Samples.RosRobotInput" preserve="nothing"/>
+		<type fullname="Unity.RenderStreaming.Samples.SimpleCameraControllerArrows" preserve="nothing"/>
+		<type fullname="Unity.RenderStreaming.Samples.UIController" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="Unity.RenderStreaming.Sample.WebBrowserInput">
+		<type fullname="Unity.RenderStreaming.Samples.WebBrowserInputChannelReceiver" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="Unity.Robotics.ROSTCPConnector">
+		<type fullname="Unity.Robotics.ROSTCPConnector.HudPanel" preserve="nothing"/>
+		<type fullname="Unity.Robotics.ROSTCPConnector.ROSConnection" preserve="nothing"/>
+		<type fullname="Unity.Robotics.ROSTCPConnector.ROSGeometry.GeometryCompass" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="Unity.Robotics.UrdfImporter">
+		<type fullname="Unity.Robotics.UrdfImporter.Control.Controller" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfCollision" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfCollisions" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfInertial" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfJointContinuous" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfJointFixed" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfLink" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfPlugins" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfRobot" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfVisual" preserve="nothing"/>
+		<type fullname="Unity.Robotics.UrdfImporter.UrdfVisuals" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="UnityEngine">
+		<type fullname="UnityEditor.AudioManager" preserve="nothing"/>
+		<type fullname="UnityEditor.InputManager" preserve="nothing"/>
+		<type fullname="UnityEditor.MonoManager" preserve="nothing"/>
+		<type fullname="UnityEditor.MonoScript" preserve="nothing"/>
+		<type fullname="UnityEditor.Physics2DSettings" preserve="nothing"/>
+		<type fullname="UnityEditor.PlayerSettings" preserve="nothing"/>
+		<type fullname="UnityEditor.TagManager" preserve="nothing"/>
+		<type fullname="UnityEditor.TimeManager" preserve="nothing"/>
+		<type fullname="UnityEditor.VFXManager" preserve="nothing"/>
+		<type fullname="UnityEngine.Animation" preserve="nothing"/>
+		<type fullname="UnityEngine.ArticulationBody" preserve="nothing"/>
+		<type fullname="UnityEngine.Audio.AudioResource" preserve="nothing"/>
+		<type fullname="UnityEngine.AudioBehaviour" preserve="nothing"/>
+		<type fullname="UnityEngine.AudioClip" preserve="nothing"/>
+		<type fullname="UnityEngine.AudioListener" preserve="nothing"/>
+		<type fullname="UnityEngine.AudioSource" preserve="nothing"/>
+		<type fullname="UnityEngine.Behaviour" preserve="nothing"/>
+		<type fullname="UnityEngine.BillboardAsset" preserve="nothing"/>
+		<type fullname="UnityEngine.Camera" preserve="nothing"/>
+		<type fullname="UnityEngine.Canvas" preserve="nothing"/>
+		<type fullname="UnityEngine.CanvasGroup" preserve="nothing"/>
+		<type fullname="UnityEngine.CanvasRenderer" preserve="nothing"/>
+		<type fullname="UnityEngine.CapsuleCollider" preserve="nothing"/>
+		<type fullname="UnityEngine.Collider" preserve="nothing"/>
+		<type fullname="UnityEngine.Component" preserve="nothing"/>
+		<type fullname="UnityEngine.Font" preserve="nothing"/>
+		<type fullname="UnityEngine.GameObject" preserve="nothing"/>
+		<type fullname="UnityEngine.Light" preserve="nothing"/>
+		<type fullname="UnityEngine.LightmapSettings" preserve="nothing"/>
+		<type fullname="UnityEngine.Material" preserve="nothing"/>
+		<type fullname="UnityEngine.Mesh" preserve="nothing"/>
+		<type fullname="UnityEngine.MeshCollider" preserve="nothing"/>
+		<type fullname="UnityEngine.MeshFilter" preserve="nothing"/>
+		<type fullname="UnityEngine.MeshRenderer" preserve="nothing"/>
+		<type fullname="UnityEngine.MonoBehaviour" preserve="nothing"/>
+		<type fullname="UnityEngine.Object" preserve="nothing"/>
+		<type fullname="UnityEngine.QualitySettings" preserve="nothing"/>
+		<type fullname="UnityEngine.RectTransform" preserve="nothing"/>
+		<type fullname="UnityEngine.Renderer" preserve="nothing"/>
+		<type fullname="UnityEngine.Rendering.GraphicsSettings" preserve="nothing"/>
+		<type fullname="UnityEngine.RenderSettings" preserve="nothing"/>
+		<type fullname="UnityEngine.Shader" preserve="nothing"/>
+		<type fullname="UnityEngine.SphereCollider" preserve="nothing"/>
+		<type fullname="UnityEngine.Sprite" preserve="nothing"/>
+		<type fullname="UnityEngine.TextAsset" preserve="nothing"/>
+		<type fullname="UnityEngine.Texture" preserve="nothing"/>
+		<type fullname="UnityEngine.Texture2D" preserve="nothing"/>
+		<type fullname="UnityEngine.Texture2DArray" preserve="nothing"/>
+		<type fullname="UnityEngine.Transform" preserve="nothing"/>
+		<type fullname="UnityEngine.Tree" preserve="nothing"/>
+	</assembly>
+	<assembly fullname="UnityEngine.UI">
+		<type fullname="UnityEngine.EventSystems.EventSystem" preserve="nothing"/>
+		<type fullname="UnityEngine.UI.CanvasScaler" preserve="nothing"/>
+		<type fullname="UnityEngine.UI.GraphicRaycaster" preserve="nothing"/>
+		<type fullname="UnityEngine.UI.Image" preserve="nothing"/>
+		<type fullname="UnityEngine.UI.Text" preserve="nothing"/>
+	</assembly>
+</linker>
