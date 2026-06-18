@@ -16,6 +16,7 @@
 Клиент подключается к одному из следующих путей:
 
 - `/continuous/trail`
+- `/continuous/coverage`
 - `/discrete/patrol`
 - `/discrete/reforestation`
 - `/threed/patrol`
@@ -49,6 +50,7 @@ ws://localhost:8000/threed/trail
 
 - `run_id`
 - `scenario_version_id`
+- `source_run_id`
 - `params`
 
 ## Поддерживаемые действия
@@ -102,6 +104,21 @@ ws://localhost:8000/threed/trail
 }
 ```
 
+### `start_eval`
+
+Запустить evaluation run из checkpoint другого run.
+Требует `source_run_id`; backend берет последний `model_checkpoint` source run и передает его в runtime как `load_checkpoint_path`.
+
+```json
+{
+  "action": "start_eval",
+  "source_run_id": 12,
+  "params": {
+    "deterministic": true
+  }
+}
+```
+
 ### `stop`
 
 Остановить текущий run.
@@ -109,6 +126,17 @@ ws://localhost:8000/threed/trail
 ```json
 {
   "action": "stop"
+}
+```
+
+### `finish`
+
+Финализировать текущий run со статусом `finished`.
+Для train run backend пытается сохранить checkpoint, если runtime-сервис выставил путь последнего checkpoint.
+
+```json
+{
+  "action": "finish"
 }
 ```
 
@@ -151,6 +179,19 @@ ws://localhost:8000/threed/trail
 - `max_steps`
 - поля настройки награды и динамики
 
+### `/continuous/coverage`
+
+Плоский объект параметров для coverage runtime.
+Сейчас маршрут используется scientific MVP и обычно запускается программно через dispatcher/headless suite, но WebSocket endpoint также объявлен.
+
+Типичные ключи:
+
+- `seed`
+- `grid_size` or route-specific map params
+- `algorithm`
+- `max_steps`
+- параметры coverage task/runtime
+
 ### `/discrete/patrol`
 
 Backend принимает либо:
@@ -167,16 +208,20 @@ Backend принимает плоский объект, совместимый �
 
 ### `/threed/patrol` и `/threed/trail`
 
-Плоский объект параметров.
-Сейчас backend-сервис обычно использует здесь такие ключи:
+Backend принимает текущий nested payload фронта:
 
-- `seed`
-- `preview_size` or `grid_size`
-- `tree_density`
-- `terrain_hilliness`
+- `map_config`
+- `robot_config`
+- `target_config`
 - `algorithm`
 - `max_steps`
 - параметры обучения, зависящие от задачи
+
+`map_config` преобразуется в `/env/generate forest_msgs/srv/SetTerrainParams`.
+Основные поля: `seed`, `mesh_height_multiplayer`, `noise_scale`, `octaves`, `lacunarity`, `density`, `max_view_dst`.
+
+Для совместимости backend также принимает старые плоские ключи `seed`, `density`, `tree_density`, `terrain_hilliness`, `robot_position_*`, `target_position_*`.
+`tree_density` считается legacy alias для `density`, если Unity генерирует только деревья. Каноническое поле ROS сейчас называется `density` и означает плотность процедурных объектов.
 
 ## Формат сообщения сервера
 

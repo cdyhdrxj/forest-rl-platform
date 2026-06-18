@@ -4,6 +4,9 @@ from typing import Any
 
 import numpy as np
 
+from services.agrocare_coverage.families import resolve_coverage_family_params
+from services.agrocare_coverage.generator import apply_coverage_layout_to_scenario
+from services.agrocare_coverage.models import CoverageEnvConfig
 from services.scenario_generator.models import (
     EnvironmentKind,
     GeneratedLayer,
@@ -46,6 +49,14 @@ def _sample_unique_positions(
         occupied.add((x, y))
         sampled.append([x, y])
     return sampled
+
+
+def _preview_point_from_3d_config(config: dict[str, Any]) -> list[float]:
+    """Project a Unity point to the 2D preview plane."""
+    x = _get_number(config, "position_x", 0.0)
+    y = _get_number(config, "position_z", _get_number(config, "position_y", 0.0))
+    return [float(x), float(y)]
+
 
 class GridFamilyGenerator:
     environment_kind = EnvironmentKind.GRID
@@ -194,6 +205,19 @@ class Simulator3DFamilyGenerator:
     environment_kind = EnvironmentKind.SIMULATOR_3D
 
     def generate(self, request: GenerationRequest, seed: int) -> GeneratedScenario:
+        map_config = dict(request.terrain_params)
+        robot_config = dict(request.task_params.get("robot") or {})
+        target_config = dict(request.task_params.get("target") or {})
+        agent_preview = _preview_point_from_3d_config(robot_config)
+        goal_preview = _preview_point_from_3d_config(target_config)
+        world_descriptor = {
+            "terrain_source": "procedural_noise",
+            "seed": seed,
+            "map_config": map_config,
+            "robot_config": robot_config,
+            "target_config": target_config,
+            "max_steps": _get_int(request.task_params, "max_steps", 120),
+        }
 
         scenario = GeneratedScenario(
             environment_kind=request.environment_kind,
@@ -201,14 +225,20 @@ class Simulator3DFamilyGenerator:
             seed=seed,
             generator_name="simulator_3d_family_generator",
             generator_version="v1",
+            effective_params={
+                "world_descriptor": world_descriptor,
+            },
+            preview_payload={
+                "agent_pos": [agent_preview],
+                "goal_pos": [goal_preview] if target_config else [],
+                "landmark_pos": [],
+            },
             runtime_context={
                 "simulator_3d": {
-                    "world_descriptor": {
-                        "seed": seed,
-                    },
-                    "map_config": request.terrain_params,
-                    "robot_config": request.task_params.get("robot", {}),
-                    "target_config": request.task_params.get("target", {}),
+                    "world_descriptor": world_descriptor,
+                    "map_config": map_config,
+                    "robot_config": robot_config,
+                    "target_config": target_config,
                 }
             }
         )
@@ -221,6 +251,10 @@ class PatrolTaskOverlay:
     supported_environments = {EnvironmentKind.GRID, EnvironmentKind.SIMULATOR_3D}
 
     def apply(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
+        if scenario.environment_kind == EnvironmentKind.SIMULATOR_3D:
+            self._apply_simulator_3d(scenario, request)
+            return
+
         grid_size = int(
             scenario.runtime_context.get("grid", {}).get("grid_size")
             or scenario.get_layer_data("terrain").shape[0]
@@ -288,6 +322,52 @@ class PatrolTaskOverlay:
                 description="Deterministic intruder spawn (seeded random)",
             )
         )
+
+    def _apply_simulator_3d(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
+        sim_ctx = scenario.runtime_context.get("simulator_3d") or {}
+        map_config = dict(sim_ctx.get("map_config") or {})
+        target_config = dict(sim_ctx.get("target_config") or {})
+        robot_config = dict(sim_ctx.get("robot_config") or {})
+        agent_pos = _preview_point_from_3d_config(robot_config)
+
+        intruder_count = max(1, _get_int(request.task_params, "intruder_count", 1))
+        rng = np.random.default_rng(scenario.seed + 1001)
+        extent = max(1.0, float(map_config.get("max_view_dst") or 125.0))
+        half_extent = extent / 2.0
+        intruders = [
+            [
+                float(rng.uniform(-half_extent, half_extent)),
+                float(rng.uniform(-half_extent, half_extent)),
+            ]
+            for _ in range(intruder_count)
+        ]
+
+        if target_config and intruder_count == 1:
+            intruders[0] = _preview_point_from_3d_config(target_config)
+        elif not target_config and intruders:
+            first_x, first_y = intruders[0]
+            target_config = {
+                "position_x": first_x,
+                "position_y": 0.0,
+                "position_z": first_y,
+                "radius": 1.0,
+            }
+            sim_ctx["target_config"] = target_config
+
+        descriptor = dict(sim_ctx.get("world_descriptor") or {})
+        descriptor["target_config"] = target_config
+        sim_ctx["world_descriptor"] = descriptor
+        scenario.effective_params["world_descriptor"] = descriptor
+
+        scenario.runtime_context["simulator_3d"] = sim_ctx
+        scenario.runtime_context["patrol"] = {
+            "agent_pos": agent_pos,
+            "intruder_positions": intruders,
+            "intruder_types": list(request.task_params.get("intruder_types") or []),
+        }
+        scenario.preview_payload["agent_pos"] = [agent_pos]
+        scenario.preview_payload["goal_pos"] = intruders
+        scenario.preview_payload["landmark_pos"] = []
 
 class ReforestationTaskOverlay:
     task_kind = TaskKind.REFORESTATION
@@ -414,6 +494,14 @@ class TrailTaskOverlay:
     supported_environments = {EnvironmentKind.CONTINUOUS_2D, EnvironmentKind.SIMULATOR_3D}
 
     def apply(self, scenario: GeneratedScenario, request: GenerationRequest) -> None:
+        if scenario.environment_kind == EnvironmentKind.SIMULATOR_3D:
+            preview = scenario.preview_payload
+            scenario.runtime_context["trail"] = {
+                "agent_pos": (preview.get("agent_pos") or [[0.0, 0.0]])[0],
+                "goal_pos": (preview.get("goal_pos") or [[0.0, 0.0]])[0],
+            }
+            return
+
         if scenario.environment_kind == EnvironmentKind.CONTINUOUS_2D:
             # Для continuous_2d используем уже сгенерированные CAMAR-позиции
             preview = scenario.preview_payload
@@ -460,6 +548,10 @@ class DefaultScenarioValidator:
             grid_ctx = scenario.runtime_context.get("grid", {})
             if patrol_ctx is None:
                 messages.append("Patrol scenario has no patrol runtime context")
+            elif scenario.environment_kind == EnvironmentKind.SIMULATOR_3D:
+                positions = [patrol_ctx.get("agent_pos")] + list(patrol_ctx.get("intruder_positions") or [])
+                if any(not isinstance(pos, (list, tuple)) or len(pos) < 2 for pos in positions):
+                    messages.append("3D patrol scenario contains invalid preview positions")
             else:
                 grid_size = int(grid_ctx.get("grid_size", 0))
                 if grid_size <= 0:

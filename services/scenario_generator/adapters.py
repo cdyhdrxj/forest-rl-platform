@@ -12,20 +12,21 @@ from services.scenario_generator.models import EnvironmentKind, GeneratedScenari
 
 
 def build_patrol_grid_request(config: GridForestConfig) -> GenerationRequest:
+    map_seed = config.map_seed if hasattr(config, "map_seed") else 0
     return GenerationRequest(
         environment_kind=EnvironmentKind.GRID,
         task_kind=TaskKind.PATROL,
-        seed=config.map_seed, 
+        seed=map_seed,
         terrain_params={
             "grid_size": config.grid_size,
         },
         forest_params={
-            "map_seed": config.map_seed,
-            "passability_low": config.passability_low,
-            "passability_high": config.passability_high,
-            "impassable_prob": config.impassable_prob,
-            "max_value": config.max_value,
-            "value_density": config.value_density,
+            "map_seed": map_seed,
+            "passability_low": getattr(config, "passability_low", 0.1),
+            "passability_high": getattr(config, "passability_high", 1.0),
+            "impassable_prob": getattr(config, "impassable_prob", 0.15),
+            "max_value": getattr(config, "max_value", 1000.0),
+            "value_density": getattr(config, "value_density", 0.7),
         },
         task_params={
             "grid_size": config.grid_size,
@@ -51,20 +52,16 @@ def apply_patrol_generation(
     if scenario.runtime_context.get("seed") is not None:
         scenario_seed = scenario.runtime_context["seed"]
     
-    updated.map_seed = scenario_seed
+    if hasattr(updated, "map_seed"):
+        updated.map_seed = scenario_seed
     
     agent_pos = patrol_ctx.get("agent_pos")
     
-    agent_random_spawn = updated.agent_config.is_random_spawned
-    
-    if agent_pos is not None and not agent_random_spawn:
+    if agent_pos is not None:
         updated.agent_config.pos = list(agent_pos)
         updated.agent_config.is_random_spawned = False
-    else:
-        updated.agent_config.is_random_spawned = agent_random_spawn
     
     intruder_positions = patrol_ctx.get("intruder_positions", [])
-    intruder_random_spawn = patrol_ctx.get("intruder_random_spawn", [])
     
     if intruder_positions:
         intruder_types = patrol_ctx.get("intruder_types", [])
@@ -79,16 +76,11 @@ def apply_patrol_generation(
                 new_intruder = WandererConfig()
                 config_random_spawn = True
             
-            if i < len(intruder_random_spawn):
-                use_random = intruder_random_spawn[i]
-            else:
-                use_random = config_random_spawn
-            
-            if not use_random and i < len(intruder_positions):
+            if i < len(intruder_positions):
                 new_intruder.pos = list(intruder_positions[i])
                 new_intruder.is_random_spawned = False
             else:
-                new_intruder.is_random_spawned = True
+                new_intruder.is_random_spawned = config_random_spawn
             
             if i < len(intruder_types):
                 new_intruder.type = intruder_types[i]
@@ -189,11 +181,37 @@ def build_coverage_runtime_config(params: dict[str, Any], scenario: GeneratedSce
 
 
 def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -> GenerationRequest:
-    map_config = params.get("map_config", {})
-    robot_config = params.get("robot_config", {})
-    target_config = params.get("target_config", {})
+    map_config = _build_3d_map_config(params)
+    robot_config = _build_3d_robot_config(params)
+    target_config = _build_3d_target_config(params)
 
-    seed = map_config.get("seed", 0)
+    try:
+        seed = int(map_config.get("seed", 0))
+    except (TypeError, ValueError):
+        seed = 0
+    map_config["seed"] = seed
+    task_params = {
+        key: value
+        for key, value in dict(params).items()
+        if key not in {"map_config", "robot_config", "target_config"}
+    }
+    task_params.update(
+        {
+            "robot": robot_config,
+            "target": target_config,
+        }
+    )
+
+    tree_density = params.get("tree_density")
+    if tree_density is None and map_config.get("density") is not None:
+        tree_density = float(map_config.get("density", 0)) / 100.0
+    forest_params: dict[str, Any] = {
+        "object_density": map_config.get("density", 10),
+    }
+    if tree_density is not None:
+        forest_params["tree_density"] = tree_density
+    if params.get("terrain_hilliness") is not None:
+        forest_params["terrain_hilliness"] = params.get("terrain_hilliness")
 
     return GenerationRequest(
         environment_kind=EnvironmentKind.SIMULATOR_3D,
@@ -201,24 +219,21 @@ def build_simulator_3d_request(params: dict[str, Any], *, task_kind: TaskKind) -
         seed=seed,
 
         terrain_params={
-            "uniform_scale": 0.1,
+            "uniform_scale": map_config.get("uniform_scale", 0.1),
             "mesh_height_multiplayer": map_config.get("mesh_height_multiplayer", 15),
             "noise_scale": map_config.get("noise_scale", 50),
             "octaves": map_config.get("octaves", 4),
-            "persistance": 0.5,
+            "persistance": map_config.get("persistance", 0.5),
             "lacunarity": map_config.get("lacunarity", 2.0),
             "seed": seed,
-            "offset_x": 0,
-            "offset_y": 0,
+            "offset_x": map_config.get("offset_x", 0),
+            "offset_y": map_config.get("offset_y", 0),
             "density": map_config.get("density", 10),
             "max_view_dst": map_config.get("max_view_dst", 1) * 125,
-            "noise_normalize_mode": 1,
+            "noise_normalize_mode": map_config.get("noise_normalize_mode", 1),
         },
-
-        task_params={
-            "robot": robot_config,
-            "target": target_config,
-        },
+        forest_params=forest_params,
+        task_params=task_params,
     )
 
 
@@ -230,3 +245,69 @@ def extract_simulator_3d_runtime_config(scenario: GeneratedScenario) -> dict[str
         "robot_config": ctx.get("robot_config", {}),
         "target_config": ctx.get("target_config", {}),
     }
+
+
+def _build_3d_map_config(params: dict[str, Any]) -> dict[str, Any]:
+    source = dict(params.get("map_config") or {})
+
+    if "seed" not in source and params.get("seed") is not None:
+        source["seed"] = params.get("seed")
+    if "density" not in source:
+        if params.get("density") is not None:
+            source["density"] = params.get("density")
+        elif params.get("tree_density") is not None:
+            source["density"] = int(round(float(params["tree_density"]) * 100))
+
+    for key in (
+        "uniform_scale",
+        "mesh_height_multiplayer",
+        "noise_scale",
+        "octaves",
+        "persistance",
+        "lacunarity",
+        "offset_x",
+        "offset_y",
+        "max_view_dst",
+        "noise_normalize_mode",
+    ):
+        if key not in source and params.get(key) is not None:
+            source[key] = params.get(key)
+
+    if "mesh_height_multiplayer" not in source and params.get("terrain_hilliness") is not None:
+        source["mesh_height_multiplayer"] = 1.0 + 4.0 * float(params["terrain_hilliness"])
+
+    return source
+
+
+def _build_3d_robot_config(params: dict[str, Any]) -> dict[str, Any]:
+    source = dict(params.get("robot_config") or {})
+    if "robot_type" not in source and "type" in source:
+        source["robot_type"] = source["type"]
+
+    flat_mapping = {
+        "robot_type": "robot_type",
+        "robot_position_x": "position_x",
+        "robot_position_y": "position_y",
+        "robot_position_z": "position_z",
+        "robot_rotation_y": "rotation_y",
+    }
+    for flat_key, target_key in flat_mapping.items():
+        if target_key not in source and params.get(flat_key) is not None:
+            source[target_key] = params.get(flat_key)
+
+    return source
+
+
+def _build_3d_target_config(params: dict[str, Any]) -> dict[str, Any]:
+    source = dict(params.get("target_config") or {})
+    flat_mapping = {
+        "target_position_x": "position_x",
+        "target_position_y": "position_y",
+        "target_position_z": "position_z",
+        "radius": "radius",
+    }
+    for flat_key, target_key in flat_mapping.items():
+        if target_key not in source and params.get(flat_key) is not None:
+            source[target_key] = params.get(flat_key)
+
+    return source

@@ -1,26 +1,27 @@
 #!/bin/bash
+set -eo pipefail
 
-# Активируем ROS 2
 source /opt/ros/humble/setup.bash
 
 if [ -f /ros2_ws/install/setup.bash ]; then
     source /ros2_ws/install/setup.bash
 fi
 
+ENDPOINT_PID=""
+
 cleanup() {
-    echo "Останавливаем сервисы..."
-    kill $ENDPOINT_PID 2>/dev/null
-    exit 0
+    echo "Останавливаем ROS 2 сервисы..."
+    if [ -n "${ENDPOINT_PID}" ]; then
+        kill "${ENDPOINT_PID}" 2>/dev/null || true
+    fi
 }
 
-trap cleanup INT TERM
+trap cleanup EXIT INT TERM
 
-# Запускаем ROS TCP Endpoint для Unity в фоне
 echo "Запуск ROS TCP Endpoint на порту 10000..."
 ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0 &
 ENDPOINT_PID=$!
-echo "ROS TCP Endpoint запущен (PID: $ENDPOINT_PID)"
+echo "ROS TCP Endpoint запущен (PID: ${ENDPOINT_PID})"
 
-# Запускаем rosbridge для веба (блокирует выполнение)
 echo "Запуск rosbridge на порту 9090..."
 ros2 launch rosbridge_server rosbridge_websocket_launch.xml

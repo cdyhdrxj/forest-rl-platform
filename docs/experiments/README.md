@@ -12,24 +12,39 @@
 
 Это основной поток, вокруг которого строится современная часть платформы.
 
-## ТЗ на scientific mode
+## Scientific mode
 
-Целевое развитие отдельного научного режима зафиксировано в документе:
+Scientific mode уже частично реализован как headless-контур поверх dispatcher:
+
+- CLI: `python -m experiments.scientific.run_suite --config <path>`;
+- конфиги: `experiments/configs/scientific/*.json|*.yaml`;
+- модели: `experiments/scientific/models.py`;
+- orchestration: `experiments/scientific/orchestrator.py`;
+- отчеты: `experiments/scientific/report_builder.py`;
+- контракты: `contracts/v1/scientific_suite.schema.json` и `contracts/v1/scientific_report.schema.json`.
+
+Актуальное пользовательское описание структуры конфига и отчета:
+
+- `docs/experiments/scientific_mode.md`
+
+Исходное целевое ТЗ остается в документе:
 
 - `docs/experiments/scientific_mode_tz.md`
 
-В этом ТЗ определены:
+В ТЗ определены:
 
 - новый headless-контур экспериментов без live-визуализации;
 - поддержка сценариев `S1-S4`, split'ов `train/val/test` и независимых RL-запусков;
 - требования к агрегированным метрикам, статистике, отчету и offline-визуализации траекторий.
+
+Статус на 2026-05-30: развитие scientific mode заморожено до отдельного решения. Текущий MVP оставляем доступным, но полный набор из ТЗ не является текущей задачей.
 
 ## Каталог `experiments/`
 
 На текущий момент каталог содержит легковесные экспериментальные и вспомогательные материалы:
 
 - `benchmark_suites/` — скрипты для запуска базовых сравнений;
-- `configs/` — место под конфигурации запусков;
+- `configs/` — конфигурации запусков, включая `configs/scientific/`;
 - `notebooks/` — место под исследовательские ноутбуки;
 - `quick_mode/` — легкие сценарии и smoke-проверки.
 
@@ -70,6 +85,8 @@
 - единый каталог benchmark-конфигов;
 - формальный протокол сравнения алгоритмов;
 - набор golden scenarios;
-- документы по MARL в `docs/experiments/marl/`.
+- полноценный guide по MARL в `docs/experiments/marl/`; сейчас там есть только статусная страница без инструкций запуска;
+- полноценные статистические сравнения scientific mode;
+- provenance-блок в scientific report.
 
 Эти области пока считаются направлением развития, а не завершенной пользовательской документацией.

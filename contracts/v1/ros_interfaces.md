@@ -2,6 +2,8 @@
 
 Версия: v1
 
+> **Исторический документ.** Этот файл не является актуальным ROS source of truth. Текущие сообщения и сервисы находятся в `ros2_ws/src/forest_msgs`, а человекочитаемое описание актуальной версии - в `contracts/v2/ros_interfaces.md`. В частности, текущий `/env/step` использует `forest_msgs/srv/Step`, а `forest_msgs/Event.msg` перешел на v2 event codes без compatibility bridge.
+
 ## 1. Общие принципы
 
 1. Интерфейсы совместимы с 3 видами среды:

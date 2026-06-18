@@ -2,15 +2,18 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:99
-ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV UNITY_SOFTWARE_RENDERING=0
 ENV MESA_GL_VERSION_OVERRIDE=4.5
 ENV MESA_GLSL_VERSION_OVERRIDE=450
 
 RUN apt-get update && apt-get install -y \
     xvfb \
+    libglvnd0 libglx0 libegl1 libgles2 \
     libglu1-mesa \
     libgl1-mesa-dri \
+    libvulkan1 vulkan-tools \
     mesa-vulkan-drivers \
+    libminizip1 libgomp1 \
     libxcursor1 libxinerama1 libxi6 libxrandr2 \
     libglib2.0-0 libgtk-3-0 \
     libasound2 \
@@ -23,7 +26,7 @@ RUN chmod +x /linux_build/simulator.x86_64
 
 # Стартовый скрипт
 COPY entrypoint.unity.sh /entrypoint.unity.sh
-RUN chmod +x /entrypoint.unity.sh
+RUN sed -i 's/\r$//' /entrypoint.unity.sh && chmod +x /entrypoint.unity.sh
 
 EXPOSE 80 443
 
