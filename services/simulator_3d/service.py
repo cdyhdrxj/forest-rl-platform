@@ -84,7 +84,7 @@ class Simulator3DService:
             "positions_y": [float(robot_config.get("position_y", 0.0))],
             "positions_z": [float(robot_config.get("position_z", 0.0))],
             "rotations_y": [float(robot_config.get("rotation_y", 0.0))],
-            "type": [int(robot_config.get("robot_type", robot_config.get("type", 0)))],
+            "type": [int(robot_config.get("type", 0))],
         }
 
         target_config = self.loaded_runtime_config.get("target_config", {})
