@@ -49,12 +49,14 @@
 - `contracts/v1/scenario.schema.json` и `contracts/v1/preview.schema.json` описывают сохраняемые сценарии.
 - `contracts/v1/replay.schema.json` описывает одну строку replay NDJSON.
 - `contracts/v1/metrics.schema.json` и `contracts/v1/episode_log.schema.json` задают канонические export-форматы.
+- `contracts/v1/scientific_suite.schema.json` описывает конфиг headless scientific suite.
+- `contracts/v1/scientific_report.schema.json` описывает итоговый suite-level `report.json`.
 
 ## Принятые допущения
 
 Текущие контракты собраны на следующих рабочих решениях:
 
-1. Официально поддерживаются только 5 активных WebSocket routes из `apps/api/app.py`.
+1. Официально поддерживаются 6 активных WebSocket routes из `apps/api/app.py`: `continuous/trail`, `continuous/coverage`, `discrete/patrol`, `discrete/reforestation`, `threed/patrol`, `threed/trail`.
 2. Realtime-контракт хранится отдельным markdown-файлом рядом с OpenAPI.
 3. Обязательными считаются только поля состояния, добавляемые диспетчером.
 4. Поля, зависящие от маршрута, разрешены как добавочные расширения.
@@ -62,12 +64,15 @@
 6. `scenario.schema.json` описывает сохраненный `scenario.json`.
 7. `preview.json` считается частью формального контракта.
 8. Replay, metrics и episode log фиксируются как канонические форматы времени исполнения и экспорта с общим базовым ядром и расширениями по режимам.
-9. `contracts/v2/ros_interfaces.md` считается основной ROS-спецификацией, а `v1` сохраняется как историческая версия.
-10. Структура для multi-agent явно отложена за пределы `v1`.
+9. Файлы `.msg/.srv` в `ros2_ws/src/forest_msgs` считаются source of truth для ROS-интерфейсов, а `contracts/v2/ros_interfaces.md` является документацией к ним.
+10. Остальные JSON-контракты не переносятся в `v2` автоматически. Новая версия нужна только при breaking change конкретного артефакта.
+11. Структура для multi-agent явно отложена за пределы текущих JSON-схем `v1`.
+12. `forest_msgs/Event.msg` переведен на v2 как breaking change без compatibility bridge.
 
 ## Что еще остается на будущее
 
-- оформить реальный ROS 2 message/service пакет в `ros2_ws/src/forest_interfaces`;
+- довести Unity/ROS runtime до фактической реализации `/env/step forest_msgs/srv/Step`; контракт и минимальный guide уже описаны в `contracts/v2/ros_interfaces.md` и `docs/simulator/unity_env_step_integration.md`;
 - при необходимости ужесточить `params` и схемы состояния, зависящие от маршрута;
-- добавить тесты, валидирующие реальные артефакты против новых JSON Schema;
+- добавить тесты, валидирующие реальные артефакты против JSON Schema на CI;
 - решить, нужен ли в будущем AsyncAPI вместо markdown-описания WebSocket-протокола.
+- формально описать HTTP endpoints в `contracts/openapi.yaml`, если REST-часть станет публичным контрактом, а не вспомогательным API для UI.

@@ -31,6 +31,7 @@ class TestCheckpoint:
             dispatcher.stop_run(run_id)
         
         from packages.db.models.artifact import Artifact
+        from packages.db.models.model import Model
         from packages.db.models.enums import ArtifactType
         with db_session() as db:
             artifact = (
@@ -43,6 +44,10 @@ class TestCheckpoint:
             )
             assert artifact is not None
             assert artifact.storage_uri == str(mock_checkpoint)
+            model = db.query(Model).filter(Model.run_id == run_id).first()
+            assert model is not None
+            assert model.storage_uri == str(mock_checkpoint)
+            assert artifact.model_id == model.id
     
     async def test_disconnect_saves_checkpoint(self, dispatcher, tmp_path):
         """Тест: При разрыве соединения (закрытии страницы) чекпоинт сохраняется."""
@@ -60,6 +65,7 @@ class TestCheckpoint:
             dispatcher.dispose_run(run_id)
         
         from packages.db.models.artifact import Artifact
+        from packages.db.models.model import Model
         from packages.db.models.enums import ArtifactType
         with db_session() as db:
             artifact = (
@@ -71,6 +77,9 @@ class TestCheckpoint:
                 .first()
             )
             assert artifact is not None
+            model = db.query(Model).filter(Model.run_id == run_id).first()
+            assert model is not None
+            assert artifact.model_id == model.id
     
     async def test_stop_does_not_change_status(self, dispatcher):
         """Тест: Кнопка "Стоп" не меняет статус Run (остаётся running)."""

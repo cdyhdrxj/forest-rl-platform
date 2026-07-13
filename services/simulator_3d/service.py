@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+import os
 import threading
 import time
 from typing import Any
 
 from packages.schemas.enums import EventType
+from packages.schemas.event_mapping import map_ros_event_type
 from services.scenario_generator.models import GeneratedScenario
 from services.ros_2.ros_api_connection import ros
 
@@ -37,10 +40,20 @@ class Simulator3DService:
         self._state["running"] = True
         self._state["mode"] = self.loaded_scenario.task_kind.value
         self._pending_events.clear()
-        self._thread = threading.Thread(target=self._loop, args=(dict(params),), daemon=True)
-        self._thread.start()
+        runtime_mode = self._resolve_runtime_mode(params)
+        self._state["runtime_mode"] = runtime_mode
 
-        ros.call_service("/env/reset", "std_srvs/srv/Trigger", {})
+        if runtime_mode == "sync_step":
+            try:
+                ros.call_service("/env/reset", "std_srvs/srv/Trigger", {})
+            except Exception as exc:
+                self.last_error = f"3D sync runtime reset failed: {exc}"
+                self._state["running"] = False
+                return
+
+        target = self._loop if runtime_mode == "synthetic" else self._sync_step_loop
+        self._thread = threading.Thread(target=target, args=(dict(params),), daemon=True)
+        self._thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -71,28 +84,29 @@ class Simulator3DService:
             "positions_y": [float(robot_config.get("position_y", 0.0))],
             "positions_z": [float(robot_config.get("position_z", 0.0))],
             "rotations_y": [float(robot_config.get("rotation_y", 0.0))],
-            "type": [int(robot_config.get("robot_type", 0))],
+            "type": [int(robot_config.get("type", 0))],
         }
 
         target_config = self.loaded_runtime_config.get("target_config", {})
 
         threading.Thread(
-            target=self._call_ros_init,
-            args=(map_config, "/env/generate", "forest_msgs/srv/SetTerrainParams", ),
-            daemon=True
+            target=self._init_ros_scene,
+            args=(map_config, robots_ros_request, target_config),
+            daemon=True,
         ).start()
 
-        threading.Thread(
-            target=self._call_ros_init,
-            args=(robots_ros_request, "/env/set_robots", "forest_msgs/srv/SetRobots", ),
-            daemon=True
-        ).start()
-
-        threading.Thread(
-            target=self._call_ros_init,
-            args=(target_config, "/env/set_goal", "forest_msgs/srv/SetGoal", ),
-            daemon=True
-        ).start()
+    def _init_ros_scene(
+        self,
+        map_config: dict[str, Any],
+        robots_ros_request: dict[str, Any],
+        target_config: dict[str, Any],
+    ) -> None:
+        for config, service, service_type in (
+            (map_config, "/env/generate", "forest_msgs/srv/SetTerrainParams"),
+            (robots_ros_request, "/env/set_robots", "forest_msgs/srv/SetRobots"),
+            (target_config, "/env/set_goal", "forest_msgs/srv/SetGoal"),
+        ):
+            self._call_ros_init(config, service, service_type)
 
     def _call_ros_init(self, config: dict[str, Any] | None, service, service_type) -> None:
         try:
@@ -192,6 +206,110 @@ class Simulator3DService:
         finally:
             self._state["running"] = False
 
+    def _sync_step_loop(self, params: dict[str, Any]) -> None:
+        max_steps = int(params.get("max_steps") or self._state.get("max_steps") or 120)
+        step_sleep = float(params.get("tick_sleep") or 0.05)
+        dt = float(params.get("dt") or params.get("step_dt") or step_sleep)
+
+        try:
+            while not self._stop_event.is_set() and self._state["step"] < max_steps:
+                response = ros.call_service_dict(
+                    "/env/step",
+                    "forest_msgs/srv/Step",
+                    {
+                        "actions": list(params.get("actions") or []),
+                        "dt": dt,
+                    },
+                )
+                self._state["step"] += 1
+                self._state["new_episode"] = False
+                self._apply_step_response(response)
+
+                if bool(response.get("terminated")) or bool(response.get("truncated")):
+                    self._finish_episode((self._state.get("agent_pos") or [[0.0, 0.0]])[0])
+                    break
+
+                time.sleep(step_sleep)
+        except Exception as exc:
+            self.last_error = (
+                "3D sync runtime failed. The selected runtime mode requires "
+                f"/env/step forest_msgs/srv/Step: {exc}"
+            )
+        finally:
+            self._state["running"] = False
+
+    def _apply_step_response(self, response: dict[str, Any]) -> None:
+        if not bool(response.get("success", True)):
+            message = str(response.get("message") or "unknown /env/step failure")
+            raise RuntimeError(message)
+
+        reward = float(response.get("reward") or 0.0)
+        self._state["total_reward"] += reward
+        self._state["last_step_reward"] = reward
+        self._state["terminated"] = bool(response.get("terminated"))
+        self._state["truncated"] = bool(response.get("truncated"))
+
+        observation = self._decode_json_field(response.get("observation_json"), "observation_json")
+        info = self._decode_json_field(response.get("info_json"), "info_json")
+        self._state["last_observation"] = observation
+        self._state["last_info"] = info
+
+        if isinstance(observation, dict):
+            for key in ("agent_pos", "goal_pos", "landmark_pos", "terrain_map"):
+                if key in observation:
+                    self._state[key] = observation[key]
+            if "trajectory" in observation:
+                self._state["trajectory"] = observation["trajectory"]
+
+        for event in response.get("events") or []:
+            self._push_ros_event(event)
+
+    def _push_ros_event(self, event: dict[str, Any]) -> None:
+        event_type = map_ros_event_type(int(event.get("event_type") or 0)).value
+        position = event.get("position") or {}
+        intruder_id = int(event.get("intruder_id", -1))
+        event_position = [float(position.get("x", 0.0)), float(position.get("y", 0.0))]
+        self._push_event(
+            event_type,
+            step_index=int(self._state.get("step") or 0),
+            position=event_position,
+            intruder_id=intruder_id if intruder_id >= 0 else None,
+        )
+
+        if event_type == EventType.goal_reached.value:
+            self._state["goal_count"] += 1
+        elif event_type in {EventType.collision_passable.value, EventType.collision_impassable.value}:
+            self._state["collision_count"] += 1
+            self._state["is_collision"] = True
+        elif event_type == EventType.intruder_caught.value:
+            self._state["goal_count"] += 1
+            self._state["intruders_remaining"] = max(0, int(self._state.get("intruders_remaining") or 0) - 1)
+
+    @staticmethod
+    def _decode_json_field(value: Any, field_name: str) -> dict[str, Any]:
+        if value in (None, ""):
+            return {}
+        if isinstance(value, dict):
+            return dict(value)
+        try:
+            decoded = json.loads(str(value))
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Invalid {field_name}: {exc}") from exc
+        if not isinstance(decoded, dict):
+            raise RuntimeError(f"{field_name} must decode to a JSON object")
+        return decoded
+
+    @staticmethod
+    def _resolve_runtime_mode(params: dict[str, Any]) -> str:
+        value = params.get("synthetic")
+        if value is None:
+            value = os.getenv("SIMULATOR_3D_SYNTHETIC")
+        if isinstance(value, str):
+            synthetic = value.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            synthetic = bool(value)
+        return "synthetic" if synthetic else "sync_step"
+
     def _advance_trail(self, goal_pos: list[list[float]]) -> None:
         agent = list((self._state.get("agent_pos") or [[0.0, 0.0]])[0])
         goal = list(goal_pos[0]) if goal_pos else agent
@@ -280,4 +398,10 @@ class Simulator3DService:
             "world_descriptor": {},
             "max_steps": 120,
             "intruders_remaining": 0,
+            "runtime_mode": "sync_step",
+            "last_step_reward": 0.0,
+            "terminated": False,
+            "truncated": False,
+            "last_observation": {},
+            "last_info": {},
         }

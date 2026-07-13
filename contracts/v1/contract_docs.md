@@ -1,6 +1,6 @@
 # Контракты платформы ForestRobotTwin `v1`
 
-Этот каталог содержит текущий набор контрактов `v1`, используемый платформой.
+Этот каталог содержит текущий набор платформенных JSON-контрактов `v1`, используемый платформой. Исключение - `ros_interfaces.md`: это исторический документ, оставленный для сравнения со старой версией ROS-интерфейсов.
 
 ## Файлы
 
@@ -9,13 +9,15 @@
 - `replay.schema.json` - схема одной NDJSON-строки в `replay_*.jsonl`
 - `metrics.schema.json` - канонический JSON-формат экспорта метрик
 - `episode_log.schema.json` - канонический JSON-формат экспорта эпизодов и событий
-- `ros_interfaces.md` - исторический контракт ROS-интерфейсов
+- `scientific_suite.schema.json` - конфиг пакетного scientific suite
+- `scientific_report.schema.json` - итоговый JSON-отчет scientific suite
+- `ros_interfaces.md` - исторический контракт ROS-интерфейсов; актуальные ROS types лежат в `ros2_ws/src/forest_msgs`
 
 ## Связанные контракты вне этого каталога
 
 - `../websocket_protocol.md` - канонический контракт времени исполнения по WebSocket
 - `../openapi.yaml` - HTTP-метаданные backend-сервиса
-- `../v2/ros_interfaces.md` - основная ROS-спецификация событий и топиков, используемая текущей кодовой базой
+- `../v2/ros_interfaces.md` - документация к ROS v2; source of truth находится в `.msg/.srv` файлах `ros2_ws/src/forest_msgs`
 
 ## Примечания
 
@@ -23,3 +25,4 @@
 - Replay-файлы являются newline-delimited JSON. Схема replay применяется к каждой строке, а не ко всему файлу как к одному JSON-документу.
 - Схемы метрик и журнала эпизодов задают канонический export-формат для данных, которые сейчас в основном сохраняются в базе.
 - Route-specific runtime-поля остаются расширяемыми внутри replay-записей и WebSocket state snapshots.
+- Не используйте `v1/ros_interfaces.md` для новой Unity/ROS-интеграции. Новый код должен ориентироваться на реальные `.msg/.srv` и `../v2/ros_interfaces.md`.

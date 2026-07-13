@@ -14,6 +14,7 @@
 3. Для событий среды используется пространство имен `/env/`.
 4. Ключевые происшествия публикуются через топик `/env/events`.
 5. `v2` обратно несовместим с `v1` по набору кодов событий `forest_msgs/Event`.
+6. Канонический RL runtime для 3D работает синхронно через `/env/step`: вызывающая сторона отправляет action, симулятор возвращает observation/reward/done/info.
 
 ## 2. Топики: Наблюдения (Среда -> Агент)
 
@@ -79,15 +80,66 @@
     * Возвращает статус успешности операции.
 
 ### `/env/step`
-* **Тип:** `std_srvs/Empty`
+* **Тип:** `forest_msgs/srv/Step`
 * **Описание:**
-    * Принудительный расчет одного такта симуляции для синхронизации между агентом и средой.
-    * После вызова сервиса все топики наблюдений (`/robot_{id}/pose`, `/robot_{id}/base_scan`, `/env/events`) будут обновлены до возврата управления вызывающему коду.
-    * Только **клеточная среда**.
+    * Синхронный шаг среды в стиле Gymnasium.
+    * Запрос содержит действия агентов и длительность такта `dt`.
+    * Ответ содержит `observation_json`, `reward`, `terminated`, `truncated`, `info_json` и события, случившиеся на шаге.
+    * Топики `/robot_{id}/pose`, `/robot_{id}/base_scan`, `/env/events` остаются live-каналом для мониторинга, но не являются каноническим RL handshake.
 
-## 5. Форматы данных
+### `/env/generate`
+* **Тип:** `forest_msgs/srv/SetTerrainParams`
+* **Описание:**
+    * Генерация terrain-а среды с заданными параметрами шума и отображения.
+* **Параметры:**
+    * uniform_scale       - равномерный масштаб сцены
+    * mesh_height_multiplayer - множитель высоты меша
+    * noise_scale         - масштаб шума
+    * seed                - зерно генерации
+    * octaves             - количество октав шума
+    * persistance         - персистентность шума
+    * lacunarity          - лакунарность шума
+    * offset_x            - смещение по X
+    * offset_y            - смещение по Y
+    * density             - плотность процедурно размещаемых статических объектов
+    * max_view_dst        - максимальная дальность видимости
+    * noise_normalize_mode - режим нормализации шума
 
-### 5.1 Сообщение `forest_msgs/Event.msg`
+### `/env/set_robots`
+* **Тип:** `forest_msgs/srv/SetRobots`
+* **Описание:**
+    * Задание начальных позиций и типов роботов перед ресетом среды.
+* **Параметры:**
+    * positions_x  - список координат X для каждого робота
+    * positions_y  - список координат Y для каждого робота
+    * positions_z  - список координат Z для каждого робота
+    * rotations_y  - список углов поворота по оси Y для каждого робота
+    * type         - список типов роботов (0 = стандартный)
+ 
+### `/env/set_goal`
+* **Тип:** `forest_msgs/srv/SetGoal`
+* **Описание:**
+    * Установка целевой точки для роботов.
+* **Параметры:**
+    * position_x - координата X цели
+    * position_y - координата Y цели
+    * position_z - координата Z цели
+    * radius     - радиус зоны достижения цели
+
+## 5. Типовой порядок инициализации среды
+ 
+Для корректного запуска среды рекомендуется следующий порядок вызовов:
+ 
+ 1. `/env/generate`   - сгенерировать terrain
+ 2. `/env/set_robots` - задать позиции роботов
+ 3. `/env/set_goal`   - установить цель
+ 4. `/env/reset`      - сброс среды (выполнить спавн роботов по заданным точкам)
+
+Backend не передает в 3D симулятор готовый `terrain_map`: Unity должна строить terrain по `SetTerrainParams.seed` и параметрам шума. Если текущая сцена содержит только деревья, `density` можно трактовать как плотность деревьев. Для нескольких классов объектов контракт нужно расширять отдельными типизированными плотностями.
+
+## 6. Форматы данных
+
+### 6.1 Сообщение `forest_msgs/Event.msg`
 
 ```text
 # Заголовок со временем события
@@ -114,7 +166,7 @@ uint8 event_type
 int32 intruder_id
 ```
 
-### 5.2 Сообщение `forest_msgs/StepCmd.msg`
+### 6.2 Сообщение `forest_msgs/StepCmd.msg`
 
 ```text
 uint8 UP=0
@@ -123,6 +175,37 @@ uint8 LEFT=2
 uint8 RIGHT=3
 uint8 STAY=4
 
+int32 robot_id
+
 # Действие
 uint8 action
+```
+
+### 6.3 Сообщение `forest_msgs/EnvAction.msg`
+
+```text
+uint8 TWIST=0
+uint8 GRID_STEP=1
+
+int32 robot_id
+uint8 action_type
+
+geometry_msgs/Twist twist
+uint8 step_action
+```
+
+### 6.4 Сервис `forest_msgs/srv/Step.srv`
+
+```text
+forest_msgs/EnvAction[] actions
+float32 dt
+---
+bool success
+string message
+string observation_json
+float32 reward
+bool terminated
+bool truncated
+string info_json
+forest_msgs/Event[] events
 ```

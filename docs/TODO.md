@@ -1,14 +1,42 @@
 # TODO проекта ForestRobotTwin
 
+## Документация для внешнего разработчика
+
+- [x] Собрать входную карту документации в `docs/README.md`
+- [x] Добавить quick start, Docker, runtime, ROS, simulator, contracts, testing и glossary
+- [x] Синхронизировать документацию с route `continuous/coverage`
+- [x] Описать WebSocket actions `start_eval` и `finish`
+- [ ] Заполнить полноценный OpenAPI для HTTP endpoints, если REST API станет публичным контрактом
+- [ ] Добавить диаграммы sequence flow для `generate/load/start/finish`
+- [x] Добавить минимальный внешний integration guide для Unity-разработчика по реализации `/env/step`
+- [ ] Выровнять Python version metadata: `pyproject.toml` сейчас требует `>=3.11`, а Docker runtime использует Python 3.10
+
+## Архитектурные решения от 2026-05-23
+
+- [x] Убрать CRLF-причину падения `unity` и `ros2` entrypoint'ов в Docker
+- [x] Добавить базовую GPU-настройку для `unity` в `docker-compose.yml`
+- [x] Добавить CPU-only override для разработчиков без NVIDIA GPU
+- [x] Пересобрать и проверить, что `ros2` и `unity` стартуют без restart loop
+- [x] Закрыть недостающие runtime-зависимости Unity build (`libminizip1`, `libgomp1`, `libnvidia-encode.so`, `libdl`)
+- [ ] Перевести Unity renderer внутри контейнера с `llvmpipe` на NVIDIA OpenGL/EGL/VirtualGL-стек
+- [ ] Оптимизировать API Dockerfile/requirements, чтобы проверка `unity`/`ros2` не требовала тяжелой пересборки Python ML-зависимостей
+- [x] Зафиксировать реальный 3D runtime contract: observation/action/reward/done/info/reset/step
+- [ ] Реализовать `/env/step forest_msgs/srv/Step` на стороне Unity/ROS
+- [ ] Заменить synthetic loop в `Simulator3DService` на чтение ROS/Unity telemetry
+- [x] Синхронизировать `ros2_ws/src/forest_msgs` с `contracts/v2/ros_interfaces.md`
+- [x] Сделать breaking change `forest_msgs/Event.msg` под v2 вместо compatibility bridge
+- [x] Описать текущую структуру scientific suite config и `report.json`
+- [x] Заморозить развитие scientific mode до отдельного решения
+
 ## Архитектура
 
 - [ ] Расширить контракт сценария до поддержки многоагентного режима
 - [ ] Ввести единый формат логирования событий среды
-- [ ] Добавить систему версионирования сценариев
+- [x] Добавить систему версионирования сценариев
 
 ## Симулятор
 
-- [ ] Поддержка нескольких агентов в Gazebo
+- [ ] Поддержка нескольких агентов в Unity/ROS 3D-симуляторе
 - [ ] Модель распространения пожара
 - [ ] Генерация карт проходимости
 
@@ -125,18 +153,18 @@
 - [ ] Реализовать сквозной интеграционный тест
 - [ ] Настроить CI pipeline
 - [ ] Добавить smoke-тест быстрого режима в CI
-- [ ] Добавить периодический тест Gazebo-режима
+- [ ] Добавить периодический тест Unity/ROS 3D-режима
 
 ---
 
 ### 5. Стандарты интерфейсов интеграции
 
 - [ ] Зафиксировать ROS 2 топики и сервисы
-- [ ] Определить формат журнала эпизода
+- [x] Определить формат журнала эпизода
 - [ ] Определить формат артефактов модели
 - [ ] Добавить поддержку многоагентного режима
 - [ ] Ввести единый формат логирования событий среды
-- [ ] Добавить систему версионирования сценариев
+- [x] Добавить систему версионирования сценариев
 - [ ] Написать тесты проверки структуры логов (проверка наличия обязательных полей в логах, совместимости версий схем, корректности частот публикации и реакции на сброс эпизода)
 
 ---

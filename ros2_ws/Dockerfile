@@ -18,7 +18,7 @@ RUN bash -c "source /opt/ros/humble/setup.bash && \
     colcon build --packages-select ros_tcp_endpoint forest_msgs"
 
 COPY entrypoint.ros2.sh /
-RUN chmod +x /entrypoint.ros2.sh
+RUN sed -i 's/\r$//' /entrypoint.ros2.sh && chmod +x /entrypoint.ros2.sh
 
 EXPOSE 10000
 EXPOSE 9090

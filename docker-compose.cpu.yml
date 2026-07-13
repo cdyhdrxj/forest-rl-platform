@@ -1,0 +1,9 @@
+services:
+  unity:
+    gpus: !reset []
+    environment:
+      UNITY_REQUIRE_NVIDIA: "0"
+      UNITY_SOFTWARE_RENDERING: "1"
+      UNITY_GRAPHICS_API: "glcore"
+      NVIDIA_VISIBLE_DEVICES: "void"
+      NVIDIA_DRIVER_CAPABILITIES: ""

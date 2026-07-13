@@ -36,6 +36,14 @@
 - `artifacts` — зарегистрированные файлы запуска;
 - `replays` — replay-файлы, связанные с run или episode.
 
+Рабочее решение для обученных моделей:
+
+- файл checkpoint хранится в файловом хранилище, обычно в `data/runs/run_<id>/model.zip`;
+- строка `models` описывает обученную модель: `run_id`, `framework`, `storage_uri`, `is_best`, `metrics_json`;
+- строка `artifacts` с `artifact_type = model_checkpoint` регистрирует тот же файл как артефакт run и связывается с `models.id` через `model_id`.
+
+Старые zip-файлы в корне проекта и `.models/` считаются локальными/историческими артефактами, пока они не зарегистрированы в БД.
+
 ### Аналитика выполнения
 
 - `episodes` — агрегаты по эпизодам;
@@ -76,6 +84,7 @@
 - `patrol`
 - `fast_grid`
 - `reforestation`
+- `coverage`
 
 ### `RunStatus`
 

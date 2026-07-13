@@ -7,6 +7,7 @@ info:
 
     Runtime-управление и телеметрия сейчас построены на WebSocket.
     Канонический realtime-контракт описан в `contracts/websocket_protocol.md`.
+    Реальные вспомогательные HTTP endpoints пока определяются кодом `apps/api/app.py`.
 servers:
   - url: http://localhost:8000
     description: Локальный сервер разработки
@@ -16,6 +17,7 @@ x-runtime-transport:
   contract_file: contracts/websocket_protocol.md
   supported_routes:
     - /continuous/trail
+    - /continuous/coverage
     - /discrete/patrol
     - /discrete/reforestation
     - /threed/patrol

@@ -10,11 +10,14 @@ from services.scenario_generator import (
     build_continuous_trail_request,
     build_patrol_grid_request,
     build_reforestation_request,
+    build_simulator_3d_request,
     extract_coverage_runtime_layout,
     extract_continuous_runtime_kwargs,
     extract_reforestation_runtime_layout,
+    extract_simulator_3d_runtime_config,
     get_default_environment_generation_service,
 )
+from services.scenario_generator.models import TaskKind
 
 
 def test_grid_patrol_generation_is_deterministic_and_unique():
@@ -146,4 +149,69 @@ def test_continuous_coverage_family_preset_applies_split_and_field_profile():
     assert 8 <= int(layout["row_count"]) <= 12
     assert layout["split"] == "test"
     assert layout["family"] == "S4"
+    assert scenario.validation_passed is True
+
+
+def test_simulator_3d_generation_uses_nested_ros_payload_for_preview():
+    service = get_default_environment_generation_service()
+    scenario = service.generate(
+        build_simulator_3d_request(
+            {
+                "map_config": {
+                    "seed": 51,
+                    "mesh_height_multiplayer": 1.5,
+                    "noise_scale": 150.0,
+                    "density": 10,
+                    "max_view_dst": 2,
+                },
+                "robot_config": {
+                    "type": 1,
+                    "position_x": 1.0,
+                    "position_y": 2.0,
+                    "position_z": 3.0,
+                },
+                "target_config": {
+                    "position_x": 10.0,
+                    "position_y": 20.0,
+                    "position_z": 30.0,
+                    "radius": 5.0,
+                },
+            },
+            task_kind=TaskKind.TRAIL,
+        )
+    )
+
+    runtime_config = extract_simulator_3d_runtime_config(scenario)
+
+    assert scenario.seed == 51
+    assert runtime_config["map_config"]["seed"] == 51
+    assert runtime_config["map_config"]["density"] == 10
+    assert runtime_config["map_config"]["max_view_dst"] == 250
+    assert runtime_config["robot_config"]["robot_type"] == 1
+    assert scenario.preview_payload["agent_pos"] == [[1.0, 3.0]]
+    assert scenario.preview_payload["goal_pos"] == [[10.0, 30.0]]
+    assert "terrain_map" not in scenario.preview_payload
+    assert scenario.validation_passed is True
+
+
+def test_simulator_3d_generation_accepts_flat_legacy_density_alias():
+    service = get_default_environment_generation_service()
+    scenario = service.generate(
+        build_simulator_3d_request(
+            {
+                "seed": 52,
+                "tree_density": 0.25,
+                "terrain_hilliness": 0.4,
+                "intruder_count": 2,
+            },
+            task_kind=TaskKind.PATROL,
+        )
+    )
+
+    runtime_config = extract_simulator_3d_runtime_config(scenario)
+
+    assert scenario.seed == 52
+    assert runtime_config["map_config"]["density"] == 25
+    assert runtime_config["map_config"]["mesh_height_multiplayer"] == 2.6
+    assert len(scenario.preview_payload["goal_pos"]) == 2
     assert scenario.validation_passed is True
