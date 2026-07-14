@@ -3,10 +3,12 @@ import { useState, useEffect, useRef } from "react"
 export function useWebSocket(endpoint) {
   const [state, setState] = useState(null)
   const [chartData, setChartData] = useState([])
+  const [valChartData, setValChartData] = useState([])
   const [running, setRunning] = useState(false)
   const [scenarioReady, setScenarioReady] = useState(false)
   const wsRef = useRef(null)
   const lastEpisodeRef = useRef(-1)
+  const lastValStepRef = useRef(0)
 
   useEffect(() => {
     if (!endpoint) return
@@ -20,7 +22,9 @@ export function useWebSocket(endpoint) {
     setScenarioReady(false)
     setRunning(false)
     setChartData([])
+    setValChartData([])
     lastEpisodeRef.current = -1
+    lastValStepRef.current = 0
 
     const ws = new WebSocket(endpoint)
     wsRef.current = ws
@@ -45,6 +49,15 @@ export function useWebSocket(endpoint) {
           })
         }
       }
+
+      const vs = data.val_step ?? 0
+      if (vs > 0 && vs !== lastValStepRef.current && data.val_metrics) {
+        lastValStepRef.current = vs
+        setValChartData(prev => {
+          if (prev.length && prev[prev.length - 1].step === vs) return prev
+          return [...prev.slice(-99), { step: vs, ...data.val_metrics }]
+        })
+      }
     }
     
     ws.onerror = e => console.error("ws error", e)
@@ -61,5 +74,5 @@ export function useWebSocket(endpoint) {
     wsRef.current.send(message)
   }
 
-  return { state, chartData, running, scenarioReady, setRunning, setChartData, setState, wsRef, send }
+  return { state, chartData, valChartData, running, scenarioReady, setRunning, setChartData, setValChartData, setState, wsRef, send }
 }

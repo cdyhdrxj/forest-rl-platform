@@ -2,28 +2,23 @@ import numpy as np
 import random
 
 
-import numpy as np
+def sample_spawn_times(T: int, tau_min: int, tau_max: int, K: int) -> list:
+    """Генерирует времена спавна в [1, T) с интервалами tau_min..tau_max.
 
-def sample_spawn_times(K, T, tau_min, tau_max, t0=0):
+    K < 0 — без ограничений (до конца горизонта).
+    K == 0 — пустой список.
+    K > 0 — не более K времён.
     """
-    Генерирует моменты появления нарушителей.
-    Интервалы задаются между появлениями.
-    """
+    if K == 0:
+        return []
 
     times = []
-    current_time = t0
-
-    for _ in range(K):
-        upper = min(tau_max, T - current_time)
-
-        # если больше нельзя разместить интервал
-        if upper < tau_min:
+    t = np.random.randint(tau_min, tau_max + 1)
+    while t < T:
+        times.append(t)
+        if K > 0 and len(times) >= K:
             break
-
-        tau_k = np.random.randint(tau_min, upper + 1)
-        current_time += tau_k
-        times.append(current_time)
-
+        t += np.random.randint(tau_min, tau_max + 1)
     return times
 
 def get_valid_spawn_cells(env, mu_min = 0.5):
@@ -74,33 +69,21 @@ def sample_spawn_cell(env, mu_min):
 
     return random.choice(valid)
 
-def generate_intruder_schedule(intruders, T, tau_min, tau_max, random):
+def generate_intruder_schedule(intruders_start, T: int, tau_min: int, tau_max: int, K: int = -1) -> dict:
+    """Генерирует расписание спавна нарушителей.
+
+    Аргументы:
+        intruders_start — пул шаблонов нарушителей (циклически используется).
+        T               — длина эпизода.
+        tau_min/tau_max — диапазон интервалов между появлениями.
+        K               — макс. число спавнов: -1 = без ограничений, 0 = нет, >0 = не более K.
+
+    Возвращает: {time_step: [intruder_index, (-1, -1)]}
+    Позиция (-1, -1) — placeholder; реальная позиция выбирается в step() через sample_spawn_cell.
     """
-    intruders - список нарушителей
-    tau_min - минимальное значение интервала
-    tau_max - максимальное значение интервала
-    T - время патрулирования
+    if not intruders_start or K == 0:
+        return {}
 
-    Возвращает словарь:
-    {idx: (t_k, (x, y))}
-    """
-
-    K = len(intruders)
-
-    times = []
-    
-    # моменты появления
-    if random:
-        times = sample_spawn_times(K, T, tau_min, tau_max)
-    else:
-        for i in intruders:
-            times.append(i.incoming_moment)
-        
-
-    schedule = {}
-
-    # связываем индекс нарушителя с его временем
-    for idx, t in enumerate(times):
-        schedule[t] = [idx, (-1, -1)]  # позиция вычисляется позже
-
-    return schedule
+    times = sample_spawn_times(T, tau_min, tau_max, K)
+    n = len(intruders_start)
+    return {t: [i % n, (-1, -1)] for i, t in enumerate(times)}

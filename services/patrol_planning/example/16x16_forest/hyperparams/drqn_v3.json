@@ -1,0 +1,39 @@
+{
+  "algo_config": {
+    "lr": 3e-4,
+    "gamma": 0.999,
+    "batch_size": 64,
+    "lstm_hidden_size": 256,
+    "unroll_length": 25,
+    "buffer_capacity": 75000,
+    "learning_starts": 5000,
+    "target_update_freq": 15000,
+    "epsilon_decay_steps": 300000,
+    "epsilon_final": 0.05,
+    "train_freq": 12,
+    "log_interval": 100,
+    "n_envs": 12,
+    "use_amp": true,
+    "device": "cuda",
+    "common_seed": false,
+    "cpu_cores_num": 8,
+    "normalize_rewards": true
+  },
+  "run_config": {
+    "algorithm": "alt_drqn",
+    "total_timesteps": 3000000,
+    "seed": 42,
+    "exclude_layers": ["terrain"],
+    "checkpoint_freq": 150000,
+    "use_tensorboard": true
+  },
+  "validation_config": {
+    "config_path": "services/patrol_planning/research/16x16_forest/test_configs/forest_16x16_val_v3.json",
+    "exclude_layers": ["terrain"],
+    "freq": 100000,
+    "n_episodes": 20,
+    "seed": 2026,
+    "verbose": true,
+    "drqn_device": "cuda"
+  }
+}

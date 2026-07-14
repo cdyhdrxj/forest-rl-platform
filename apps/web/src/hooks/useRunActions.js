@@ -5,17 +5,14 @@ import { ENV, TASK } from "../constants/envs"
 const modeForTask = t =>
   t === TASK.TRAIL ? "trail" : t === TASK.REFORESTATION ? "reforestation" : "patrol"
 
-// Функция для получения параметров из SLIDER_CONFIG
 const getParamsWithDefaults = (params, activeEnv, activeTask, algo) => {
   const config = SLIDER_CONFIG[activeEnv]?.[activeTask] ?? {}
   const result = { ...params }
 
-  // Параметры среды из SLIDER_CONFIG
   for (const categoryName of Object.keys(config)) {
     const category = config[categoryName]
     if (categoryName === "algos") continue
     if (!Array.isArray(category)) continue
-
     for (const slider of category) {
       if (result[slider.param] === undefined && slider.default !== undefined) {
         result[slider.param] = slider.default
@@ -23,7 +20,6 @@ const getParamsWithDefaults = (params, activeEnv, activeTask, algo) => {
     }
   }
 
-  // Гиперпараметры алгоритма из ALGO_SLIDER_PARAMS
   const algoParams = ALGO_SLIDER_PARAMS[algo] ?? []
   for (const slider of algoParams) {
     if (result[slider.param] === undefined && slider.default !== undefined) {
@@ -34,10 +30,22 @@ const getParamsWithDefaults = (params, activeEnv, activeTask, algo) => {
   return result
 }
 
+const stripFileName = (obj) => {
+  if (!obj) return null
+  const { _fileName, ...rest } = obj
+  return rest
+}
+
 export function useRunActions({
   wsRef, endpoint, params, algo, activeTask, activeEnv,
-  setRunning, setChartData, setState, jsonConfig,
+  setRunning, setChartData, setValChartData, setState, jsonConfig,
   resetEpisode, mode, sourceRunTitle,
+  visualize = false,
+  stepDelay = 0,
+  algoConfigJson = null,
+  envConfigJson = null,
+  valEnvConfigJson = null,
+  useGeneratedForValidation = false,
 }) {
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
   const is3DSim = activeEnv === ENV.SIM_3D && activeTask === TASK.TRAIL
@@ -58,11 +66,11 @@ export function useRunActions({
 
     let generateParams
     if (isPatrol && jsonConfig) {
-    const { _fileName, ...rest } = jsonConfig
-    generateParams = {
-      ...rest,
-      algorithm: algo.toLowerCase(),
-      mode: modeForTask(activeTask),
+      const { _fileName, ...rest } = jsonConfig
+      generateParams = {
+        ...rest,
+        algorithm: algo.toLowerCase(),
+        mode: modeForTask(activeTask),
       }
     } else if (isPatrol) {
       generateParams = {
@@ -78,6 +86,19 @@ export function useRunActions({
       generateParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) }
     }
 
+    if (algoConfigJson) {
+      generateParams = { ...generateParams, ...stripFileName(algoConfigJson) }
+    }
+    if (envConfigJson) {
+      generateParams = { ...generateParams, ...stripFileName(envConfigJson) }
+    }
+    if (valEnvConfigJson) {
+      generateParams = { ...generateParams, ...stripFileName(valEnvConfigJson) }
+    }
+    if (useGeneratedForValidation) {
+      generateParams.use_generated_for_validation = true
+    }
+
     if (mode === "inference") {
       generateParams.mode = "inference"
       if (sourceRunTitle) generateParams.source_run_title = sourceRunTitle
@@ -86,8 +107,9 @@ export function useRunActions({
     send("generate", generateParams)
     resetEpisode?.()
     setChartData([])
+    setValChartData?.([])
     setRunning(false)
-  }, [params, algo, activeEnv, activeTask, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
+  }, [params, algo, activeEnv, activeTask, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setValChartData, setRunning, mode, sourceRunTitle, algoConfigJson, envConfigJson, valEnvConfigJson, useGeneratedForValidation])
 
   const start = useCallback((options = {}) => {
     const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask, algo)
@@ -97,24 +119,38 @@ export function useRunActions({
 
     if (isPatrol && jsonConfig) {
       const { _fileName, ...rest } = jsonConfig
-      payloadParams = { ...rest, algorithm: algo.toLowerCase(), resume }
+      payloadParams = { ...rest, algorithm: algo.toLowerCase(), resume, visualize, step_delay: stepDelay / 1000 }
     } else if (isPatrol) {
-      payloadParams = { ...buildPatrolPayload(paramsWithDefaults, algo), resume }
+      payloadParams = { ...buildPatrolPayload(paramsWithDefaults, algo), resume, visualize, step_delay: stepDelay / 1000 }
     } else if (is3DSim) {
       payloadParams = { ...buildTerrainPayload(paramsWithDefaults), resume }
     } else {
       payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask), resume }
     }
 
+    if (algoConfigJson) {
+      payloadParams = { ...payloadParams, ...stripFileName(algoConfigJson) }
+    }
+    if (envConfigJson) {
+      payloadParams = { ...payloadParams, ...stripFileName(envConfigJson) }
+    }
+    if (valEnvConfigJson) {
+      payloadParams = { ...payloadParams, ...stripFileName(valEnvConfigJson) }
+    }
+    if (useGeneratedForValidation) {
+      payloadParams.use_generated_for_validation = true
+    }
+
     send("start", payloadParams)
     resetEpisode?.()
     setChartData([])
+    setValChartData?.([])
     setRunning(true)
-  }, [params, algo, activeEnv, activeTask, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setRunning])
+  }, [params, algo, activeEnv, activeTask, jsonConfig, isPatrol, is3DSim, visualize, stepDelay, send, resetEpisode, setChartData, setValChartData, setRunning, algoConfigJson, envConfigJson, valEnvConfigJson, useGeneratedForValidation])
 
   const stop = useCallback(() => {
-      send("stop", {})
-      setRunning(false)
+    send("stop", {})
+    setRunning(false)
   }, [send, setRunning])
 
   const reset = useCallback(() => {
@@ -123,7 +159,8 @@ export function useRunActions({
     setRunning(false)
     setState(null)
     setChartData([])
-  }, [send, resetEpisode, setRunning, setState, setChartData])
+    setValChartData?.([])
+  }, [send, resetEpisode, setRunning, setState, setChartData, setValChartData])
 
   const finish = useCallback(() => {
     send("finish", mode ? { mode } : {})
