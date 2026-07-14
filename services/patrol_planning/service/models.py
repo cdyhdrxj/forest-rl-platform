@@ -13,6 +13,7 @@ class GridWorldTrainState(DictLikeModel):
     }
         
     def reset_counters(self):
+        """Полный сброс — вызывается при старте нового обучения."""
         self.episode = 0
         self.step = 0
         self.total_reward = 0.0
@@ -21,6 +22,19 @@ class GridWorldTrainState(DictLikeModel):
         self.trajectory = []
         self.catch_latency = []
         self.total_damage = 0
+        self.train_metrics = None
+        self.val_metrics = None
+        self.val_step = 0
+
+    def reset_per_episode(self):
+        """Сброс внутри-эпизодных счётчиков — вызывается в env.reset()."""
+        self.step = 0
+        self.total_reward = 0.0
+        self.new_episode = False
+        self.trajectory = []
+        self.catch_latency = []
+        self.total_damage = 0
+        # episode, last_episode_reward, train_metrics, val_metrics сохраняются
         
     #Параметры, обновляемые средой
     agent_pos: List[List[float]] = Field(
@@ -89,6 +103,11 @@ class GridWorldTrainState(DictLikeModel):
         intruders - нарушители, rows - индексы строк, cols -индексы столбцов, passability - проходимость, value - ценность"
     )
 
+    episode_metrics: dict | None = Field(
+        default=None,
+        description="Метрики задачи за последний завершённый эпизод: M_damage, M_move, M_idleness, idleness_max, Z"
+    )
+
     #Параметры, не обновляемые/не используемые средой
     running: bool = Field(
         default=False,
@@ -100,6 +119,31 @@ class GridWorldTrainState(DictLikeModel):
         description="Режим работы"
     )
 
-    
+    train_metrics: dict | None = Field(
+        default=None,
+        description="Метрики обучения: fps, ep_rew_mean, ep_len_mean, global_step"
+    )
+
+    val_metrics: dict | None = Field(
+        default=None,
+        description="Метрики последней валидации: total_reward, metric_Z, metric_M_idleness, etc."
+    )
+
+    val_step: int = Field(
+        default=0,
+        description="Глобальный шаг обучения, на котором проводилась последняя валидация"
+    )
+
+    step_delay: float = Field(
+        default=0.0,
+        description="Задержка после каждого шага среды в секундах (режим визуализации)"
+    )
+
+    visualize: bool = Field(
+        default=False,
+        description="Режим визуализации: True = визуальные данные (agent_pos, trajectory, world_layers) пишутся в train_state"
+    )
+
+
 
     

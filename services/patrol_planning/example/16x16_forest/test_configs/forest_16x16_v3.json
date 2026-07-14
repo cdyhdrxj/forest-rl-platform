@@ -1,0 +1,78 @@
+{
+    "agent_config": {
+        "type": "default",
+        "pos": [3, 3],
+        "is_random_spawned": true,
+        "spawn_min_passability": 1.0,
+        "m_block": 1.0,
+        "m_out": 1.0,
+        "m_stay": 0.0
+    },
+    "intruder_config": [
+        {
+            "type": "poacher_alt",
+            "pos": [0, 0],
+            "is_random_spawned": false,
+            "manual_spawn": false,
+            "catch_reward": 1.0,
+            "m_plan": 175.0,
+            "m_tool_power": 2.0,
+            "incoming_moment": 5,
+            "use_idleness_targeting": false
+        }
+    ],
+    "obs_config": {
+        "type": "box",
+        "size": 5,
+        "layers_count": 7,
+        "max_value": 100.0,
+        "max_steps": 256,
+        "grid_size": 16,
+        "exclude_layers": [],
+        "oob_value": -1.0
+    },
+    "max_steps": 256,
+    "grid_size": 16,
+    "reward_config": {
+        "w_catch": 1.0,
+        "w_damage": 1.0,
+        "w_move": 1.0,
+        "w_idle": 0.1,
+        "idle_value_only": false,
+        "m_catch": 350.0,
+        "m_exit_penalty": -250.0,
+        "m_out": 1.0,
+        "m_stay": 0.3,
+        "m_block": 0.5,
+        "use_passability_cost": true,
+        "detection_reward": 0.0,
+        "scale_detection_by_count": false,
+        "scale_detection_by_proximity": false,
+        "exploration_reward": 0.1,
+        "useful_exp_reward": 0.3,
+        "exploration_staleness_threshold": 10
+    },
+    "metrics_config": {
+        "w1": 1.0,
+        "w2": 1.0,
+        "w3": 1.0,
+        "m_stay": 0.005,
+        "idleness_value_only": false
+    },
+    "mu_min": 0.9,
+    "tau_min": 25,
+    "tau_max": 75,
+    "continue_until_max_steps": true,
+    "map_seed": null,
+    "passability_low": 0.9,
+    "passability_high": 0.9,
+    "impassable_prob": 0.1,
+    "max_value": 100.0,
+    "value_density": 0.7,
+    "random_map": false,
+    "load_layers": {
+        "passability": "C:/Users/George Doroshin/repos/forest-rl-platform/services/patrol_planning/example/16x16_forest/test_configs/passability.csv",
+        "value": "C:/Users/George Doroshin/repos/forest-rl-platform/services/patrol_planning/example/16x16_forest/test_configs/value.csv"
+    },
+    "max_intruders": -1
+}

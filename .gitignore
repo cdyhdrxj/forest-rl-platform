@@ -31,3 +31,35 @@ uv.lock
 /services/patrol_planning/assets/intruders/poacher_lite.old
 
 data/*/
+data/platform_dev.sqlite3
+
+.cl*/
+
+# Data and model files
+*.csv
+*.zip
+*.pt
+*.png
+*.npy
+*.parquet
+
+/services/patrol_planning/research/*
+!/services/patrol_planning/research/16x16_forest/
+/services/patrol_planning/learning/configs/
+/services/patrol_planning/learning/train/
+/services/patrol_planning/learning/models/
+/services/patrol_planning/learning/test/test.py
+/services/patrol_planning/learning/test/test_with_bots.py
+/services/patrol_planning/learning/test/test_with_input.py
+/services/patrol_planning/learning/test/forest_playground/
+/services/patrol_planning/learning/test/evaluation/compare_app.py
+/services/patrol_planning/learning/test/evaluation/run.py
+/services/patrol_planning/learning/test/evaluation/README.md
+/services/patrol_planning/learning/test/evaluation/app_config.json
+/services/patrol_planning/src/draft.py
+/services/patrol_planning/src/play_map_gen.py
+/services/patrol_planning/src/play_map_visualizer.py
+/services/patrol_planning/src/renderer_simple.py
+/services/patrol_planning/assets/intruders/poacher_simple_fixed.py
+/services/patrol_planning/assets/observations/obs_box_CNN.py
+/services/patrol_planning/assets/agents/__init___.py

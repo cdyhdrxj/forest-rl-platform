@@ -15,15 +15,24 @@ async def handle_ws(websocket: WebSocket, dispatcher: ExperimentDispatcher, rout
     _last_logged_run_id = [None]
 
     async def send_loop():
+        interval = 0.1
         while True:
             try:
                 state = dispatcher.get_state(route_key, active_run_id)
                 if active_run_id != _last_logged_run_id[0]:
                     _last_logged_run_id[0] = active_run_id
                 await websocket.send_text(orjson.dumps(state).decode())
+                # Adaptive interval: fast when visualizing (canvas animation),
+                # slow when training without visualization (chart-only updates),
+                # normal when idle/preview
+                if state.get("running"):
+                    interval = 0.05 if state.get("visualize") else 0.5
+                else:
+                    interval = 0.1
             except Exception as e:
                 print(f"Error in send_loop: {e}")
-            await asyncio.sleep(0.1)
+                interval = 0.1
+            await asyncio.sleep(interval)
 
     task = asyncio.create_task(send_loop())
 

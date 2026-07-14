@@ -4,12 +4,31 @@ import {
   TASKS_BY_ENV,
   SLIDER_CONFIG,
   ALGO_SLIDER_PARAMS,
+  filterParamsForAlgo,
   isParamLocked,
 } from "../constants/config"
 import { ENV, TASK, CLASSIC_ALGOS } from "../constants/envs"
 
+// ── Dev-флаги раздела «Дискретная / Патруль» ───────────────────────────────
+// Скрываем старые вкладки, оставляем только "Генерировать сценарий"
+const HIDDEN_PATROL_TABS = ["Карта", "Агент", "Наблюдение", "Нарушитель", "Награды", "Окружение"]
+const FREEZE_PATROL_SETTINGS = true
+
 const Label = ({ children }) =>
   <div style={{ fontSize: 11, color: Theme.textSecond, marginBottom: 4 }}>{children}</div>
+
+const CheckRow = ({ label, checked, onChange, disabled }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <input
+      type="checkbox"
+      checked={!!checked}
+      onChange={e => onChange?.(e.target.checked)}
+      disabled={disabled}
+      style={{ accentColor: Theme.accent, cursor: disabled ? "not-allowed" : "pointer" }}
+    />
+    <span style={{ fontSize: 11, color: Theme.textSecond }}>{label}</span>
+  </div>
+)
 
 const CoordinatesGroup = ({ label, prefix, valueX, valueY, valueZ, onChange, disabled }) => {
   const setCoord = (coord, val) => {
@@ -64,7 +83,6 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
     )
   }
 
-  // Чекбокс
   if (type === "bool") {
     return (
       <div style={{ marginBottom: 12 }}>
@@ -78,7 +96,6 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
     )
   }
 
-  // Числовой ввод
   if (type === "number") {
     return (
       <div style={{ marginBottom: 12 }}>
@@ -104,7 +121,6 @@ const Slider = ({ label, param, min, max, step, type, options, value, onChange, 
     )
   }
 
-  // Слайдер 
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
@@ -165,7 +181,33 @@ export function ConfigPanel({
   tab, setTab,
   running,
   jsonConfig, setJsonConfig,
+  useConfigFiles = false,
+  setUseConfigFiles,
+  loadMapFromConfig = false,
+  setLoadMapFromConfig,
+  visualize = false,
+  setVisualize,
+  algoConfigJson = null,
+  setAlgoConfigJson,
+  envConfigJson = null,
+  setEnvConfigJson,
+  valEnvConfigJson = null,
+  setValEnvConfigJson,
+  stepDelay = 0,
+  setStepDelay,
+  useGeneratedForValidation = false,
+  setUseGeneratedForValidation,
 }) {
+
+  const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
+  const isClassic = CLASSIC_ALGOS.has(algo)
+  const isControlDisabled = running || readOnly || paramsLocked || isResuming
+  const isEnvDisabled = running || envLocked || readOnly
+  const isAlgoLocked = isInference || isResuming || isControlDisabled
+  const isSlidersDisabled = isControlDisabled
+
+  const valConfigProvided = valEnvConfigJson !== null
+  const validationEnabled = valConfigProvided || useGeneratedForValidation
 
   const set = (k, v) => {
     if ((isInference || isResuming || running) && isParamLocked(k, activeEnv)) return
@@ -173,16 +215,10 @@ export function ConfigPanel({
     setParams(p => ({ ...p, [k]: v }))
   }
 
-  const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
-  const isClassic = CLASSIC_ALGOS.has(algo)
-  const isControlDisabled = running || readOnly || paramsLocked || isResuming
-  const isEnvDisabled = running || envLocked || readOnly
-  const isAlgoLocked = isInference || isResuming || isControlDisabled
-
-  const algosConfig  = SLIDER_CONFIG[activeEnv]?.[activeTask]?.algos ?? { "PPO": { excludeParams: [] } }
-  const algos        = Object.keys(algosConfig)
+  const algosConfig = SLIDER_CONFIG[activeEnv]?.[activeTask]?.algos ?? { "PPO": { excludeParams: [] } }
+  const algos = Object.keys(algosConfig)
   const classicAlgos = algos.filter(a => CLASSIC_ALGOS.has(a))
-  const rlAlgos      = algos.filter(a => !CLASSIC_ALGOS.has(a))
+  const rlAlgos = algos.filter(a => !CLASSIC_ALGOS.has(a))
   const hasBothTypes = classicAlgos.length > 0 && rlAlgos.length > 0
 
   const [algoType, setAlgoType] = useState(() => CLASSIC_ALGOS.has(algo) ? "classic" : "rl")
@@ -192,14 +228,12 @@ export function ConfigPanel({
     if (algoType !== newType) setAlgoType(newType)
   }, [algo])
 
-  // При смене алгоритма — убираем параметры которых нет в новом алгоритме
   const handleAlgoChange = (e) => {
     const newAlgo = e.target.value
     if (newAlgo === algo) return
-    const supported = new Set((ALGO_SLIDER_PARAMS[newAlgo] ?? []).map(s => s.param))
-    const filtered  = Object.fromEntries(Object.entries(params).filter(([k]) => supported.has(k)))
+    const filteredParams = filterParamsForAlgo(params, newAlgo)
     setAlgo(newAlgo)
-    setParams(filtered)
+    setParams(filteredParams)
     setAlgoType(CLASSIC_ALGOS.has(newAlgo) ? "classic" : "rl")
   }
 
@@ -208,11 +242,10 @@ export function ConfigPanel({
     setAlgoType(type)
     const list = type === "classic" ? classicAlgos : rlAlgos
     if (list.length > 0 && !list.includes(algo)) {
-      const newAlgo   = list[0]
-      const supported = new Set((ALGO_SLIDER_PARAMS[newAlgo] ?? []).map(s => s.param))
-      const filtered  = Object.fromEntries(Object.entries(params).filter(([k]) => supported.has(k)))
+      const newAlgo = list[0]
+      const filteredParams = filterParamsForAlgo(params, newAlgo)
       setAlgo(newAlgo)
-      setParams(filtered)
+      setParams(filteredParams)
     }
   }
 
@@ -241,6 +274,19 @@ export function ConfigPanel({
     const reader = new FileReader()
     reader.onload = (ev) => {
       try { setJsonConfig({ ...JSON.parse(ev.target.result), _fileName: file.name }) }
+      catch { alert("Ошибка разбора JSON файла") }
+    }
+    reader.readAsText(file)
+    e.target.value = ""
+  }
+
+  const handleConfigFile = (e, setter) => {
+    if (isControlDisabled) return
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try { setter({ ...JSON.parse(ev.target.result), _fileName: file.name }) }
       catch { alert("Ошибка разбора JSON файла") }
     }
     reader.readAsText(file)
@@ -283,6 +329,11 @@ export function ConfigPanel({
     if (["robot_position_y", "robot_position_z", "target_position_y", "target_position_z"].includes(s.param)) {
       return false
     }
+    if (s.algoOnly) {
+      const normalizedAlgo = algo.toUpperCase()
+      const normalizedAlgoOnly = s.algoOnly.map(a => a.toUpperCase())
+      return normalizedAlgoOnly.includes(normalizedAlgo)
+    }
     return true
   }
 
@@ -298,7 +349,7 @@ export function ConfigPanel({
           valueY={params.robot_position_y ?? 0}
           valueZ={params.robot_position_z ?? 0}
           onChange={set}
-          disabled={isControlDisabled}
+          disabled={isSlidersDisabled}
         />
       )
     }
@@ -314,36 +365,42 @@ export function ConfigPanel({
           valueY={params.target_position_y ?? 0}
           valueZ={params.target_position_z ?? 5}
           onChange={set}
-          disabled={isControlDisabled}
+          disabled={isSlidersDisabled}
         />
       )
     }
 
-    const value   = s.type === "bool"
+    const value = s.type === "bool"
       ? (params[s.param] ?? s.default ?? false)
       : (params[s.param] ?? s.default ?? s.min)
     const isLocked = (isInference || isResuming || running) && isParamLocked(s.param, activeEnv)
+
     return (
       <Slider
         key={s.param}
         {...s}
         value={value}
         onChange={(k, v) => set(k, v)}
-        disabled={isControlDisabled || isLocked}
+        disabled={isSlidersDisabled || isLocked}
       />
     )
   }
 
-  // Вкладки среды 
-  const envTabNames = ["Алгоритм", "Награды", "Ландшафт", "Робот", "Цель", "Карта", "Агент", "Наблюдение", "Нарушитель"]
-  const envConfig   = SLIDER_CONFIG[activeEnv]?.[activeTask] ?? {}
+  const envConfig = SLIDER_CONFIG[activeEnv]?.[activeTask] ?? {}
+  const excludeParams = algosConfig[algo]?.excludeParams ?? []
+  const algoSliders = (ALGO_SLIDER_PARAMS[algo] ?? []).filter(s => !excludeParams.includes(s.param))
 
-  const availableTabs = [
-    "Алгоритм",
-    ...envTabNames
-      .filter(t => t !== "Алгоритм")
-      .filter(t => (envConfig[t] ?? []).some(sl => shouldShowEnvSlider(sl))),
-  ]
+  // Вкладки из SLIDER_CONFIG (все, кроме algos и Алгоритм)
+  const tabsFromConfig = Object.keys(envConfig)
+    .filter(key => key !== "algos" && key !== "Алгоритм")
+    .filter(key => (envConfig[key] ?? []).some(sl => shouldShowEnvSlider(sl)))
+    .filter(key => !(isPatrol && HIDDEN_PATROL_TABS.includes(key)))
+
+  // Для патруля: Алгоритм + Генерировать сценарий + Настройки + Конфигурации
+  // Для остальных: Алгоритм + все вкладки из SLIDER_CONFIG
+  const availableTabs = isPatrol
+    ? ["Алгоритм", "Генерировать сценарий", "Настройки", "Конфигурации"]
+    : ["Алгоритм", ...tabsFromConfig]
 
   useEffect(() => {
     checkTabs()
@@ -355,17 +412,32 @@ export function ConfigPanel({
     if (!availableTabs.includes(tab)) setTab(availableTabs[0])
   }, [availableTabs.join(","), tab])
 
-  const excludeParams = algosConfig[algo]?.excludeParams ?? []
-  const algoSliders   = (ALGO_SLIDER_PARAMS[algo] ?? []).filter(s => !excludeParams.includes(s.param))
-
   const envSliders = (envConfig[tab] ?? []).filter(shouldShowEnvSlider)
+  const hideSliders = isPatrol && jsonConfig
 
-  const hideSliders  = isPatrol && jsonConfig
+  const fileUploadStyle = (disabled) => ({
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+    padding: "7px 0", fontSize: 11, color: Theme.textSecond,
+    border: `1px dashed ${Theme.border}`, borderRadius: 6,
+    cursor: disabled ? "not-allowed" : "pointer",
+    background: "transparent",
+    opacity: disabled ? 0.6 : 1,
+  })
+
+  const fileLoadedStyle = {
+    display: "flex", alignItems: "center", gap: 6, padding: "6px 8px",
+    background: `${Theme.accent}12`, border: `1px solid ${Theme.accent}`, borderRadius: 6,
+  }
+
+  const fileRemoveBtn = (disabled) => ({
+    padding: "1px 6px", fontSize: 10, color: Theme.textMuted,
+    background: "transparent", border: `1px solid ${Theme.border}`, borderRadius: 4,
+    cursor: disabled ? "not-allowed" : "pointer", flexShrink: 0,
+  })
 
   return (
     <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
 
-      {/* Конфигурация среды */}
       <div style={{ ...card, padding: 14 }}>
         <div style={secLabel}>Конфигурация</div>
 
@@ -415,35 +487,21 @@ export function ConfigPanel({
           </>
         )}
 
-        <div style={{ marginTop: 12 }}>
+        {!isPatrol && <div style={{ marginTop: 12 }}>
           <Label>Конфиг (.json)</Label>
           {jsonConfig ? (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "6px 8px",
-              background: `${Theme.accent}12`, border: `1px solid ${Theme.accent}`, borderRadius: 6,
-            }}>
+            <div style={fileLoadedStyle}>
               <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {jsonConfig._fileName ?? "config.json"}
               </span>
               <button
                 onClick={() => setJsonConfig(null)}
                 disabled={isControlDisabled}
-                style={{
-                  padding: "1px 6px", fontSize: 10, color: Theme.textMuted,
-                  background: "transparent", border: `1px solid ${Theme.border}`, borderRadius: 4,
-                  cursor: isControlDisabled ? "not-allowed" : "pointer", flexShrink: 0,
-                }}
+                style={fileRemoveBtn(isControlDisabled)}
               >✕</button>
             </div>
           ) : (
-            <label style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: "7px 0", fontSize: 11, color: Theme.textSecond,
-              border: `1px dashed ${Theme.border}`, borderRadius: 6,
-              cursor: isControlDisabled ? "not-allowed" : "pointer",
-              background: "transparent",
-              opacity: isControlDisabled ? 0.6 : 1,
-            }}>
+            <label style={fileUploadStyle(isControlDisabled)}>
               <input
                 type="file" accept=".json"
                 onChange={handleJsonFile}
@@ -453,10 +511,9 @@ export function ConfigPanel({
               + Загрузить файл
             </label>
           )}
-        </div>
+        </div>}
       </div>
 
-      {/* Параметры */}
       <div style={{ ...card, overflow: "hidden", display: hideSliders ? "none" : undefined }}>
         <div style={{ position: "relative" }}>
           <div
@@ -546,15 +603,16 @@ export function ConfigPanel({
                   : algos
                 ).map(a => <option key={a}>{a}</option>)}
               </select>
-               <div style={{
-                  maxHeight: 380,
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "#d1d5db #f9fafb",
-                  marginRight: -8,
-                  paddingRight: 8,
-                }}>
+
+              <div style={{
+                maxHeight: 380,
+                overflowY: "auto",
+                overflowX: "hidden",
+                scrollbarWidth: "thin",
+                scrollbarColor: "#d1d5db #f9fafb",
+                marginRight: -8,
+                paddingRight: 8,
+              }}>
                 {envConfig["Алгоритм"]?.length > 0 && (
                   <>
                     <div style={{ height: 12 }} />
@@ -564,11 +622,10 @@ export function ConfigPanel({
                   </>
                 )}
 
-                {/* Алго-параметры */}
                 {algoSliders.length === 0
                   ? <div style={{ fontSize: 11, color: Theme.textMuted }}>Нет параметров</div>
                   : algoSliders.map(s => {
-                      const value    = params[s.param] ?? s.default ?? s.min
+                      const value = params[s.param] ?? s.default ?? s.min
                       const isLocked = (isInference || isResuming || running) && isParamLocked(s.param, activeEnv)
                       return (
                         <Slider
@@ -576,7 +633,7 @@ export function ConfigPanel({
                           {...s}
                           value={value}
                           onChange={(k, v) => set(k, v)}
-                          disabled={isControlDisabled || isLocked}
+                          disabled={isSlidersDisabled || isLocked}
                         />
                       )
                     })
@@ -585,7 +642,228 @@ export function ConfigPanel({
             </>
           )}
 
-          {tab !== "Алгоритм" && (
+          {tab === "Настройки" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <CheckRow
+                label="Визуализировать обучение"
+                checked={visualize}
+                onChange={v => setVisualize?.(v)}
+                disabled={FREEZE_PATROL_SETTINGS || isControlDisabled}
+              />
+              <CheckRow
+                label="Использовать конфиги"
+                checked={useConfigFiles}
+                onChange={v => {
+                  setUseConfigFiles?.(v)
+                  if (!v) setLoadMapFromConfig?.(false)
+                }}
+                disabled={FREEZE_PATROL_SETTINGS || isControlDisabled}
+              />
+              <CheckRow
+                label="Загрузка карты из конфига"
+                checked={loadMapFromConfig}
+                onChange={v => setLoadMapFromConfig?.(v)}
+                disabled={isControlDisabled || !useConfigFiles}
+              />
+              {FREEZE_PATROL_SETTINGS && (
+                <div style={{ fontSize: 10, color: Theme.textMuted, lineHeight: 1.4 }}>
+                  Режимы «Визуализировать обучение» и «Использовать конфиги» зафиксированы.
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === "Конфигурации" && (
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                <div>
+                  <Label>Шагов обучения</Label>
+                  <input
+                    type="number"
+                    value={params.total_timesteps ?? 3000000}
+                    min={100000} max={20000000} step={100000}
+                    disabled={isControlDisabled}
+                    onChange={e => setParams?.(p => ({ ...p, total_timesteps: parseInt(e.target.value) || 3000000 }))}
+                    style={{
+                      width: "100%", padding: "6px 8px", fontSize: 12,
+                      background: Theme.surface, color: Theme.textPrimary,
+                      border: `1px solid ${Theme.border}`, borderRadius: Theme.radiusSm,
+                      boxSizing: "border-box",
+                      opacity: isControlDisabled ? 0.5 : 1,
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label>Сид</Label>
+                  <input
+                    type="number"
+                    value={params.seed ?? 42}
+                    min={0} max={999999} step={1}
+                    disabled={isControlDisabled}
+                    onChange={e => setParams?.(p => ({ ...p, seed: parseInt(e.target.value) || 0 }))}
+                    style={{
+                      width: "100%", padding: "6px 8px", fontSize: 12,
+                      background: Theme.surface, color: Theme.textPrimary,
+                      border: `1px solid ${Theme.border}`, borderRadius: Theme.radiusSm,
+                      boxSizing: "border-box",
+                      opacity: isControlDisabled ? 0.5 : 1,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                  <span style={{ color: visualize ? Theme.textSecond : Theme.textMuted }}>Задержка обновления</span>
+                  <span style={{ color: Theme.textPrimary, fontWeight: 600, fontFamily: Theme.mono, fontSize: 11 }}>{stepDelay} мс</span>
+                </div>
+                <input
+                  type="range"
+                  min={0} max={500} step={10}
+                  value={stepDelay}
+                  onChange={e => setStepDelay?.(parseInt(e.target.value))}
+                  disabled={isControlDisabled || !visualize}
+                  style={{ width: "100%", accentColor: Theme.accent, cursor: (isControlDisabled || !visualize) ? "not-allowed" : "pointer", opacity: visualize ? 1 : 0.4 }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <Label>Конфиг алгоритма (.json)</Label>
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 6 }}>
+                  {algo}TrainConfig
+                </div>
+                {algoConfigJson ? (
+                  <div style={fileLoadedStyle}>
+                    <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {algoConfigJson._fileName ?? "algo_config.json"}
+                    </span>
+                    <button
+                      onClick={() => setAlgoConfigJson?.(null)}
+                      disabled={isControlDisabled}
+                      style={fileRemoveBtn(isControlDisabled)}
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label style={fileUploadStyle(isControlDisabled)}>
+                    <input type="file" accept=".json" onChange={e => handleConfigFile(e, setAlgoConfigJson)} disabled={isControlDisabled} style={{ display: "none" }} />
+                    + Загрузить
+                  </label>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <Label>Конфиг среды (.json)</Label>
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 6 }}>
+                  GridForestConfig
+                </div>
+                {envConfigJson ? (
+                  <div style={fileLoadedStyle}>
+                    <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {envConfigJson._fileName ?? "env_config.json"}
+                    </span>
+                    <button
+                      onClick={() => setEnvConfigJson?.(null)}
+                      disabled={isControlDisabled}
+                      style={fileRemoveBtn(isControlDisabled)}
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label style={fileUploadStyle(isControlDisabled)}>
+                    <input type="file" accept=".json" onChange={e => handleConfigFile(e, setEnvConfigJson)} disabled={isControlDisabled} style={{ display: "none" }} />
+                    + Загрузить
+                  </label>
+                )}
+              </div>
+
+              <div>
+                <Label>Конфиг среды для валидации (.json)</Label>
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginBottom: 6 }}>
+                  GridForestConfig (опционально)
+                </div>
+                {valEnvConfigJson ? (
+                  <div style={fileLoadedStyle}>
+                    <span style={{ flex: 1, fontSize: 10, color: Theme.accent, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {valEnvConfigJson._fileName ?? "val_env_config.json"}
+                    </span>
+                    <button
+                      onClick={() => setValEnvConfigJson?.(null)}
+                      disabled={isControlDisabled}
+                      style={fileRemoveBtn(isControlDisabled)}
+                    >✕</button>
+                  </div>
+                ) : (
+                  <label style={fileUploadStyle(isControlDisabled)}>
+                    <input type="file" accept=".json" onChange={e => handleConfigFile(e, setValEnvConfigJson)} disabled={isControlDisabled} style={{ display: "none" }} />
+                    + Загрузить
+                  </label>
+                )}
+              </div>
+
+              {(() => {
+                const valDisabled = isControlDisabled || !validationEnabled
+                const valInput = (key, def, min, max, step) => (
+                  <input
+                    type="number"
+                    value={params[key] ?? def}
+                    min={min} max={max} step={step}
+                    disabled={valDisabled}
+                    onChange={e => setParams?.(p => ({ ...p, [key]: parseInt(e.target.value) || def }))}
+                    style={{
+                      width: "100%", padding: "6px 8px", fontSize: 12,
+                      background: Theme.surface, color: Theme.textPrimary,
+                      border: `1px solid ${Theme.border}`, borderRadius: Theme.radiusSm,
+                      boxSizing: "border-box", opacity: valDisabled ? 0.5 : 1,
+                    }}
+                  />
+                )
+                return (
+                  <div style={{ marginTop: 16 }}>
+                    <Label>Настройки валидации</Label>
+                    <div style={{ fontSize: 10, color: validationEnabled ? Theme.accent : Theme.textMuted, marginBottom: 8 }}>
+                      {validationEnabled
+                        ? (valConfigProvided ? "Включена (конфиг среды задан)" : "Включена (сгенерированный сценарий)")
+                        : "Выключена — задайте конфиг среды или отметьте «Использовать для валидации»"}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                      <div>
+                        <Label>Сид</Label>
+                        {valInput("validation_seed", 2026, 0, 999999, 1)}
+                      </div>
+                      <div>
+                        <Label>Эпизодов</Label>
+                        {valInput("validation_n_episodes", 20, 1, 200, 1)}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Частота (шагов)</Label>
+                      {valInput("validation_freq", 100000, 1000, 5000000, 1000)}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
+          {tab === "Генерировать сценарий" && (
+            <>
+              {envSliders.map(s => renderSliderOrCoordinates(s))}
+              <div style={{ marginTop: 10, paddingTop: 12, borderTop: `1px solid ${Theme.border}` }}>
+                <CheckRow
+                  label="Использовать для валидации"
+                  checked={useGeneratedForValidation}
+                  onChange={v => setUseGeneratedForValidation?.(v)}
+                  disabled={isControlDisabled || valConfigProvided}
+                />
+                <div style={{ fontSize: 10, color: Theme.textMuted, marginTop: 4, lineHeight: 1.4 }}>
+                  {valConfigProvided
+                    ? "Валидация уже задана конфигом во вкладке «Конфигурации»."
+                    : "После генерации эта же карта будет использоваться для валидации."}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab !== "Алгоритм" && tab !== "Настройки" && tab !== "Конфигурации" && tab !== "Генерировать сценарий" && (
             envSliders.length === 0
               ? <div style={{ fontSize: 11, color: Theme.textMuted }}>Нет параметров</div>
               : envSliders.map(s => renderSliderOrCoordinates(s))

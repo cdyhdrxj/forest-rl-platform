@@ -511,6 +511,7 @@ class ExperimentDispatcher:
                 start_params["resume"] = True
 
         session.training_params = start_params
+        session.last_error = None
         session.service.start(start_params)
         
         if session.observer is None:
@@ -687,7 +688,7 @@ class ExperimentDispatcher:
             }
 
         session = self.load_run(run_id)
-        session.last_error = session.last_error or getattr(session.service, "last_error", None)
+        session.last_error = getattr(session.service, "last_error", None)
         state = dict(session.service.get_state())
         execution_phase = "running" if state.get("running") else "preview"
         if session.last_error:

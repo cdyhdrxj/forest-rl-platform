@@ -31,4 +31,11 @@ class AgentConfig(BaseModel):
         description= "Размер штрафа за простой"
     )
 
+    spawn_min_passability: float = Field(
+        default=0.0,
+        description="Минимальная проходимость клетки для случайного спавна. "
+                    "0.0 — любая проходимая клетка; 0.3 — исключает плотный лес (0.2); "
+                    "0.9 — только тропы."
+    )
+
 

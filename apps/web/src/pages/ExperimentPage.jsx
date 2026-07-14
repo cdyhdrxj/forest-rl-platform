@@ -10,6 +10,7 @@ import { CanvasPanel } from "../components/CanvasPanel"
 import { ControlButtons } from "../components/ControlButtons"
 import { RewardChart } from "../components/RewardChart"
 import { LiveState } from "../components/LiveState"
+import { ValChartsPanel } from "../components/ValChartsPanel"
 import { ENV, TASK } from "../constants/envs"
 import { API_PROTOCOL, API_ADDRESS, API_PORT } from "../constants/envs"
 
@@ -175,6 +176,16 @@ export function ExperimentPage({ nav, ctx = {} }) {
   const [algo, setAlgo] = useState("PPO")
   const [tab, setTab] = useState("Алгоритм")
   const [jsonConfig, setJsonConfig] = useState(null)
+  // Для патруля режимы «Использовать конфиги» и «Визуализировать обучение»
+  // включены по умолчанию и зафиксированы в ConfigPanel (FREEZE_PATROL_SETTINGS).
+  const [useConfigFiles, setUseConfigFiles] = useState(true)
+  const [algoConfigJson, setAlgoConfigJson] = useState(null)
+  const [envConfigJson, setEnvConfigJson] = useState(null)
+  const [valEnvConfigJson, setValEnvConfigJson] = useState(null)
+  const [loadMapFromConfig, setLoadMapFromConfig] = useState(false)
+  const [visualize, setVisualize] = useState(true)
+  const [stepDelay, setStepDelay] = useState(0)
+  const [useGeneratedForValidation, setUseGeneratedForValidation] = useState(false)
   const [showTrail, setShowTrail] = useState(true)
   const [showObs, setShowObs] = useState(true)
   const [confirmFinish, setConfirmFinish] = useState(false)
@@ -182,7 +193,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
   const [finishRenameError, setFinishRenameError] = useState("")
 
   const endpoint = WS_MAP[`${activeEnv}/${activeTask}`]
-  const { state, chartData, running, scenarioReady, setRunning, setChartData, setState, wsRef } = useWebSocket(endpoint)
+  const { state, chartData, valChartData, running, scenarioReady, setRunning, setChartData, setValChartData, setState, wsRef } = useWebSocket(endpoint)
 
 	useEffect(() => {
     const rid = state?.run_id
@@ -200,10 +211,17 @@ export function ExperimentPage({ nav, ctx = {} }) {
 
   const { generate: _generate, start, stop, reset, finish } = useRunActions({
     wsRef, endpoint, params, algo, activeTask, activeEnv,
-    setRunning, setChartData, setState,
+    setRunning, setChartData, setValChartData, setState,
     jsonConfig, runTitle: null,
     mode: isInference ? "inference" : undefined,
     sourceRunTitle: sourceRunTitle || null,
+    useConfigFiles,
+    algoConfigJson,
+    envConfigJson,
+    valEnvConfigJson,
+    visualize,
+    stepDelay,
+    useGeneratedForValidation,
   })
 
   const generate = useCallback(() => {
@@ -366,11 +384,24 @@ export function ExperimentPage({ nav, ctx = {} }) {
     }
   }
 
-  const obsSize = params.obs_size ?? 3
+  // obs_size фиксирован в генераторе сценария (obs_config.size = 5).
+  const obsSize = (useConfigFiles && envConfigJson?.obs_config?.size)
+    ? envConfigJson.obs_config.size
+    : params.obs_size ?? 5
+  const activeGridSize = (useConfigFiles && envConfigJson?.grid_size)
+    ? envConfigJson.grid_size
+    : params.grid_size
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
   const is3d = IS_3D(activeEnv)
+  // Для патруля индикатор «Валидация» отражает, включена ли обучающая валидация:
+  // задан val-конфиг ИЛИ помечено использование сгенерированного сценария.
+  const validationEnabled = isPatrol
+    ? (valEnvConfigJson !== null || useGeneratedForValidation)
+    : null
+  // During non-visual patrol training, freeze the canvas to prevent OOM from continuous redraws
+  const canvasState = (isPatrol && running && !visualize) ? null : state
   const { canvasRef } = useCanvasRender(
-    activeEnv, state, params.grid_size,
+    activeEnv, canvasState, activeGridSize,
     isPatrol ? showTrail : true,
     isPatrol ? showObs : false,
     obsSize
@@ -488,6 +519,22 @@ export function ExperimentPage({ nav, ctx = {} }) {
             running={running}
             jsonConfig={jsonConfig}
             setJsonConfig={setJsonConfig}
+            useConfigFiles={useConfigFiles}
+            setUseConfigFiles={setUseConfigFiles}
+            algoConfigJson={algoConfigJson}
+            setAlgoConfigJson={setAlgoConfigJson}
+            envConfigJson={envConfigJson}
+            setEnvConfigJson={setEnvConfigJson}
+            valEnvConfigJson={valEnvConfigJson}
+            setValEnvConfigJson={setValEnvConfigJson}
+            loadMapFromConfig={loadMapFromConfig}
+            setLoadMapFromConfig={setLoadMapFromConfig}
+            visualize={visualize}
+            setVisualize={setVisualize}
+            stepDelay={stepDelay}
+            setStepDelay={setStepDelay}
+            useGeneratedForValidation={useGeneratedForValidation}
+            setUseGeneratedForValidation={setUseGeneratedForValidation}
           />
           
           <div style={{
@@ -531,16 +578,19 @@ export function ExperimentPage({ nav, ctx = {} }) {
               onStart={start}
               onStop={stop}
               onReset={reset}
-							onFinish={openFinishDialog} 
+							onFinish={openFinishDialog}
               isInference={isInference}
               onStartEval={handleStartEval}
               evalReady={evalReady}
+              loadMapFromConfig={loadMapFromConfig}
+              envConfigJsonReady={envConfigJson !== null}
             />
 
             {is3d && (
               <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
                   <RewardChart chartData={chartData} />
+                  <ValChartsPanel valChartData={valChartData} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <LiveState
@@ -549,6 +599,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
                     scenarioReady={scenarioReady}
                     endpoint={endpoint}
                     activeTask={activeTask}
+                    validationEnabled={validationEnabled}
                   />
                 </div>
               </div>
@@ -558,6 +609,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
           {!is3d && (
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
               <RewardChart chartData={chartData} />
+              <ValChartsPanel valChartData={valChartData} />
               <LiveState
                 state={state}
                 executionPhase={executionPhase}

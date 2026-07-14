@@ -279,15 +279,25 @@ class PatrolTaskOverlay:
         if patrol is None:
             raise ValueError("Missing patrol runtime_context")
 
+        # Параметры спавна агента берём из запроса: build_patrol_grid_request
+        # заполняет их из agent_config, тогда как GridFamilyGenerator кладёт в
+        # runtime_context лишь дефолтную заглушку (agent_random_spawn=True). Без
+        # этого фиксированная позиция агента (agent.pos) игнорировалась.
+        task = request.task_params or {}
+        agent_random_spawn = bool(
+            task.get("agent_random_spawn", patrol.get("agent_random_spawn", True))
+        )
+        agent_pos_req = task.get("agent_pos", patrol.get("agent_pos", [0, 0]))
+
         seed = scenario.seed
         rng = np.random.default_rng(seed + 1001)
 
         occupied = set()
 
-        if patrol.get("agent_random_spawn", True):
+        if agent_random_spawn:
             agent_pos = _sample_unique_positions(rng, grid_size, 1, occupied)[0]
         else:
-            agent_pos = patrol["agent_pos"]
+            agent_pos = [int(agent_pos_req[0]), int(agent_pos_req[1])]
 
         occupied.add(tuple(agent_pos))
 
