@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { drawCanvas } from "../scripts/drawCanvas"
+import { ENV } from "../constants/envs"
 
 const CANVAS_SIZE = 360
 
@@ -8,6 +9,10 @@ export function useCanvasRender(activeEnv, state, activeGridSize, showTrail = tr
   const gridCacheRef = useRef(null)
 
   useEffect(() => {
+    if (activeEnv !== ENV.DISCRETE) {
+      gridCacheRef.current = null
+      return
+    }
     const offscreen = document.createElement("canvas")
     offscreen.width  = CANVAS_SIZE
     offscreen.height = CANVAS_SIZE

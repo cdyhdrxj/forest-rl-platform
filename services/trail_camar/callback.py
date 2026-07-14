@@ -38,6 +38,7 @@ class CamarCallback(BaseCallback):
         self.state["goal_pos"] = render.get("goal_pos", [])
         self.state["landmark_pos"] = render.get("landmark_pos", [])
         self.state["is_collision"] = is_collision
+        self.state["agent_vel"]    = render.get("agent_vel", [])  
 
         # Запись точки траектории 
         if render.get("agent_pos") and self.state.get("mode") == "trail":
@@ -50,13 +51,6 @@ class CamarCallback(BaseCallback):
         self.state["step"] += 1
         self.state["total_reward"] = self.episode_reward
         self.state["new_episode"] = False
-
-        # Отправка карты рельефа
-        if not self.sent_terrain:
-            terrain = self.training_env.env_method("get_terrain_map")[0]
-            if terrain is not None:
-                self.state["terrain_map"] = terrain
-                self.sent_terrain = True
 
         # Обработка конца эпизода
         if self.locals["dones"][0]:

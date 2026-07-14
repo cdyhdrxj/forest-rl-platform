@@ -1,5 +1,5 @@
 export * from "./envs"
-export * from "./params"
+export * from "./algo_params"
 export * from "./sliders"
 export * from "./metrics"
 export * from "./patrol"

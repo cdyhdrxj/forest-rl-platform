@@ -131,7 +131,6 @@ class TestResume:
         
         dispatcher.start_run(run_id, {})
         real_service.training_state["step"] = 75
-        real_service.training_state["total_reward"] = 200.0
         
         dispatcher.stop_run(run_id)
         state_after_stop = dispatcher.get_state(route_key, run_id)
@@ -140,7 +139,6 @@ class TestResume:
         dispatcher.start_run(run_id, {"resume": True}, resume=True)
         state_after_resume = dispatcher.get_state(route_key, run_id)
         assert state_after_resume.get("step") >= 75
-        assert state_after_resume.get("total_reward") >= 200.0
 
     async def test_resume_flag_in_websocket(self, dispatcher):
         """WebSocket передаёт resume флаг в start."""

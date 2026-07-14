@@ -26,6 +26,7 @@ class CamarGymWrapper(gym.Env):
         "damping",
         "dt",
         "step_penalty",
+        "viscosity_penalty", 
     }
 
     def __init__(
@@ -42,6 +43,7 @@ class CamarGymWrapper(gym.Env):
         damping: float = 0.6,
         dt: float = 0.03,
         frameskip: int = 1,
+        viscosity_penalty: float = 0.01,
         **kwargs,
     ):
         super().__init__()
@@ -52,7 +54,7 @@ class CamarGymWrapper(gym.Env):
         self.collision_penalty = collision_penalty
         self.step_penalty = step_penalty
         self.terrain_map = []
-
+        self.viscosity_penalty = viscosity_penalty  
         self.env = camar_v0(
             map_generator="random_grid",
             map_kwargs={
@@ -81,7 +83,7 @@ class CamarGymWrapper(gym.Env):
 
         self._jit_step = jax.jit(self.env.step)
         self._jit_reset = jax.jit(self.env.reset)
-
+        
         obs_dim = self.env.observation_size
         self.observation_space = spaces.Box(
             -np.inf, np.inf, shape=(obs_dim,), dtype=np.float32
@@ -118,6 +120,25 @@ class CamarGymWrapper(gym.Env):
             r += self.goal_reward
             self.goal_count += 1
 
+        agent_pos = np.array(self.state.physical_state.agent_pos[0])
+    
+        cell_x = int((agent_pos[0] + 1) / 2 * self.grid_size)
+        cell_y = int((agent_pos[1] + 1) / 2 * self.grid_size)
+        
+        cell_x = max(0, min(cell_x, self.grid_size - 1))
+        cell_y = max(0, min(cell_y, self.grid_size - 1))
+        
+        viscosity_penalty_applied = 0.0
+            
+        if hasattr(self, 'terrain_map') and self.terrain_map:
+            viscosity = self.terrain_map[cell_x][cell_y]
+            viscosity_penalty = getattr(self, 'viscosity_penalty', 0.01)
+            viscosity_penalty_applied = viscosity * viscosity_penalty  # ← ЭТУ СТРОКУ НУЖНО ДОБАВИТЬ!
+            r -= viscosity_penalty_applied
+
+        if viscosity_penalty_applied > 0:
+            print(f"[VISCOSITY]  pos=({agent_pos[0]:.2f}, {agent_pos[1]:.2f}), "
+                f"cell=({cell_x},{cell_y}), viscosity={viscosity:.3f}, penalty={viscosity_penalty_applied:.4f}")
         d = bool(np.array(done).any())
 
         return (
@@ -128,18 +149,20 @@ class CamarGymWrapper(gym.Env):
             {"on_goal": on_goal, "is_collision": is_collision},
         )
 
-    def get_terrain_map(self):
-        return self.terrain_map
-
     def get_render_state(self) -> dict[str, Any]:
         if self.state is None:
             return {}
+        
+        agent_vel = np.array(self.state.physical_state.agent_vel).tolist()
+
         return {
             "agent_pos": np.array(self.state.physical_state.agent_pos).tolist(),
             "goal_pos": np.array(self.state.goal_pos).tolist(),
             "landmark_pos": np.array(self.state.landmark_pos).tolist(),
             "is_collision": bool(np.array(self.state.is_collision).any()),
             "on_goal": bool(np.array(self.state.on_goal).any()),
+            "agent_vel": np.array(self.state.physical_state.agent_vel).tolist(),
+
         }
 
     def render(self) -> None:

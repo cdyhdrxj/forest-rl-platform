@@ -32,32 +32,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
 
 _dispatcher = ExperimentDispatcher()
 
-
-@app.websocket("/continuous/trail")
-async def ws_continuous(websocket: WebSocket):
-    await handle_ws(websocket, _dispatcher, "continuous/trail")
-
-@app.websocket("/continuous/coverage")
-async def ws_continuous_coverage(websocket: WebSocket):
-    await handle_ws(websocket, _dispatcher, "continuous/coverage")
-
-@app.websocket("/discrete/patrol")
-async def ws_discrete_patrol(websocket: WebSocket):
-    await handle_ws(websocket, _dispatcher, "discrete/patrol")
-
-@app.websocket("/discrete/reforestation")
-async def ws_discrete_reforestation(websocket: WebSocket):
-    await handle_ws(websocket, _dispatcher, "discrete/reforestation")
-
-@app.websocket("/threed/patrol")
-async def ws_threed_patrol(websocket: WebSocket):
-    await handle_ws(websocket, _dispatcher, "threed/patrol")
-
-@app.websocket("/threed/trail")
-async def ws_threed_trail(websocket: WebSocket):
-    await handle_ws(websocket, _dispatcher, "threed/trail")
-
-
 webrtc_config = ServerConfig(mode="public", logging_level="dev", socket_type="websocket")
 setup_webrtc_routes(app, webrtc_config)
 
@@ -182,3 +156,10 @@ async def get_run_checkpoint(run_id: int):
         "size_bytes": p.stat().st_size if p.exists() else 0,
     })
  
+@app.websocket("/{env}/{task}")
+async def ws_dynamic(websocket: WebSocket, env: str, task: str):
+    route_key = f"{env}/{task}"
+    if not _dispatcher.has_route(route_key):
+        await websocket.close(code=1008, reason=f"Unknown route: {route_key}")
+        return
+    await handle_ws(websocket, _dispatcher, route_key)

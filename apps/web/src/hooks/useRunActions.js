@@ -1,28 +1,42 @@
 import { useCallback } from "react"
-import { buildPatrolPayload, buildTerrainPayload, SLIDER_CONFIG } from "../constants/config" 
+import { buildPatrolPayload, buildTerrainPayload, SLIDER_CONFIG, ALGO_SLIDER_PARAMS } from "../constants/config"
 import { ENV, TASK } from "../constants/envs"
 
 const modeForTask = t =>
   t === TASK.TRAIL ? "trail" : t === TASK.REFORESTATION ? "reforestation" : "patrol"
 
 // Функция для получения параметров из SLIDER_CONFIG
-const getParamsWithDefaults = (params, activeEnv, activeTask) => {
-  const sliders = SLIDER_CONFIG[activeEnv]?.[activeTask] ?? {}
+const getParamsWithDefaults = (params, activeEnv, activeTask, algo) => {
+  const config = SLIDER_CONFIG[activeEnv]?.[activeTask] ?? {}
   const result = { ...params }
-  
-  for (const category of Object.values(sliders)) {
+
+  // Параметры среды из SLIDER_CONFIG
+  for (const categoryName of Object.keys(config)) {
+    const category = config[categoryName]
+    if (categoryName === "algos") continue
+    if (!Array.isArray(category)) continue
+
     for (const slider of category) {
       if (result[slider.param] === undefined && slider.default !== undefined) {
         result[slider.param] = slider.default
       }
     }
   }
+
+  // Гиперпараметры алгоритма из ALGO_SLIDER_PARAMS
+  const algoParams = ALGO_SLIDER_PARAMS[algo] ?? []
+  for (const slider of algoParams) {
+    if (result[slider.param] === undefined && slider.default !== undefined) {
+      result[slider.param] = slider.default
+    }
+  }
+
   return result
 }
 
 export function useRunActions({
   wsRef, endpoint, params, algo, activeTask, activeEnv,
-  setRunning, setChartData, setState, jsonConfig, 
+  setRunning, setChartData, setState, jsonConfig,
   resetEpisode, mode, sourceRunTitle,
 }) {
   const isPatrol = activeEnv === ENV.DISCRETE && activeTask === TASK.PATROL
@@ -35,20 +49,20 @@ export function useRunActions({
       console.error(`WebSocket not open, state=${wsRef.current.readyState}`)
       return
     }
-    const message = JSON.stringify({ action, params: extra }) 
+    const message = JSON.stringify({ action, params: extra })
     wsRef.current.send(message)
   }
 
   const generate = useCallback(() => {
-    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
-    
+    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask, algo)
+
     let generateParams
     if (isPatrol && jsonConfig) {
-      const { _fileName, ...rest } = jsonConfig
-      generateParams = {
-        ...rest,
-        algorithm: algo.toLowerCase(),
-        mode: modeForTask(activeTask),
+    const { _fileName, ...rest } = jsonConfig
+    generateParams = {
+      ...rest,
+      algorithm: algo.toLowerCase(),
+      mode: modeForTask(activeTask),
       }
     } else if (isPatrol) {
       generateParams = {
@@ -73,14 +87,14 @@ export function useRunActions({
     resetEpisode?.()
     setChartData([])
     setRunning(false)
-  }, [params, algo, activeTask, activeEnv, jsonConfig, isPatrol, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
+  }, [params, algo, activeEnv, activeTask, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setRunning, mode, sourceRunTitle])
 
   const start = useCallback((options = {}) => {
-    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
+    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask, algo)
     const resume = options.resume || false
-    
+
     let payloadParams
-    
+
     if (isPatrol && jsonConfig) {
       const { _fileName, ...rest } = jsonConfig
       payloadParams = { ...rest, algorithm: algo.toLowerCase(), resume }
@@ -92,30 +106,25 @@ export function useRunActions({
       payloadParams = { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask), resume }
     }
 
-    send("start", payloadParams)  
+    send("start", payloadParams)
     resetEpisode?.()
     setChartData([])
     setRunning(true)
-  }, [params, algo, activeTask, activeEnv, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setRunning])
+  }, [params, algo, activeEnv, activeTask, jsonConfig, isPatrol, is3DSim, send, resetEpisode, setChartData, setRunning])
 
   const stop = useCallback(() => {
-      send("stop", {}) 
+      send("stop", {})
       setRunning(false)
   }, [send, setRunning])
 
   const reset = useCallback(() => {
-    const paramsWithDefaults = getParamsWithDefaults(params, activeEnv, activeTask)
-    
-    if (activeEnv === ENV.CONTINUOUS) {
-      send("generate", { ...paramsWithDefaults, algorithm: algo.toLowerCase(), mode: modeForTask(activeTask) })
-    } else {
-      send("reset")
-    }
+    send("reset")
     resetEpisode?.()
     setRunning(false)
     setState(null)
     setChartData([])
-  }, [activeEnv, params, algo, activeTask, send, resetEpisode, setRunning, setState, setChartData])
+  }, [send, resetEpisode, setRunning, setState, setChartData])
+
   const finish = useCallback(() => {
     send("finish", mode ? { mode } : {})
   }, [send, mode])

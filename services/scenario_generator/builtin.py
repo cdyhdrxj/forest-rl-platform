@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from matplotlib.pylab import seed
 import numpy as np
 
 from services.agrocare_coverage.families import resolve_coverage_family_params
@@ -108,7 +109,6 @@ class GridFamilyGenerator:
 
 
 class Continuous2DFamilyGenerator:
-
     environment_kind = EnvironmentKind.CONTINUOUS_2D
 
     def generate(self, request: GenerationRequest, seed: int) -> GeneratedScenario:
@@ -148,58 +148,73 @@ class Continuous2DFamilyGenerator:
                 "landmark_pos": [],
             },
             runtime_context={
-                "continuous_2d": {
-                    "wrapper_kwargs": wrapper_kwargs,
-                },
+                "continuous_2d": {"wrapper_kwargs": wrapper_kwargs},
             },
         )
         return scenario
-
-
-# def _generate_camar_preview(seed: int, grid_size: int, obstacle_density: float) -> dict:
-#     """Генерирует превью карты CAMAR по seed."""
-#     key = jax.random.PRNGKey(seed)
-
-#     env = camar_v0(
-#         map_generator="random_grid",
-#         map_kwargs={
-#             "num_agents": 1,
-#             "num_rows": grid_size,
-#             "num_cols": grid_size,
-#             "obstacle_density": obstacle_density,
-#             "goal_rad_range": (0.3, 0.3),
-#         },
-#         dynamic_kwargs={
-#             "max_speed": 50.0,
-#             "accel": 40.0,
-#             "damping": 0.6,
-#             "dt": 0.03,
-#         },
-#         frameskip=1,
-#         max_steps=100,
-#     )
-
-#     _, landmark_pos, agent_pos, goal_pos, _ = env.map_reset(key)
-
-#     landmark_pos_np = np.array(landmark_pos)
-#     agent_pos_np = np.array(agent_pos)
-#     goal_pos_np = np.array(goal_pos)
-
-
-#     terrain_map = np.zeros((grid_size, grid_size), dtype=np.float32)
     
-#     for pos in landmark_pos_np:
-#         x = int((pos[0] + 1) / 2 * grid_size)
-#         y = int((pos[1] + 1) / 2 * grid_size)
-#         if 0 <= x < grid_size and 0 <= y < grid_size:
-#             terrain_map[x, y] = 1.0  
+def _build_camar_preview( seed: int, grid_size: int, 
+                         obstacle_density: float, 
+                         dynamic_kwargs: dict[str, Any],) -> dict[str, Any]:
+    import jax
+    import jax.numpy as jnp
+    from camar import camar_v0
+    from camar.maps.utils import perlin_noise_vectorized
 
-#     return {
-#         "terrain_map": terrain_map.tolist(), 
-#         "agent_pos": agent_pos_np.tolist(),
-#         "goal_pos": goal_pos_np.tolist(),
-#         "landmark_pos": landmark_pos_np.tolist(),
-#     }
+    key = jax.random.PRNGKey(seed)
+    env = camar_v0(
+        map_generator="random_grid",
+        map_kwargs={
+            "num_agents": 1,
+            "num_rows": grid_size,
+            "num_cols": grid_size,
+            "obstacle_density": obstacle_density,
+            "goal_rad_range": (0.3, 0.3),
+        },
+        dynamic_kwargs={
+            "max_speed": _get_number(dynamic_kwargs, "max_speed", 50.0),
+            "accel": _get_number(dynamic_kwargs, "accel", 40.0),
+            "damping": _get_number(dynamic_kwargs, "damping", 0.6),
+            "dt": _get_number(dynamic_kwargs, "dt", 0.03),
+        },
+        frameskip=_get_int(dynamic_kwargs, "frameskip", 1),
+        max_steps=_get_int(dynamic_kwargs, "max_steps", 100),
+    )
+    _, landmark_pos, agent_pos, goal_pos, _ = env.map_reset(key)
+
+    lm = np.array(landmark_pos)
+    terrain_map = np.zeros((grid_size, grid_size), dtype=np.float32)
+    for pos in lm:
+        x = int((pos[0] + 1) / 2 * grid_size)
+        y = int((pos[1] + 1) / 2 * grid_size)
+        if 0 <= x < grid_size and 0 <= y < grid_size:
+            terrain_map[x, y] = 1.0
+
+    noise_key = jax.random.PRNGKey(seed + 9999)
+
+    noise_resolution = 50  
+    noise_scale = 4.0      
+
+    # Генерируем шум в меньшем разрешении
+    noise = perlin_noise_vectorized(
+        noise_key,
+        width=noise_resolution,
+        height=noise_resolution,
+        grid_width=int(noise_resolution / noise_scale),
+        grid_height=int(noise_resolution / noise_scale),
+    )
+    intensity = 2  
+    threshold = 0.1     
+    
+    noise = noise * intensity
+    noise = jnp.clip(noise, 0.0, 1.0)
+    noise = jnp.where(noise > threshold, noise, 0.0)
+    return {
+        "terrain_map": np.array(noise).tolist(), 
+        "agent_pos": np.array(agent_pos).tolist(),
+        "goal_pos": np.array(goal_pos).tolist(),
+        "landmark_pos": lm.tolist(),
+    }
 
 class Simulator3DFamilyGenerator:
     environment_kind = EnvironmentKind.SIMULATOR_3D
@@ -503,13 +518,17 @@ class TrailTaskOverlay:
             return
 
         if scenario.environment_kind == EnvironmentKind.CONTINUOUS_2D:
-            # Для continuous_2d используем уже сгенерированные CAMAR-позиции
-            preview = scenario.preview_payload
-            agent_pos = (preview.get("agent_pos") or [[0.0, 0.0]])[0]
-            goal_pos = (preview.get("goal_pos") or [[0.0, 0.0]])[0]
+            wrapper_kwargs = scenario.runtime_context["continuous_2d"]["wrapper_kwargs"]
+            preview = _build_camar_preview(
+                seed=scenario.seed,
+                grid_size=_get_int(wrapper_kwargs, "grid_size", 10),
+                obstacle_density=_get_number(wrapper_kwargs, "obstacle_density", 0.2),
+                dynamic_kwargs=wrapper_kwargs,
+            )
+            scenario.preview_payload = preview
             scenario.runtime_context["trail"] = {
-                "agent_pos": agent_pos,
-                "goal_pos": goal_pos,
+                "agent_pos": (preview["agent_pos"] or [[0.0, 0.0]])[0],
+                "goal_pos": (preview["goal_pos"] or [[0.0, 0.0]])[0],
             }
             return
 

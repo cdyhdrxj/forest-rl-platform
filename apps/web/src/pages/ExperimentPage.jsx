@@ -157,13 +157,14 @@ export function ExperimentPage({ nav, ctx = {} }) {
 			const initialParams = {}
 			const config = SLIDER_CONFIG[activeEnv]?.[activeTask]
 			if (config) {
-				for (const category of Object.values(config)) {
-					for (const slider of category) {
-						if (slider.default !== undefined) {
-							initialParams[slider.param] = slider.default
-						}
-					}
-				}
+				for (const [key, category] of Object.entries(config)) {
+          if (key === "algos" || !Array.isArray(category)) continue
+          for (const slider of category) {
+            if (slider.default !== undefined) {
+              initialParams[slider.param] = slider.default
+            }
+          }
+        }
 			}
 			if (Object.keys(initialParams).length) {
 				setParams(initialParams)
@@ -293,7 +294,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
   }
 
   const executionPhase = state?.execution_phase ?? (running ? "running" : scenarioReady ? "preview" : "idle")
-
+  
   useEffect(() => {
     if (!isInference) return
     
@@ -482,6 +483,7 @@ export function ExperimentPage({ nav, ctx = {} }) {
             params={params}
             setParams={setParams}
             tab={tab}
+            isResuming={state?.execution_phase === "stopped"} 
             setTab={setTab}
             running={running}
             jsonConfig={jsonConfig}

@@ -35,6 +35,9 @@ class CamarService(SB3Trainer):
         self.training_state = self._make_state()
         if self.loaded_scenario is not None:
             self._apply_preview_state(self.loaded_scenario)
+        
+        if self.env is not None:
+            self.env.reset()
 
     def load_scenario(
         self,
@@ -70,19 +73,26 @@ class CamarService(SB3Trainer):
             "goal_count": s["goal_count"],
             "collision_count": s["collision_count"],
             "trajectory": s.get("trajectory", []),
+            "agent_vel": s.get("agent_vel", []),
+            "terrain_map": s.get("terrain_map", []),
         }
 
     def _build_env(self, params: dict) -> CamarGymWrapper:
         if self.loaded_wrapper_kwargs is None:
             raise RuntimeError("Call load_scenario() before start()")
 
-        # Фильтруем только известные параметры
-        filtered = {
-            k: v
-            for k, v in self.loaded_wrapper_kwargs.items()
-            if k in CamarGymWrapper._KNOWN_PARAMS
-        }
-        return CamarGymWrapper(**filtered)
+        MAP_PARAMS = {"seed", "grid_size", "obstacle_density"}
+
+        filtered = {k: v for k, v in self.loaded_wrapper_kwargs.items() if k in MAP_PARAMS}
+
+        for k in CamarGymWrapper._KNOWN_PARAMS - MAP_PARAMS:
+            if k in params:
+                filtered[k] = params[k]
+
+        env = CamarGymWrapper(**filtered)
+        env.terrain_map = self.training_state.get("terrain_map", [])
+        env.viscosity_penalty = params.get("viscosity_penalty", 0.01)
+        return env
 
     def _make_callback(self) -> CamarCallback:
         return CamarCallback(self.training_state)
@@ -129,6 +139,8 @@ class CamarService(SB3Trainer):
             "goal_count": 0,
             "collision_count": 0,
             "trajectory": [],
+            "agent_vel": [],
+            "terrain_map": [],
         }
 
     def _apply_preview_state(self, scenario: GeneratedScenario) -> None:
@@ -141,4 +153,5 @@ class CamarService(SB3Trainer):
             "trajectory": [],
             "is_collision": False,
             "new_episode": False,
+            "terrain_map": preview.get("terrain_map", []),
         })

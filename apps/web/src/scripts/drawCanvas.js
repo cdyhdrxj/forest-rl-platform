@@ -28,31 +28,34 @@ function drawContinuous(ctx, state, gridSize, gridCache, terrain, showTrail = tr
   const pu = size / range
   const tc = ([x, y]) => [(x + half) / range * size, (half - y) / range * size]
 
-  // Terrain / препятствия
-  if (terrain && terrain.length > 0) {
-    const rows = terrain.length
-    const cols = terrain[0].length
-    const cw = size / cols
-    const ch = size / rows
-
-    for (let iy = 0; iy < rows; iy++) {
-      for (let ix = 0; ix < cols; ix++) {
-        const val = terrain[iy][ix]
-        if (val > 0.8) {
-          ctx.fillStyle = "rgba(156,163,175,0.85)"
-          ctx.fillRect(ix * cw, iy * ch, cw, ch)
-        } else if (val > 0.1) {
-          const intensity = 0.3 + val * 0.5
-          ctx.fillStyle = `rgba(100,116,139,${intensity * 0.6})`
-          ctx.fillRect(ix * cw, iy * ch, cw, ch)
-        }
+  // Terrain
+  if (state?.terrain_map && state.terrain_map.length > 0) {
+    const hm = state.terrain_map
+    const rows = hm.length, cols = hm[0].length
+    const cw = size / cols, ch = size / rows
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const v = hm[i][j]
+        ctx.fillStyle = `rgba(100, 116, 139, ${v * 0.5})`
+        ctx.fillRect(j * cw, i * ch, cw, ch)
       }
     }
   }
 
   if (!state) return
 
-  // Траектория
+  const dot = (positions, color, r) => {
+    if (!positions?.length) return
+    ctx.fillStyle = color
+    for (const p of positions) {
+      const [cx, cy] = tc(p)
+      ctx.beginPath()
+      ctx.arc(cx, cy, pu * r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+ // Траектория
   const traj = state.trajectory ?? []
   if (showTrail && traj.length > 1) {
     ctx.beginPath()
@@ -67,22 +70,45 @@ function drawContinuous(ctx, state, gridSize, gridCache, terrain, showTrail = tr
     ctx.stroke()
   }
 
-  const dot = (positions, color, r) => {
-    if (!positions?.length) return
-    ctx.fillStyle = color
-    for (const p of positions) {
-      const [cx, cy] = tc(p)
-      ctx.beginPath()
-      ctx.arc(cx, cy, pu * r, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
-
+  // Препятствия
   dot(state.landmark_pos, "#9ca3af", 0.10)
-  dot(state.goal_pos, Theme.green, 0.18)
-  dot(state.agent_pos, state.is_collision ? Theme.red : Theme.accent, 0.14)
-}
 
+  // Цель
+  dot(state.goal_pos, Theme.green, 0.18)
+
+  // Агент
+  const agentColor = state.is_collision ? Theme.red : Theme.accent
+  const vels = state.agent_vel ?? []
+  for (let i = 0; i < (state.agent_pos?.length ?? 0); i++) {
+    const [ax, ay] = tc(state.agent_pos[i])
+    const r = pu * 0.17
+
+    const vel = vels[i]
+    const vx = vel?.[0] ?? 0
+    const vy = vel?.[1] ?? 0
+    const speed = Math.hypot(vx, vy)
+    const angle = speed > 0.01 ? Math.atan2(-vy, vx) : 0
+
+    ctx.save()
+    ctx.translate(ax, ay)
+    ctx.rotate(angle)
+
+    ctx.shadowColor = "rgba(0,0,0,0.18)"
+    ctx.shadowBlur = 4
+    ctx.shadowOffsetY = 1
+
+    ctx.beginPath()
+    ctx.moveTo(r * 1.8, 0)
+    ctx.lineTo(-r * 0.6,  r * 1.1)
+    ctx.quadraticCurveTo(-r * 0.1, 0, -r * 0.6, -r * 1.1)
+    ctx.closePath()
+
+    ctx.fillStyle = agentColor
+    ctx.fill()
+
+    ctx.restore()
+  }
+}
 // Дискретная
 function drawDiscrete(ctx, state, terrain, showTrail = true, showObs = true, obsSize = 3) {
   const size = CANVAS_SIZE

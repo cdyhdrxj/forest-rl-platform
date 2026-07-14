@@ -6,6 +6,7 @@ export function useWebSocket(endpoint) {
   const [running, setRunning] = useState(false)
   const [scenarioReady, setScenarioReady] = useState(false)
   const wsRef = useRef(null)
+  const lastEpisodeRef = useRef(-1)
 
   useEffect(() => {
     if (!endpoint) return
@@ -18,6 +19,8 @@ export function useWebSocket(endpoint) {
     setState(null)
     setScenarioReady(false)
     setRunning(false)
+    setChartData([])
+    lastEpisodeRef.current = -1
 
     const ws = new WebSocket(endpoint)
     wsRef.current = ws
@@ -27,14 +30,23 @@ export function useWebSocket(endpoint) {
       setState(data)
       setRunning(data?.execution_phase === "running" || Boolean(data?.running))
       setScenarioReady(Boolean(data?.scenario_generated && data?.run_id))
-      if (data.new_episode) {
-        setChartData(prev => {
-          const i = Math.max(0, (data.episode ?? 1) - 1)
-          if (prev.length && prev[prev.length - 1].i === i) return prev
-          return [...prev.slice(-99), { i, r: data.last_episode_reward ?? 0 }]
-        })
+      
+      const currentEpisode = data.episode ?? 0
+      const lastEpisodeReward = data.last_episode_reward
+      
+      if (currentEpisode !== lastEpisodeRef.current && lastEpisodeReward !== undefined) {
+        lastEpisodeRef.current = currentEpisode
+        
+        if (currentEpisode > 0) {
+          setChartData(prev => {
+            const newData = [...prev, { i: currentEpisode, r: lastEpisodeReward }]
+            if (newData.length > 100) return newData.slice(-100)
+            return newData
+          })
+        }
       }
     }
+    
     ws.onerror = e => console.error("ws error", e)
     return () => ws.close()
   }, [endpoint])

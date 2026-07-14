@@ -12,3 +12,5 @@ alembic
 sqlalchemy
 psycopg2-binary
 roslibpy
+requests>=2.28.0
+matplotlib

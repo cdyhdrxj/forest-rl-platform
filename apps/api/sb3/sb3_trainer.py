@@ -102,21 +102,26 @@ class SB3Trainer:
                 return
             deterministic = bool(params.get("deterministic", True))
             eval_episodes = max(1, int(params.get("eval_episodes") or 999_999))
-            threading.Thread(
+            self._thread = threading.Thread(
                 target=self._eval_loop,
                 args=(deterministic, eval_episodes),
                 daemon=True,
-            ).start()
+            )
+            self._thread.start()
         else:
-            threading.Thread(
+            self._thread = threading.Thread(
                 target=self._training_loop,
-                args=(resume,), 
-                daemon=True
-            ).start()
+                args=(resume,),
+                daemon=True,
+            )
+            self._thread.start()
             
 
     def stop(self) -> None:
         self.training_state["running"] = False
+        t = getattr(self, "_thread", None)
+        if t is not None and t.is_alive():
+            t.join(timeout=10)          # колбэк спит 0.5с/шаг — дай запас
         if self.model and hasattr(self.model, "save"):
             checkpoint_path = self._resolve_checkpoint_save_path()
             self.model.save(str(checkpoint_path))
@@ -266,6 +271,8 @@ class SB3Trainer:
                 d = get_runtime_storage_root() / f"run_{self._run_id}"
                 d.mkdir(parents=True, exist_ok=True)
                 return d / "model"
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[_resolve_checkpoint_save_path] run_{self._run_id}: {exc}")
+        else:
+            print(f"[_resolve_checkpoint_save_path] _run_id не выставлен, сохранение модели в корень")
         return Path(f"{self.__class__.__name__}_model")

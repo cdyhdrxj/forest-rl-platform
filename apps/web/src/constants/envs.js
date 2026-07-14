@@ -20,14 +20,13 @@ export const TASK = {
   TRAIL:         "Тропы",
   PATROL:        "Патруль",
   REFORESTATION: "Посадка",
-  COVERAGE:      "Покрытие",  
+  COVERAGE:      "Покрытие",
 }
 
-// Задачи по среде
 export const TASKS_BY_ENV = {
   [ENV.CONTINUOUS]: [TASK.TRAIL, TASK.COVERAGE],
   [ENV.DISCRETE]:   [TASK.PATROL, TASK.REFORESTATION],
-  [ENV.SIM_3D]:     [TASK.TRAIL],
+  [ENV.SIM_3D]:     [TASK.TRAIL, TASK.PATROL],
 }
 
 export const HTTP_MAP = {
@@ -43,22 +42,6 @@ export const WS_MAP = {
   [`${ENV.SIM_3D}/${TASK.PATROL}`]:           `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/patrol`,
   [`${ENV.SIM_3D}/${TASK.TRAIL}`]:            `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/threed/trail`,
   "WebrtcWs":                                 `${API_WS_PROTOCOL}${API_ADDRESS}:${API_PORT}/ws`,
-}
-
-
-export const ALGOS_BY_ROUTE = {
-  [`${ENV.CONTINUOUS}/${TASK.TRAIL}`]:        ["PPO", "SAC", "A2C"],
-  [`${ENV.CONTINUOUS}/${TASK.COVERAGE}`]:     ["greedy_nearest", "greedy_two_step", "PPO", "SAC", "A2C"],
-  [`${ENV.DISCRETE}/${TASK.PATROL}`]:         ["PPO", "A2C"],
-  [`${ENV.DISCRETE}/${TASK.REFORESTATION}`]:  ["PPO", "A2C"],
-  [`${ENV.SIM_3D}/${TASK.PATROL}`]:           ["PPO", "SAC", "A2C"],
-  [`${ENV.SIM_3D}/${TASK.TRAIL}`]:            ["PPO", "SAC", "A2C"],
-}
-
-export const ALGOS_BY_ENV = {
-  [ENV.CONTINUOUS]: ["PPO", "SAC", "A2C"],
-  [ENV.DISCRETE]:   ["PPO", "A2C"],
-  [ENV.SIM_3D]:     ["PPO", "SAC", "A2C"],
 }
 
 export const CLASSIC_ALGOS = new Set(["greedy_nearest", "greedy_two_step"])

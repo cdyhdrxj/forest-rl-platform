@@ -209,7 +209,7 @@ export function ReplayPage({ nav, ctx = {} }) {
                 onClick={() => { stopPlayback(); setCursor(p => Math.max(0, p - 1)) }}
                 disabled={cursor <= 0}
                 color={Theme.textMuted}
-              >◀</Btn>
+              >Пред.</Btn>
 
               {playing
                 ? <Btn onClick={stopPlayback} color={Theme.red}>⏸</Btn>
@@ -226,7 +226,7 @@ export function ReplayPage({ nav, ctx = {} }) {
                 onClick={() => { stopPlayback(); setCursor(p => Math.min(frames.length - 1, p + 1)) }}
                 disabled={cursor >= frames.length - 1}
                 color={Theme.textMuted}
-              >▶</Btn>
+              >След.</Btn>
 
               <Btn
                 onClick={() => { stopPlayback(); setCursor(0) }}
